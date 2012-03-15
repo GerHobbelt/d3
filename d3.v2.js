@@ -705,8 +705,7 @@ function d3_format_group(value) {
   while (i > 0) t.push(value.substring(i -= 3, i + 3));
   return t.reverse().join(",") + f;
 }
-var d3_formatPrefixes = ["y","z","a","f","p","n","μ","m","","k","M","G","T","P","E","Z","Y"].map(d3_formatPrefix);
-
+d3_formatPrefixes = _.map(["y","z","a","f","p","n","μ","m","","k","M","G","T","P","E","Z","Y"], d3_formatPrefix);
 d3.formatPrefix = function(value, precision) {
   var i = 0;
   if (value) {
@@ -1725,11 +1724,21 @@ d3_selectionPrototype.property = function(name, value) {
       ? propertyFunction : propertyConstant));
 };
 d3_selectionPrototype.text = function(value) {
-  return arguments.length < 1
-      ? this.node().textContent : this.each(typeof value === "function"
-      ? function() { var v = value.apply(this, arguments); this.textContent = v == null ? "" : v; } : value == null
-      ? function() { this.textContent = ""; }
-      : function() { this.textContent = value; });
+var hasInnerText = (document.getElementsByTagName("body")[0].innerText !== undefined) ? true : false;
+  if (!hasInnerText) {
+    return arguments.length < 1
+        ? this.node().textContent : this.each(typeof value === "function"
+        ? function() { var v = value.apply(this, arguments); this.textContent = v == null ? "" : v; } : value == null
+        ? function() { this.textContent = ""; }
+        : function() { this.textContent = value; });
+  } else {
+    return arguments.length < 1
+        ? this.node().innerText : this.each(typeof value === "function"
+        ? function() { var v = value.apply(this, arguments); this.innerText = v == null ? "" : v; } : value == null
+        ? function() { this.innerText = ""; }
+        : function() { this.innerText = value; });
+
+  }
 };
 d3_selectionPrototype.html = function(value) {
   return arguments.length < 1
@@ -1744,7 +1753,8 @@ d3_selectionPrototype.append = function(name) {
   name = d3.ns.qualify(name);
 
   function append() {
-    return this.appendChild(document.createElementNS(this.namespaceURI, name));
+    return this.appendChild(document.createElement(name));
+    // return this.appendChild(document.createElementNS(this.namespaceURI, name));
   }
 
   function appendNS() {
