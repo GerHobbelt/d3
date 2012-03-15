@@ -6,9 +6,46 @@ try {
 } catch (error) {
   var d3_style_prototype = CSSStyleDeclaration.prototype,
       d3_style_setProperty = d3_style_prototype.setProperty;
-  d3_style_prototype.setProperty = function(name, value, priority) {
-    d3_style_setProperty.call(this, name, value + "", priority);
-  };
+  if (!d3_style_setProperty) {
+    // IE compat. - priority is ignored.
+    d3_style_prototype.setProperty = function(name, value) {
+      this[name] = value;
+    };
+
+  } else {
+    d3_style_prototype.setProperty = function(name, value, priority) {
+      d3_style_setProperty.call(this, name, value + "", priority);
+    };
+  }
+}
+// Namespace related methods - does not exist in IE < 9.
+var d3_createElementNS;
+var d3_setAttributeNS;
+if (!document.createElementNS) {
+  d3_createElementNS = function createElementNS(space, name) {
+    var node = document.createElement(name);
+    if (space) { node.setAttribute('xmlns', space) }
+    return node;
+  }
+} else {
+  d3_createElementNS = document.createElementNS.bind(document);
+}
+var _setAttributeNS = document.createElement('div').setAttributeNS;
+if(_setAttributeNS) {
+  d3_setAttributeNS = _setAttributeNS;
+} else {
+  d3_setAttributeNS = function(ns, name, value) {
+    this.setAttribute((ns ? (ns + ':'):'') + name, value);
+  }
+}
+
+var d3_array_map;
+if (Array.prototype.map) {
+  d3_array_map = function(array, each) {
+    return array.map(each);
+  }
+} else {
+  d3_array_map = _.map;
 }
 d3 = {version: "2.8.1"}; // semver
 function d3_class(ctor, properties) {
@@ -528,7 +565,8 @@ var d3_nsPrefix = {
   xhtml: "http://www.w3.org/1999/xhtml",
   xlink: "http://www.w3.org/1999/xlink",
   xml: "http://www.w3.org/XML/1998/namespace",
-  xmlns: "http://www.w3.org/2000/xmlns/"
+  xmlns: "http://www.w3.org/2000/xmlns/",
+  vml: "urn:schemas-microsoft-com:vml"
 };
 
 d3.ns = {
@@ -705,7 +743,7 @@ function d3_format_group(value) {
   while (i > 0) t.push(value.substring(i -= 3, i + 3));
   return t.reverse().join(",") + f;
 }
-d3_formatPrefixes = _.map(["y","z","a","f","p","n","μ","m","","k","M","G","T","P","E","Z","Y"], d3_formatPrefix);
+d3_formatPrefixes = d3_array_map(["y","z","a","f","p","n","μ","m","","k","M","G","T","P","E","Z","Y"], d3_formatPrefix);
 d3.formatPrefix = function(value, precision) {
   var i = 0;
   if (value) {
@@ -1593,7 +1631,7 @@ d3_selectionPrototype.attr = function(name, value) {
   }
 
   function attrConstantNS() {
-    this.setAttributeNS(name.space, name.local, value);
+    d3_setAttributeNS.call(this, name.space, name.local, value);
   }
 
   function attrFunction() {
@@ -1605,7 +1643,7 @@ d3_selectionPrototype.attr = function(name, value) {
   function attrFunctionNS() {
     var x = value.apply(this, arguments);
     if (x == null) this.removeAttributeNS(name.space, name.local);
-    else this.setAttributeNS(name.space, name.local, x);
+    else d3_setAttributeNS.call(this, name.space, name.local, x);
   }
 
   return this.each(value == null
@@ -1753,12 +1791,11 @@ d3_selectionPrototype.append = function(name) {
   name = d3.ns.qualify(name);
 
   function append() {
-    return this.appendChild(document.createElement(name));
-    // return this.appendChild(document.createElementNS(this.namespaceURI, name));
+    return this.appendChild(d3_createElementNS(this.namespaceURI, name));
   }
 
   function appendNS() {
-    return this.appendChild(document.createElementNS(name.space, name.local));
+    return this.appendChild(d3_createElementNS(name.space, name.local));
   }
 
   return this.select(name.local ? appendNS : append);
@@ -1771,13 +1808,13 @@ d3_selectionPrototype.insert = function(name, before) {
 
   function insert() {
     return this.insertBefore(
-        document.createElementNS(this.namespaceURI, name),
+        d3_createElementNS(this.namespaceURI, name),
         d3_select(before, this));
   }
 
   function insertNS() {
     return this.insertBefore(
-        document.createElementNS(name.space, name.local),
+        d3_createElementNS(name.space, name.local),
         d3_select(before, this));
   }
 

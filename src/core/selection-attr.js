@@ -22,7 +22,7 @@ d3_selectionPrototype.attr = function(name, value) {
   }
 
   function attrConstantNS() {
-    this.setAttributeNS(name.space, name.local, value);
+    d3_setAttributeNS.call(this, name.space, name.local, value);
   }
 
   function attrFunction() {
@@ -34,7 +34,7 @@ d3_selectionPrototype.attr = function(name, value) {
   function attrFunctionNS() {
     var x = value.apply(this, arguments);
     if (x == null) this.removeAttributeNS(name.space, name.local);
-    else this.setAttributeNS(name.space, name.local, x);
+    else d3_setAttributeNS.call(this, name.space, name.local, x);
   }
 
   return this.each(value == null

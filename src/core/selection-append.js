@@ -4,12 +4,11 @@ d3_selectionPrototype.append = function(name) {
   name = d3.ns.qualify(name);
 
   function append() {
-    return this.appendChild(document.createElement(name));
-    // return this.appendChild(document.createElementNS(this.namespaceURI, name));
+    return this.appendChild(d3_createElementNS(this.namespaceURI, name));
   }
 
   function appendNS() {
-    return this.appendChild(document.createElementNS(name.space, name.local));
+    return this.appendChild(d3_createElementNS(name.space, name.local));
   }
 
   return this.select(name.local ? appendNS : append);

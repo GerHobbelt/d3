@@ -27,6 +27,8 @@ all: \
 d3.core.js: \
 	src/compat/date.js \
 	src/compat/style.js \
+	src/compat/ns.js \
+	src/compat/map.js \
 	src/core/core.js \
 	src/core/class.js \
 	src/core/array.js \
