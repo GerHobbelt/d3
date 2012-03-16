@@ -8,7 +8,10 @@ if (!document.createElementNS) {
     return node;
   }
 } else {
-  d3_createElementNS = document.createElementNS.bind(document);
+  d3_createElementNS = function(ns, name) {
+    debugger;
+    return document.createElementNS(ns, name);
+  }
 }
 var _setAttributeNS = document.createElement('div').setAttributeNS;
 if(_setAttributeNS) {

@@ -28,7 +28,10 @@ if (!document.createElementNS) {
     return node;
   }
 } else {
-  d3_createElementNS = document.createElementNS.bind(document);
+  d3_createElementNS = function(ns, name) {
+    debugger;
+    return document.createElementNS(ns, name);
+  }
 }
 var _setAttributeNS = document.createElement('div').setAttributeNS;
 if(_setAttributeNS) {
@@ -38,7 +41,6 @@ if(_setAttributeNS) {
     this.setAttribute((ns ? (ns + ':'):'') + name, value);
   }
 }
-
 var d3_array_map;
 if (Array.prototype.map) {
   d3_array_map = function(array, each) {
