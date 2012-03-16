@@ -29,7 +29,6 @@ if (!document.createElementNS) {
   }
 } else {
   d3_createElementNS = function(ns, name) {
-    debugger;
     return document.createElementNS(ns, name);
   }
 }
@@ -48,6 +47,27 @@ if (Array.prototype.map) {
   }
 } else {
   d3_array_map = _.map;
+}
+var d3_selectionPrototype_text;
+var hasTextContent;
+
+hasTextContent = (document.createElement("div").textContent !== undefined)
+if (hasTextContent) {
+  d3_selectionPrototype_text = function(value) {
+    return arguments.length < 1
+        ? this.node().textContent : this.each(typeof value === "function"
+        ? function() { var v = value.apply(this, arguments); this.textContent = v == null ? "" : v; } : value == null
+        ? function() { this.textContent = ""; }
+        : function() { this.textContent = value; });
+  }
+} else {
+  d3_selectionPrototype_text = function(value) {
+    return arguments.length < 1
+        ? this.node().innerText : this.each(typeof value === "function"
+        ? function() { var v = value.apply(this, arguments); this.innerText = v == null ? "" : v; } : value == null
+        ? function() { this.innerText = ""; }
+        : function() { this.innerText = value; });
+  }
 }
 d3 = {version: "2.8.1"}; // semver
 function d3_class(ctor, properties) {
@@ -1763,23 +1783,7 @@ d3_selectionPrototype.property = function(name, value) {
       ? propertyNull : (typeof value === "function"
       ? propertyFunction : propertyConstant));
 };
-d3_selectionPrototype.text = function(value) {
-var hasInnerText = (document.getElementsByTagName("body")[0].innerText !== undefined) ? true : false;
-  if (!hasInnerText) {
-    return arguments.length < 1
-        ? this.node().textContent : this.each(typeof value === "function"
-        ? function() { var v = value.apply(this, arguments); this.textContent = v == null ? "" : v; } : value == null
-        ? function() { this.textContent = ""; }
-        : function() { this.textContent = value; });
-  } else {
-    return arguments.length < 1
-        ? this.node().innerText : this.each(typeof value === "function"
-        ? function() { var v = value.apply(this, arguments); this.innerText = v == null ? "" : v; } : value == null
-        ? function() { this.innerText = ""; }
-        : function() { this.innerText = value; });
-
-  }
-};
+d3_selectionPrototype.text = d3_selectionPrototype_text;
 d3_selectionPrototype.html = function(value) {
   return arguments.length < 1
       ? this.node().innerHTML : this.each(typeof value === "function"

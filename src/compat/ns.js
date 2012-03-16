@@ -9,7 +9,6 @@ if (!document.createElementNS) {
   }
 } else {
   d3_createElementNS = function(ns, name) {
-    debugger;
     return document.createElementNS(ns, name);
   }
 }
