@@ -1822,8 +1822,18 @@ d3_selectionPrototype.html = function(value) {
       : function() { this.innerHTML = value; });
 };
 // TODO append(node)?
-// TODO append(function)?
+// TODO append(function)? <-- Done by polychart.
 d3_selectionPrototype.append = function(name) {
+  if (typeof name === 'function') {
+    return this.select(function(d, i) {
+      var _name = d3.ns.qualify(name(d, i));
+      if (_name.local) {
+        return this.appendChild(d3_createElementNS(_name.space, _name.local));
+      } else {
+        return this.appendChild(d3_createElementNS(this.namespaceURI, _name));
+      }
+    });
+  }
   name = d3.ns.qualify(name);
 
   function append() {
@@ -2060,6 +2070,7 @@ d3_selectionPrototype.on = function(type, listener, capture) {
 
     // remove the old listener, if any (using the previously-set capture)
     if (o) {
+      // TODO(JEE) - this line failed on IE. figure out why.
       node.removeEventListener(type, o, o.$);
       delete node[name];
     }
