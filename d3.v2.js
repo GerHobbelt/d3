@@ -9385,7 +9385,7 @@ d3_time_scaleLocalMethods.year = function(extent, m) {
 d3.time.scale = function() {
   return d3_time_scale(d3.scale.linear(), d3_time_scaleLocalMethods, d3_time_scaleLocalFormat);
 };
-var d3_time_scaleUTCMethods = d3_time_scaleLocalMethods.map(function(m) {
+var d3_time_scaleUTCMethods = d3_array_map(d3_time_scaleLocalMethods, function(m) {
   return [m[0].utc, m[1]];
 });
 

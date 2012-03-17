@@ -17,6 +17,7 @@ d3_selectionPrototype.on = function(type, listener, capture) {
 
     // remove the old listener, if any (using the previously-set capture)
     if (o) {
+      // TODO(JEE) - this line failed on IE. figure out why.
       node.removeEventListener(type, o, o.$);
       delete node[name];
     }

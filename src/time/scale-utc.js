@@ -1,4 +1,4 @@
-var d3_time_scaleUTCMethods = d3_time_scaleLocalMethods.map(function(m) {
+var d3_time_scaleUTCMethods = d3_array_map(d3_time_scaleLocalMethods, function(m) {
   return [m[0].utc, m[1]];
 });
 
