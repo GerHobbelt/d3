@@ -24,6 +24,63 @@ all: \
 	d3.time.js \
 	src/end.js
 
+d3.nodom.js: \
+	src/compat/date.js \
+	src/compat/style.js \
+	src/compat/ns.js \
+	src/compat/map.js \
+	src/compat/text.js \
+	src/core/core.js \
+	src/core/class.js \
+	src/core/array.js \
+	src/core/map.js \
+	src/core/this.js \
+	src/core/functor.js \
+	src/core/rebind.js \
+	src/core/ascending.js \
+	src/core/descending.js \
+	src/core/mean.js \
+	src/core/median.js \
+	src/core/min.js \
+	src/core/max.js \
+	src/core/extent.js \
+	src/core/random.js \
+	src/core/number.js \
+	src/core/sum.js \
+	src/core/quantile.js \
+	src/core/transpose.js \
+	src/core/zip.js \
+	src/core/bisect.js \
+	src/core/first.js \
+	src/core/last.js \
+	src/core/nest.js \
+	src/core/keys.js \
+	src/core/values.js \
+	src/core/entries.js \
+	src/core/permute.js \
+	src/core/merge.js \
+	src/core/split.js \
+	src/core/collapse.js \
+	src/core/range.js \
+	src/core/requote.js \
+	src/core/round.js \
+	src/core/xhr.js \
+	src/core/text.js \
+	src/core/json.js \
+	src/core/html.js \
+	src/core/xml.js \
+	src/core/ns.js \
+	src/core/dispatch.js \
+	src/core/format.js \
+	src/core/formatPrefix.js \
+	src/core/ease.js \
+	src/core/event.js \
+	src/core/interpolate.js \
+	src/core/uninterpolate.js \
+	src/core/rgb.js \
+	src/core/hsl.js \
+	src/core/noop.js
+
 d3.core.js: \
 	src/compat/date.js \
 	src/compat/style.js \
