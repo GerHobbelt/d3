@@ -10,7 +10,7 @@ try {
     d3_style_setProperty.call(this, name, value + "", priority);
   };
 }
-d3 = {version: "2.8.1"}; // semver
+d3 = {version: "2.9.1"}; // semver
 function d3_class(ctor, properties) {
   try {
     for (var key in properties) {
@@ -490,7 +490,6 @@ d3.xhr = function(url, mime, callback) {
   if (arguments.length < 3) callback = mime, mime = null;
   else if (mime && req.overrideMimeType) req.overrideMimeType(mime);
   req.open("GET", url, true);
-  req.setRequestHeader("X-Requested-With", "XMLHttpRequest");
   if (mime) req.setRequestHeader("Accept", mime);
   req.onreadystatechange = function() {
     if (req.readyState === 4) {
@@ -1132,7 +1131,7 @@ d3.interpolateObject = function(a, b) {
   };
 }
 
-var d3_interpolate_number = /[-+]?(?:\d+\.?\d*|\d*\.?\d+)(?:[eE][-+]?\d+)?/g;
+var d3_interpolate_number = /[-+]?(?:\d+\.?\d*|\.?\d+)(?:[eE][-+]?\d+)?/g;
 
 function d3_interpolateByName(n) {
   return n == "transform"
@@ -2162,8 +2161,8 @@ function d3_transition(groups, id, time) {
         lock.active = id;
 
         tweens.forEach(function(key, value) {
-          if (tween = value.call(node, d, i)) {
-            tweened.push(tween);
+          if (value = value.call(node, d, i)) {
+            tweened.push(value);
           }
         });
 
@@ -4405,7 +4404,7 @@ d3.svg.brush = function() {
 
     // Propagate the active cursor to the body for the drag duration.
     g.style("pointer-events", "none").selectAll(".resize").style("display", null);
-    g.select(".background").style("display", "none"); // workaround for IE9 bug
+    g.selectAll(".background").style("pointer-events", "none"); // workaround for IE9 bug
     d3.select("body").style("cursor", eventTarget.style("cursor"));
 
     // Notify listeners.
@@ -4530,7 +4529,7 @@ d3.svg.brush = function() {
 
       // reset the cursor styles
       g.style("pointer-events", "all").selectAll(".resize").style("display", brush.empty() ? "none" : null);
-      g.select(".background").style("display", null); // workaround for IE9 bug
+      g.selectAll(".background").style("pointer-events", null); // workaround for IE9 bug
       d3.select("body").style("cursor", null);
 
       w .on("mousemove.brush", null)
@@ -8869,7 +8868,7 @@ function d3_time_parseWeekday(date, string, i) {
 }
 
 var d3_time_weekdayAbbrevRe = /^(?:sun|mon|tue|wed|thu|fri|sat)/i,
-    d3_time_weekdayRe = /^(?:Sunday|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday)/i;
+    d3_time_weekdayRe = /^(?:Sunday|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday)/i,
     d3_time_weekdays = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
 function d3_time_parseMonthAbbrev(date, string, i) {
