@@ -10,7 +10,7 @@ try {
     d3_style_setProperty.call(this, name, value + "", priority);
   };
 }
-d3 = {version: "2.8.1"}; // semver
+d3 = {version: "2.9.1"}; // semver
 function d3_class(ctor, properties) {
   try {
     for (var key in properties) {
@@ -490,7 +490,6 @@ d3.xhr = function(url, mime, callback) {
   if (arguments.length < 3) callback = mime, mime = null;
   else if (mime && req.overrideMimeType) req.overrideMimeType(mime);
   req.open("GET", url, true);
-  req.setRequestHeader("X-Requested-With", "XMLHttpRequest");
   if (mime) req.setRequestHeader("Accept", mime);
   req.onreadystatechange = function() {
     if (req.readyState === 4) {
@@ -1132,7 +1131,7 @@ d3.interpolateObject = function(a, b) {
   };
 }
 
-var d3_interpolate_number = /[-+]?(?:\d+\.?\d*|\d*\.?\d+)(?:[eE][-+]?\d+)?/g;
+var d3_interpolate_number = /[-+]?(?:\d+\.?\d*|\.?\d+)(?:[eE][-+]?\d+)?/g;
 
 function d3_interpolateByName(n) {
   return n == "transform"
@@ -4410,7 +4409,7 @@ d3.svg.brush = function() {
 
     // Propagate the active cursor to the body for the drag duration.
     g.style("pointer-events", "none").selectAll(".resize").style("display", null);
-    g.select(".background").style("display", "none"); // workaround for IE9 bug
+    g.selectAll(".background").style("pointer-events", "none"); // workaround for IE9 bug
     d3.select("body").style("cursor", eventTarget.style("cursor"));
 
     // Notify listeners.
@@ -4535,7 +4534,7 @@ d3.svg.brush = function() {
 
       // reset the cursor styles
       g.style("pointer-events", "all").selectAll(".resize").style("display", brush.empty() ? "none" : null);
-      g.select(".background").style("display", null); // workaround for IE9 bug
+      g.selectAll(".background").style("pointer-events", null); // workaround for IE9 bug
       d3.select("body").style("cursor", null);
 
       w .on("mousemove.brush", null)
@@ -5182,6 +5181,13 @@ d3.layout.force = function() {
     };
   }
 
+  field = function(x, y, w, h) {
+      return {
+          x: w/2.-x,
+          y: h/2.-y,
+      };
+  };
+
   force.tick = function() {
     // simulated annealing, basically
     if ((alpha *= .99) < .005) {
@@ -5219,14 +5225,13 @@ d3.layout.force = function() {
       }
     }
 
-    // apply gravity forces
+    // apply field forces
     if (k = alpha * gravity) {
-      x = size[0] / 2;
-      y = size[1] / 2;
-      i = -1; if (k) while (++i < n) {
+      for (i = 0; i < n; ++i) {
         o = nodes[i];
-        o.x += (x - o.x) * k;
-        o.y += (y - o.y) * k;
+        f = field(o.x, o.y, size[0], size[1]);
+        o.x += f.x * k;
+        o.y += f.y * k;
       }
     }
 
@@ -5305,6 +5310,12 @@ d3.layout.force = function() {
     gravity = x;
     return force;
   };
+
+  force.field = function(f) {
+    if (!arguments.length) return field;
+    field = f;
+    return force;
+  }
 
   force.theta = function(x) {
     if (!arguments.length) return theta;
