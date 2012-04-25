@@ -106,7 +106,13 @@ if (hasTextContent) {
         : function() { this.innerText = value; });
   }
 }
+var d3;
 d3 = {version: "2.8.1"}; // semver
+if (window) {
+  window.d3 = d3;
+} else {
+  this.d3 = d3;
+}
 function d3_class(ctor, properties) {
   try {
     for (var key in properties) {
