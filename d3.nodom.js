@@ -1,45 +1,6 @@
 if (!Date.now) Date.now = function() {
   return +new Date;
 };
-try {
-  document.createElement("div").style.setProperty("opacity", 0, "");
-} catch (error) {
-  var d3_style_prototype = CSSStyleDeclaration.prototype,
-      d3_style_setProperty = d3_style_prototype.setProperty;
-  if (!d3_style_setProperty) {
-    // IE compat. - priority is ignored.
-    d3_style_prototype.setProperty = function(name, value) {
-      this[name] = value;
-    };
-
-  } else {
-    d3_style_prototype.setProperty = function(name, value, priority) {
-      d3_style_setProperty.call(this, name, value + "", priority);
-    };
-  }
-}
-// Namespace related methods - does not exist in IE < 9.
-var d3_createElementNS;
-var d3_setAttributeNS;
-if (!document.createElementNS) {
-  d3_createElementNS = function createElementNS(space, name) {
-    var node = document.createElement(name);
-    if (space) { node.setAttribute('xmlns', space) }
-    return node;
-  }
-} else {
-  d3_createElementNS = function(ns, name) {
-    return document.createElementNS(ns, name);
-  }
-}
-var _setAttributeNS = document.createElement('div').setAttributeNS;
-if(_setAttributeNS) {
-  d3_setAttributeNS = _setAttributeNS;
-} else {
-  d3_setAttributeNS = function(ns, name, value) {
-    this.setAttribute((ns ? (ns + ':'):'') + name, value);
-  }
-}
 var d3_array_map;
 var d3_array_forEach;
 ;(function() {

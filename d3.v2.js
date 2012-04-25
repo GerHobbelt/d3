@@ -77,6 +77,13 @@ d3_array_forEach = function(obj, iterator, context) {
     }
   }
 };
+
+if (!nativeMap) {
+  Array.prototype.map = function(iterator) {
+    return d3_array_map(this, iterator)
+  }
+
+}
 })();
 var d3_selectionPrototype_text;
 var hasTextContent;
