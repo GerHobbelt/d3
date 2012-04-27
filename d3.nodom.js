@@ -769,7 +769,7 @@ function d3_format_group(value) {
   while (i > 0) t.push(value.substring(i -= 3, i + 3));
   return t.reverse().join(",") + f;
 }
-d3_formatPrefixes = d3_array_map(["y","z","a","f","p","n","μ","m","","k","M","G","T","P","E","Z","Y"], d3_formatPrefix);
+var d3_formatPrefixes = d3_array_map(["y","z","a","f","p","n","μ","m","","k","M","G","T","P","E","Z","Y"], d3_formatPrefix);
 d3.formatPrefix = function(value, precision) {
   var i = 0;
   if (value) {
