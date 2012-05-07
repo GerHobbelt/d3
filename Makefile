@@ -5,13 +5,18 @@ JS_COMPILER = $(NODE_PATH)/uglify-js/bin/uglifyjs
 JS_TESTER = $(NODE_PATH)/vows/bin/vows
 
 all: \
+	d3.latest.js \
+	d3.v2.js
+
+everything: \
+	d3.latest.js \
 	d3.v2.js \
 	d3.v2.min.js \
 	package.json
 
 # Modify this rule to build your own custom release.
 
-.INTERMEDIATE d3.v2.js: \
+.INTERMEDIATE d3.latest.js d3.v2.js: \
 	src/start.js \
 	d3.core.js \
 	d3.scale.js \
@@ -173,6 +178,7 @@ d3.layout.js: \
 	src/layout/layout.js \
 	src/layout/bundle.js \
 	src/layout/chord.js \
+	src/layout/chordratio.js \
 	src/layout/force.js \
 	src/layout/partition.js \
 	src/layout/pie.js \
