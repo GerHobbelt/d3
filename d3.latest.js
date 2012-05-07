@@ -6,11 +6,108 @@ try {
 } catch (error) {
   var d3_style_prototype = CSSStyleDeclaration.prototype,
       d3_style_setProperty = d3_style_prototype.setProperty;
-  d3_style_prototype.setProperty = function(name, value, priority) {
-    d3_style_setProperty.call(this, name, value + "", priority);
-  };
+  if (!d3_style_setProperty) {
+    // IE compat. - priority is ignored.
+    d3_style_prototype.setProperty = function(name, value) {
+      this[name] = value;
+    };
+
+  } else {
+    d3_style_prototype.setProperty = function(name, value, priority) {
+      d3_style_setProperty.call(this, name, value + "", priority);
+    };
+  }
+}
+// Namespace related methods - does not exist in IE < 9.
+var d3_createElementNS;
+var d3_setAttributeNS;
+if (!document.createElementNS) {
+  d3_createElementNS = function createElementNS(space, name) {
+    var node = document.createElement(name);
+    if (space) { node.setAttribute('xmlns', space) }
+    return node;
+  }
+} else {
+  d3_createElementNS = function(ns, name) {
+    return document.createElementNS(ns, name);
+  }
+}
+var _setAttributeNS = document.createElement('div').setAttributeNS;
+if(_setAttributeNS) {
+  d3_setAttributeNS = _setAttributeNS;
+} else {
+  d3_setAttributeNS = function(ns, name, value) {
+    this.setAttribute((ns ? (ns + ':'):'') + name, value);
+  }
+}
+var d3_array_map;
+var d3_array_forEach;
+;(function() {
+"use strict";
+// Implementation copied from underscore.js
+var ArrayProto         = Array.prototype
+var nativeForEach      = ArrayProto.forEach
+var nativeMap          = ArrayProto.map
+var breaker = {};
+
+d3_array_map = function(obj, iterator, context) {
+  var results = [];
+  if (obj == null) return results;
+  if (nativeMap && obj.map === nativeMap) return obj.map(iterator, context);
+  d3_array_forEach(obj, function(value, index, list) {
+    results[results.length] = iterator.call(context, value, index, list);
+  });
+  if (obj.length === +obj.length) results.length = obj.length;
+  return results;
+};
+
+d3_array_forEach = function(obj, iterator, context) {
+  if (obj == null) return;
+  if (nativeForEach && obj.forEach === nativeForEach) {
+    obj.forEach(iterator, context);
+  } else if (obj.length === +obj.length) {
+    for (var i = 0, l = obj.length; i < l; i++) {
+      if (i in obj && iterator.call(context, obj[i], i, obj) === breaker) return;
+    }
+  } else {
+    for (var key in obj) {
+      if (_.has(obj, key)) {
+        if (iterator.call(context, obj[key], key, obj) === breaker) return;
+      }
+    }
+  }
+};
+
+if (!nativeMap) {
+  Array.prototype.map = function(iterator) {
+    return d3_array_map(this, iterator)
+  }
+
+}
+})();
+var d3_selectionPrototype_text;
+var hasTextContent;
+
+hasTextContent = (document.createElement("div").textContent !== undefined)
+if (hasTextContent) {
+  d3_selectionPrototype_text = function(value) {
+    return arguments.length < 1
+        ? this.node().textContent : this.each(typeof value === "function"
+        ? function() { var v = value.apply(this, arguments); this.textContent = v == null ? "" : v; } : value == null
+        ? function() { this.textContent = ""; }
+        : function() { this.textContent = value; });
+  }
+} else {
+  d3_selectionPrototype_text = function(value) {
+    return arguments.length < 1
+        ? this.node().innerText : this.each(typeof value === "function"
+        ? function() { var v = value.apply(this, arguments); this.innerText = v == null ? "" : v; } : value == null
+        ? function() { this.innerText = ""; }
+        : function() { this.innerText = value; });
+  }
 }
 d3 = {version: "2.9.1"}; // semver
+
 function d3_class(ctor, properties) {
   try {
     for (var key in properties) {
@@ -539,7 +636,8 @@ var d3_nsPrefix = {
   xhtml: "http://www.w3.org/1999/xhtml",
   xlink: "http://www.w3.org/1999/xlink",
   xml: "http://www.w3.org/XML/1998/namespace",
-  xmlns: "http://www.w3.org/2000/xmlns/"
+  xmlns: "http://www.w3.org/2000/xmlns/",
+  vml: "urn:schemas-microsoft-com:vml"
 };
 
 d3.ns = {
@@ -716,8 +814,7 @@ function d3_format_group(value) {
   while (i > 0) t.push(value.substring(i -= 3, i + 3));
   return t.reverse().join(",") + f;
 }
-var d3_formatPrefixes = ["y","z","a","f","p","n","μ","m","","k","M","G","T","P","E","Z","Y"].map(d3_formatPrefix);
-
+var d3_formatPrefixes = d3_array_map(["y","z","a","f","p","n","μ","m","","k","M","G","T","P","E","Z","Y"], d3_formatPrefix);
 d3.formatPrefix = function(value, precision) {
   var i = 0;
   if (value) {
@@ -1605,7 +1702,7 @@ d3_selectionPrototype.attr = function(name, value) {
   }
 
   function attrConstantNS() {
-    this.setAttributeNS(name.space, name.local, value);
+    d3_setAttributeNS.call(this, name.space, name.local, value);
   }
 
   function attrFunction() {
@@ -1617,7 +1714,7 @@ d3_selectionPrototype.attr = function(name, value) {
   function attrFunctionNS() {
     var x = value.apply(this, arguments);
     if (x == null) this.removeAttributeNS(name.space, name.local);
-    else this.setAttributeNS(name.space, name.local, x);
+    else d3_setAttributeNS.call(this, name.space, name.local, x);
   }
 
   return this.each(value == null
@@ -1735,13 +1832,7 @@ d3_selectionPrototype.property = function(name, value) {
       ? propertyNull : (typeof value === "function"
       ? propertyFunction : propertyConstant));
 };
-d3_selectionPrototype.text = function(value) {
-  return arguments.length < 1
-      ? this.node().textContent : this.each(typeof value === "function"
-      ? function() { var v = value.apply(this, arguments); this.textContent = v == null ? "" : v; } : value == null
-      ? function() { this.textContent = ""; }
-      : function() { this.textContent = value; });
-};
+d3_selectionPrototype.text = d3_selectionPrototype_text;
 d3_selectionPrototype.html = function(value) {
   return arguments.length < 1
       ? this.node().innerHTML : this.each(typeof value === "function"
@@ -1750,16 +1841,26 @@ d3_selectionPrototype.html = function(value) {
       : function() { this.innerHTML = value; });
 };
 // TODO append(node)?
-// TODO append(function)?
+// TODO append(function)? <-- Done by polychart.
 d3_selectionPrototype.append = function(name) {
+  if (typeof name === 'function') {
+    return this.select(function(d, i) {
+      var _name = d3.ns.qualify(name(d, i));
+      if (_name.local) {
+        return this.appendChild(d3_createElementNS(_name.space, _name.local));
+      } else {
+        return this.appendChild(d3_createElementNS(this.namespaceURI, _name));
+      }
+    });
+  }
   name = d3.ns.qualify(name);
 
   function append() {
-    return this.appendChild(document.createElementNS(this.namespaceURI, name));
+    return this.appendChild(d3_createElementNS(this.namespaceURI, name));
   }
 
   function appendNS() {
-    return this.appendChild(document.createElementNS(name.space, name.local));
+    return this.appendChild(d3_createElementNS(name.space, name.local));
   }
 
   return this.select(name.local ? appendNS : append);
@@ -1772,13 +1873,13 @@ d3_selectionPrototype.insert = function(name, before) {
 
   function insert() {
     return this.insertBefore(
-        document.createElementNS(this.namespaceURI, name),
+        d3_createElementNS(this.namespaceURI, name),
         d3_select(before, this));
   }
 
   function insertNS() {
     return this.insertBefore(
-        document.createElementNS(name.space, name.local),
+        d3_createElementNS(name.space, name.local),
         d3_select(before, this));
   }
 
@@ -1988,6 +2089,7 @@ d3_selectionPrototype.on = function(type, listener, capture) {
 
     // remove the old listener, if any (using the previously-set capture)
     if (o) {
+      // TODO(JEE) - this line failed on IE. figure out why.
       node.removeEventListener(type, o, o.$);
       delete node[name];
     }
@@ -7194,7 +7296,7 @@ d3.csv.parse = function(text) {
   return d3.csv.parseRows(text, function(row, i) {
     if (i) {
       var o = {}, j = -1, m = header.length;
-      while (++j < m) o[header[j]] = row[j];
+      while (++j < m) o[header[j]] = j < row.length ? row[j] : null;
       return o;
     } else {
       header = row;
@@ -9535,7 +9637,7 @@ d3.time.dayOfYear = function(date) {
   var year = d3.time.year(date);
   return Math.floor((date - year) / 864e5 - (date.getTimezoneOffset() - year.getTimezoneOffset()) / 1440);
 };
-d3_time_weekdays.forEach(function(day, i) {
+d3_array_forEach(d3_time_weekdays, function(day, i) {
   day = day.toLowerCase();
   i = 7 - i;
 
@@ -9725,7 +9827,7 @@ d3_time_scaleLocalMethods.year = function(extent, m) {
 d3.time.scale = function() {
   return d3_time_scale(d3.scale.linear(), d3_time_scaleLocalMethods, d3_time_scaleLocalFormat);
 };
-var d3_time_scaleUTCMethods = d3_time_scaleLocalMethods.map(function(m) {
+var d3_time_scaleUTCMethods = d3_array_map(d3_time_scaleLocalMethods, function(m) {
   return [m[0].utc, m[1]];
 });
 

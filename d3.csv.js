@@ -1,3 +1,8 @@
+d3.csv = function(url, callback) {
+  d3.text(url, "text/csv", function(text) {
+    callback(text && d3.csv.parse(text));
+  });
+};
 d3.csv.parse = function(text) {
   var header;
   return d3.csv.parseRows(text, function(row, i) {
@@ -71,3 +76,16 @@ d3.csv.parseRows = function(text, f) {
 
   return rows;
 };
+d3.csv.format = function(rows) {
+  return rows.map(d3_csv_formatRow).join("\n");
+};
+
+function d3_csv_formatRow(row) {
+  return row.map(d3_csv_formatValue).join(",");
+}
+
+function d3_csv_formatValue(text) {
+  return /[",\n]/.test(text)
+      ? "\"" + text.replace(/\"/g, "\"\"") + "\""
+      : text;
+}
