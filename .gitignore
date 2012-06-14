@@ -4,3 +4,5 @@ node_modules
 /.idea/
 /d3.iml
 /docs/api
+*.swp
+*.swo

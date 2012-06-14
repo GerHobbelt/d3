@@ -1,7 +1,7 @@
 # See the README for installation instructions.
 
 NODE_PATH ?= ./node_modules
-JS_COMPILER = $(NODE_PATH)/uglify-js/bin/uglifyjs
+JS_COMPILER = uglifyjs
 JS_TESTER = $(NODE_PATH)/vows/bin/vows
 
 all: \
@@ -167,6 +167,8 @@ d3.raphael.js: \
 	src/raphael/root.js \
 	src/raphael/selection.js \
 	src/raphael/selection-enter.js \
+	src/raphael/selection-transition.js \
+	src/raphael/raphael-sizzle.js \
 	src/raphael/axis.js
 
 d3.behavior.js: \
