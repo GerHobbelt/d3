@@ -179,7 +179,7 @@ suite.addBatch({
       "can generate fewer ticks, if desired": function(log) {
         var x = log();
         assert.deepEqual(x.ticks().map(x.tickFormat(5)), [
-          "1e+0", "2e+0", "3e+0", "4e+0", "", "", "", "", "",
+          "1e+0", "2e+0", "3e+0", "4e+0", "5e+0", "", "", "", "",
           "1e+1"
         ]);
         var x = log().domain([100, 1]);

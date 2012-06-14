@@ -55,7 +55,7 @@ function d3_scale_log(linear, log) {
         f = log === d3_scale_logn ? (e = -1e-12, Math.floor) : (e = 1e-12, Math.ceil),
         e;
     return function(d) {
-      return d / pow(f(log(d) + e)) < k ? format(d) : "";
+      return d / pow(f(log(d) + e)) <= k ? format(d) : "";
     };
   };
 
