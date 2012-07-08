@@ -3,6 +3,7 @@ node_modules
 .DS_Store
 /.idea/
 /d3.iml
-/docs/api
-*.swp
-*.swo
+
+# Editor backup files
+*.bak
+*~
