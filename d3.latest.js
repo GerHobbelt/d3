@@ -1670,9 +1670,11 @@ function d3_selection_classed(name, value) {
     var c = this.className,
         cb = c.baseVal != null,
         cv = cb ? c.baseVal : c;
-    cv = d3_collapse(cv.replace(re, " "));
-    if (cb) c.baseVal = cv;
-    else this.className = cv;
+    if (cv.length) {
+      cv = d3_collapse(cv.replace(re, " "));
+      if (cb) c.baseVal = cv;
+      else this.className = cv;
+    }
   }
 
   function classedFunction() {
@@ -3337,6 +3339,7 @@ var d3_svg_lineInterpolatorDefault = "linear";
 // The various interpolators supported by the `line` class.
 var d3_svg_lineInterpolators = d3.map({
   "linear": d3_svg_lineLinear,
+  "linear-closed": d3_svg_lineLinearClosed,
   "step-before": d3_svg_lineStepBefore,
   "step-after": d3_svg_lineStepAfter,
   "basis": d3_svg_lineBasis,
@@ -3351,12 +3354,11 @@ var d3_svg_lineInterpolators = d3.map({
 
 // Linear interpolation; generates "L" commands.
 function d3_svg_lineLinear(points) {
-  var i = 0,
-      n = points.length,
-      p = points[0],
-      path = [p[0], ",", p[1]];
-  while (++i < n) path.push("L", (p = points[i])[0], ",", p[1]);
-  return path.join("");
+  return points.join("L");
+}
+
+function d3_svg_lineLinearClosed(points) {
+  return d3_svg_lineLinear(points) + "Z";
 }
 
 // Step interpolation; generates "H" and "V" commands.
@@ -4895,13 +4897,15 @@ d3.behavior.zoom = function() {
     touches.forEach(function(t) { translate0[t.identifier] = location(t); });
     d3_eventCancel();
 
-    if ((touches.length === 1) && (now - touchtime < 500)) { // dbltap
-      var p = touches[0], l = location(touches[0]);
-      scaleTo(scale * 2);
-      translateTo(p, l);
-      dispatch(event.of(this, arguments));
+    if (touches.length === 1) {
+      if (now - touchtime < 500) { // dbltap
+        var p = touches[0], l = location(touches[0]);
+        scaleTo(scale * 2);
+        translateTo(p, l);
+        dispatch(event.of(this, arguments));
+      }
+      touchtime = now;
     }
-    touchtime = now;
   }
 
   function touchmove() {
@@ -4915,6 +4919,7 @@ d3.behavior.zoom = function() {
       scaleTo(d3.event.scale * scale0);
     }
     translateTo(p0, l0);
+    touchtime = null;
     dispatch(event.of(this, arguments));
   }
 
@@ -5565,7 +5570,15 @@ d3.layout.force = function() {
 
     // compute quadtree center of mass and apply charge forces
     if (charge) {
-      d3_layout_forceAccumulate(q = d3.geom.quadtree(nodes), alpha, charges);
+      q = d3.geom.quadtree(nodes);
+      // recalculate charges on every tick if need be:
+      if (typeof charge === "function") {
+        charges = [];
+        for (i = 0; i < n; ++i) {
+          charges[i] = +charge.call(this, nodes[i], i, q);
+        }
+      }
+      d3_layout_forceAccumulate(q, alpha, charges);
       i = -1; while (++i < n) {
         if (!(o = nodes[i]).fixed) {
           q.visit(repulse(o));
@@ -8390,7 +8403,7 @@ d3.geom.hull = function(vertices) {
   // do graham's scan
   for (; j<plen; ++j) {
     if (points[j].index === -1) continue; // skip tossed out points
-    while (!d3_geom_hullCCW(stack[sp-2], stack[sp-1], points[j].index, vertices)) {
+    while (sp >= 2 && !d3_geom_hullCCW(stack[sp-2], stack[sp-1], points[j].index, vertices)) {
       --sp;
     }
     stack[sp++] = points[j].index;
@@ -9337,11 +9350,12 @@ function d3_time_parseFullYear(date, string, i) {
 function d3_time_parseYear(date, string, i) {
   d3_time_numberRe.lastIndex = 0;
   var n = d3_time_numberRe.exec(string.substring(i, i + 2));
-  return n ? (date.y = d3_time_century() + +n[0], i += n[0].length) : -1;
+  return n ? (date.y = d3_time_expandYear(+n[0]), i += n[0].length) : -1;
 }
 
-function d3_time_century() {
-  return ~~(new Date().getFullYear() / 1000) * 1000;
+function d3_time_expandYear(d) {
+  // convert to 4-digit year according to POSIX/ISO rules (strptime) ~ http://docs.python.org/py3k/library/time.html
+  return d + (((d >= 69) && (d < 100)) ? 1900 : 2000);
 }
 
 function d3_time_parseMonthNumber(date, string, i) {
@@ -9545,7 +9559,9 @@ d3.time.hour = d3_time_interval(function(date) {
 d3.time.hours = d3.time.hour.range;
 d3.time.hours.utc = d3.time.hour.utc.range;
 d3.time.day = d3_time_interval(function(date) {
-  return new d3_time(date.getFullYear(), date.getMonth(), date.getDate());
+  var day = new d3_time(0, date.getMonth(), date.getDate());
+  day.setFullYear(date.getFullYear());
+  return day;
 }, function(date, offset) {
   date.setDate(date.getDate() + offset);
 }, function(date) {
@@ -9557,7 +9573,7 @@ d3.time.days.utc = d3.time.day.utc.range;
 
 d3.time.dayOfYear = function(date) {
   var year = d3.time.year(date);
-  return Math.floor((date - year) / 864e5 - (date.getTimezoneOffset() - year.getTimezoneOffset()) / 1440);
+  return Math.floor((date - year - (date.getTimezoneOffset() - year.getTimezoneOffset()) * 6e4) / 864e5);
 };
 d3_time_weekdays.forEach(function(day, i) {
   day = day.toLowerCase();
@@ -9587,7 +9603,9 @@ d3.time.weeks = d3.time.sunday.range;
 d3.time.weeks.utc = d3.time.sunday.utc.range;
 d3.time.weekOfYear = d3.time.sundayOfYear;
 d3.time.month = d3_time_interval(function(date) {
-  return new d3_time(date.getFullYear(), date.getMonth(), 1);
+  date = d3.time.day(date);
+  date.setDate(1);
+  return date;
 }, function(date, offset) {
   date.setMonth(date.getMonth() + offset);
 }, function(date) {
@@ -9597,7 +9615,9 @@ d3.time.month = d3_time_interval(function(date) {
 d3.time.months = d3.time.month.range;
 d3.time.months.utc = d3.time.month.utc.range;
 d3.time.year = d3_time_interval(function(date) {
-  return new d3_time(date.getFullYear(), 0, 1);
+  date = d3.time.day(date);
+  date.setMonth(0, 1);
+  return date;
 }, function(date, offset) {
   date.setFullYear(date.getFullYear() + offset);
 }, function(date) {
