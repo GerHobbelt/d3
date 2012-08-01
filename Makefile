@@ -255,7 +255,8 @@ test: all
 
 %.min.js: %.js Makefile
 	@rm -f $@
-	$(JS_COMPILER) < $< > $@
+	cat $< | $(JS_COMPILER) > $@
+	@chmod a-w $@
 
 d3%.js: Makefile
 	@rm -f $@
