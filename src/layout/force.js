@@ -45,8 +45,8 @@ d3.layout.force = function() {
 
   field = function(x, y, w, h) {
       return {
-          x: w/2.-x,
-          y: h/2.-y,
+          x: w / 2. - x,
+          y: h / 2. - y,
       };
   };
 

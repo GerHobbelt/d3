@@ -73,14 +73,14 @@ d3.layout.chord = function() {
             value: v
           };
         }
-      groups[di] = {
-        index: di,
-        startAngle: x0,
-        endAngle: x,
-        value: (x - x0) / k
-      };
-      x += padding;
-    }
+        groups[di] = {
+          index: di,
+          startAngle: x0,
+          endAngle: x,
+          value: (x - x0) / k
+        };
+        x += padding;
+      }
 
       // Generate chords for each (non-empty) subgroup-subgroup link.
       i = -1; while (++i < n) {
