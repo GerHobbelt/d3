@@ -20,3 +20,5 @@ d3_transitionPrototype.selectAll = function(selector) {
 
   return d3_transition(subgroups, this.id, this.time).ease(this.ease());
 };
+
+//Next: [core/transition-attr.js](/d3/src/core/transition-attr.html)

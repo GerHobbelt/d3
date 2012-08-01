@@ -18,3 +18,5 @@ function d3_transition_each(callback) {
   d3_transitionDuration = duration;
   return this;
 }
+
+//Next: [core/transition-transition.js](/d3/src/core/transition-transition.html)

@@ -24,3 +24,5 @@ d3_selectionPrototype.style = function(name, value, priority) {
       ? styleNull : (typeof value === "function"
       ? styleFunction : styleConstant));
 };
+
+//Next: [core/selection-property.js](/d3/src/core/selection-property.html)

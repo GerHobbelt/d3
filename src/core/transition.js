@@ -129,3 +129,5 @@ d3.transition = function(selection) {
 };
 
 d3.transition.prototype = d3_transitionPrototype;
+
+//Next: [core/transition-select.js](/d3/src/core/transition-select.html)

@@ -7,3 +7,5 @@ d3_selectionPrototype.remove = function() {
     if (parent) parent.removeChild(this);
   });
 };
+
+//Next: [core/selection-data.js](/d3/src/core/selection-data.html)

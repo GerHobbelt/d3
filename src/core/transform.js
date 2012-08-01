@@ -58,3 +58,5 @@ function d3_transformCombine(a, b, k) {
 
 var d3_transformDegrees = 180 / Math.PI,
     d3_transformIdentity = {a: 1, b: 0, c: 0, d: 1, e: 0, f: 0};
+
+//Next: [core/mouse.js](/d3/src/core/mouse.html)

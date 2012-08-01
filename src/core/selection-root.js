@@ -16,3 +16,5 @@ d3.selectAll = function(selector) {
       ? d3_selectionRoot.selectAll(selector)
       : d3_selection([d3_array(selector)]); // assume node[]
 };
+
+//Next: [core/selection-enter.js](/d3/src/core/selection-enter.html)

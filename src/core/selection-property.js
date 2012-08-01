@@ -21,3 +21,5 @@ d3_selectionPrototype.property = function(name, value) {
       ? propertyNull : (typeof value === "function"
       ? propertyFunction : propertyConstant));
 };
+
+//Next: [core/selection-text.js](/d3/src/core/selection-text.html)

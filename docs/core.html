@@ -1,0 +1,16 @@
+<!DOCTYPE html>  <html> <head>   <title>core.js</title>   <meta http-equiv="content-type" content="text/html; charset=UTF-8">   <link rel="stylesheet" media="all" href="docco.css" /> </head> <body>   <div id="container">     <div id="background"></div>          <table cellpadding="0" cellspacing="0">       <thead>         <tr>           <th class="docs">             <h1>               core.js             </h1>           </th>           <th class="code">           </th>         </tr>       </thead>       <tbody>                               <tr id="section-1">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-1">&#182;</a>               </div>               <p>This is the humble beginnings of the d3 object. As other .js files are added, they will have functions which take d3 and extend it bit by bit. </p>             </td>             <td class="code">               <div class="highlight"><pre></pre></div>             </td>           </tr>                               <tr id="section-2">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-2">&#182;</a>               </div>               <p>d3 follows a semantic versioning scheme. 
+More info can be found at <a href="http://semver.org">semver.org</a>.</p>
+
+<p>What does this really mean though?</p>
+
+<p>Parse 2.9.2 as X.Y.Z for a moment</p>
+
+<p>X, the major version number, being 2 means that if your code depends on 0.X.Y or 1.X.Y, the code will most likely not work out of the box. Significant changes have been made that incremented the major number. Note that each time X increments, the value of Y and Z get reset to 0. </p>
+
+<p>Y, the minor version, being 9 indicates that there have been 9 minor version changes of the code created while X is 2. The public API will not be broken and there is a good chance that your old code, say 2.8.2, will just work out of the box. When Y is incremented, Z, the patch version, goes to 0 while the major version number is left unchanged. </p>
+
+<p>Z, the patch version, being 2 indicates that since d3 has been on version 2.9.0, there have been 2 patches applied. This means that the only changes have been fixes to backwards-compatible bugs.</p>
+
+<p>Seriously, read <a href="http://semver.org">semver.org</a>. It does an excellent job of outlining what exactly mbostock has promised to provide and why he should (hint: fully public documentation of the API). </p>             </td>             <td class="code">               <div class="highlight"><pre><span class="nx">d3</span> <span class="o">=</span> <span class="p">{</span><span class="nx">version</span><span class="o">:</span> <span class="s2">&quot;2.9.2&quot;</span><span class="p">};</span> <span class="c1">// semver</span>
+
+</pre></div>             </td>           </tr>                </tbody>     </table>   </div> </body> </html> 

@@ -1,0 +1,18 @@
+<!DOCTYPE html>  <html> <head>   <title>class.js</title>   <meta http-equiv="content-type" content="text/html; charset=UTF-8">   <link rel="stylesheet" media="all" href="docco.css" /> </head> <body>   <div id="container">     <div id="background"></div>          <table cellpadding="0" cellspacing="0">       <thead>         <tr>           <th class="docs">             <h1>               class.js             </h1>           </th>           <th class="code">           </th>         </tr>       </thead>       <tbody>                               <tr id="section-1">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-1">&#182;</a>               </div>               <p>A simple function. It takes in a object and properties and then tries to add those properties to via the static <a href="https://developer.mozilla.org/en/JavaScript/Reference/Global_Objects/Object/defineProperty">Object.defineProperty</a>. This function is only used in <a href="/map.html">map.js</a> as far as I can tell. </p>
+
+<p>"enumerable:false" <a href="https://developer.mozilla.org/en/JavaScript/Reference/Global_Objects/Object/defineProperty#Enumerable_attribute">tells the function</a> whether to show the value during iteration via a "for i in ob" loop.</p>
+
+<p>If an error is thrown, then it says screw it and just changes the protoptype to the properties. </p>             </td>             <td class="code">               <div class="highlight"><pre><span class="kd">function</span> <span class="nx">d3_class</span><span class="p">(</span><span class="nx">ctor</span><span class="p">,</span> <span class="nx">properties</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">try</span> <span class="p">{</span>
+    <span class="k">for</span> <span class="p">(</span><span class="kd">var</span> <span class="nx">key</span> <span class="k">in</span> <span class="nx">properties</span><span class="p">)</span> <span class="p">{</span>
+      <span class="nb">Object</span><span class="p">.</span><span class="nx">defineProperty</span><span class="p">(</span><span class="nx">ctor</span><span class="p">.</span><span class="nx">prototype</span><span class="p">,</span> <span class="nx">key</span><span class="p">,</span> <span class="p">{</span>
+        <span class="nx">value</span><span class="o">:</span> <span class="nx">properties</span><span class="p">[</span><span class="nx">key</span><span class="p">],</span>
+        <span class="nx">enumerable</span><span class="o">:</span> <span class="kc">false</span>
+      <span class="p">});</span>
+    <span class="p">}</span>
+  <span class="p">}</span> <span class="k">catch</span> <span class="p">(</span><span class="nx">e</span><span class="p">)</span> <span class="p">{</span>
+    <span class="nx">ctor</span><span class="p">.</span><span class="nx">prototype</span> <span class="o">=</span> <span class="nx">properties</span><span class="p">;</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+
+</pre></div>             </td>           </tr>                </tbody>     </table>   </div> </body> </html> 

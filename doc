@@ -1,0 +1,3 @@
+docco src/*/*.js
+docco src/*.js
+docco src/*/*.js

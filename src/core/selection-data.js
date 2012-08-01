@@ -119,3 +119,5 @@ d3_selectionPrototype.data = function(value, key) {
 function d3_selection_dataNode(data) {
   return {__data__: data};
 }
+
+//Next: [core/selection-datum.js](/d3/src/core/selection-datum.html)

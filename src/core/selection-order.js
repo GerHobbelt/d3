@@ -9,3 +9,5 @@ d3_selectionPrototype.order = function() {
   }
   return this;
 };
+
+//Next: [core/selection-sort.js](/d3/src/core/selection-sort.html)

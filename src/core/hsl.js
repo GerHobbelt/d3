@@ -61,3 +61,5 @@ function d3_hsl_rgb(h, s, l) {
 
   return d3_rgb(vv(h + 120), vv(h), vv(h - 120));
 }
+
+//Next: [core/selection.js](/d3/src/core/selection.html)

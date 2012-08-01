@@ -1,3 +1,12 @@
+//A method that creates an xhr request, and, using the supplied
+//arguments, sends the request. Not too complicated beyond just calling
+//the `XMLHttpRequest` API and using status codes correctly. Not used
+//all that much outside of the library. It's been used to implement
+//other json requests, as we'll see next.
+
+//Example:
+// 
+//              d3.xhr("file.html","text/html", parseHTMLCallback)
 d3.xhr = function(url, mime, callback) {
   var req = new XMLHttpRequest;
   if (arguments.length < 3) callback = mime, mime = null;
@@ -12,3 +21,5 @@ d3.xhr = function(url, mime, callback) {
   };
   req.send(null);
 };
+
+//Next: [core/text.js](/d3/src/core/text.html)

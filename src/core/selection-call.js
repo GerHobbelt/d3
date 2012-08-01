@@ -11,3 +11,5 @@ d3_selectionPrototype.call = function(callback) {
   callback.apply(this, (arguments[0] = this, arguments));
   return this;
 };
+
+//Next: [core/selection-empty.js](/d3/src/core/selection-empty.html)

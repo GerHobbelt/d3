@@ -5,3 +5,5 @@ d3_transitionPrototype.text = function(value) {
         : value;
   });
 };
+
+//Next: [core/transition-remove.js](/d3/src/core/transition-remove.html)

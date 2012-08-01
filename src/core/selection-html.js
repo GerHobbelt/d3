@@ -5,3 +5,5 @@ d3_selectionPrototype.html = function(value) {
       ? function() { this.innerHTML = ""; }
       : function() { this.innerHTML = value; });
 };
+
+//Next: [core/selection-append.js](/d3/src/core/selection-append.html)

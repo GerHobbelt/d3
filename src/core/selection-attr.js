@@ -42,3 +42,5 @@ d3_selectionPrototype.attr = function(name, value) {
       ? (name.local ? attrFunctionNS : attrFunction)
       : (name.local ? attrConstantNS : attrConstant)));
 };
+
+//Next: [core/selection-classed.js](/d3/src/core/selection-classed.html)

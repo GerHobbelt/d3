@@ -1,0 +1,28 @@
+<!DOCTYPE html>  <html> <head>   <title>style.js</title>   <meta http-equiv="content-type" content="text/html; charset=UTF-8">   <link rel="stylesheet" media="all" href="docco.css" /> </head> <body>   <div id="container">     <div id="background"></div>          <table cellpadding="0" cellspacing="0">       <thead>         <tr>           <th class="docs">             <h1>               style.js             </h1>           </th>           <th class="code">           </th>         </tr>       </thead>       <tbody>                               <tr id="section-1">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-1">&#182;</a>               </div>               <p>A solution to fix the problem with IE9 and setting the style of an element.  </p>
+
+<p>See <a href="https://github.com/mbostock/d3/commit/c2e37352ac84eb8b4be89feed90bc2249866f715">this commit</a> for more information. </p>
+
+<p>An error happens where 0 isn't being converted to "0" by IE. The error is caught, and the more general case of the error, where a value isn't being converted to its string representation, is fixed. </p>
+
+<p>This code takes the setProperty function and composes it with a function that takes the value variable and makes it into a string, via 
+value +"", before passing it on to the actual setProperty function. </p>
+
+<p>Example:</p>
+
+<pre><code>document.createElement("div").style.setProperty("opacity", 0, "");
+</code></pre>
+
+<p>This is equivalent to calling: </p>
+
+<pre><code>document.createElement("div").style.setProperty("opacity", "0", "");
+</code></pre>             </td>             <td class="code">               <div class="highlight"><pre><span class="k">try</span> <span class="p">{</span>
+  <span class="nb">document</span><span class="p">.</span><span class="nx">createElement</span><span class="p">(</span><span class="s2">&quot;div&quot;</span><span class="p">).</span><span class="nx">style</span><span class="p">.</span><span class="nx">setProperty</span><span class="p">(</span><span class="s2">&quot;opacity&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">);</span>
+<span class="p">}</span> <span class="k">catch</span> <span class="p">(</span><span class="nx">error</span><span class="p">)</span> <span class="p">{</span>
+  <span class="kd">var</span> <span class="nx">d3_style_prototype</span> <span class="o">=</span> <span class="nx">CSSStyleDeclaration</span><span class="p">.</span><span class="nx">prototype</span><span class="p">,</span>
+      <span class="nx">d3_style_setProperty</span> <span class="o">=</span> <span class="nx">d3_style_prototype</span><span class="p">.</span><span class="nx">setProperty</span><span class="p">;</span>
+  <span class="nx">d3_style_prototype</span><span class="p">.</span><span class="nx">setProperty</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">name</span><span class="p">,</span> <span class="nx">value</span><span class="p">,</span> <span class="nx">priority</span><span class="p">)</span> <span class="p">{</span>
+    <span class="nx">d3_style_setProperty</span><span class="p">.</span><span class="nx">call</span><span class="p">(</span><span class="k">this</span><span class="p">,</span> <span class="nx">name</span><span class="p">,</span> <span class="nx">value</span> <span class="o">+</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="nx">priority</span><span class="p">);</span>
+  <span class="p">};</span>
+<span class="p">}</span>
+
+</pre></div>             </td>           </tr>                </tbody>     </table>   </div> </body> </html> 

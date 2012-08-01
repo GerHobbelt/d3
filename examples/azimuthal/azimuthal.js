@@ -27,3 +27,72 @@ function refresh(duration) {
   d3.select("#translate-y span")
       .text(xy.translate()[1]);
 }
+
+$("#lon").slider({
+  min: -180,
+  max: 180,
+  step: 1e-1,
+  value: 0,
+  slide: function(event, ui) {
+    var origin = xy.origin();
+    origin[0] = ui.value;
+    xy.origin(origin);
+    circle.origin(origin);
+    refresh();
+  }
+});
+
+$("#lat").slider({
+  min: -90,
+  max: 90,
+  step: 1e-1,
+  value: 0,
+  slide: function(event, ui) {
+    var origin = xy.origin();
+    origin[1] = ui.value;
+    xy.origin(origin);
+    circle.origin(origin);
+    refresh();
+  }
+});
+
+$("#scale").slider({
+  min: 0,
+  max: 3000,
+  value: 240,
+  slide: function(event, ui) {
+    xy.scale(ui.value);
+    refresh();
+  }
+});
+
+$("#translate-x").slider({
+  min: -2000,
+  max: 2000,
+  value: 480,
+  slide: function(event, ui) {
+    var translate = xy.translate();
+    translate[0] = ui.value;
+    xy.translate(translate);
+    refresh();
+  }
+});
+
+$("#translate-y").slider({
+  min: -2000,
+  max: 2000,
+  value: 250,
+  slide: function(event, ui) {
+    var translate = xy.translate();
+    translate[1] = ui.value;
+    xy.translate(translate);
+    refresh();
+  }
+});
+
+$("#mode").change(function() {
+  var mode = $(this).val();
+  xy.mode(mode);
+  refresh(500);
+});
+

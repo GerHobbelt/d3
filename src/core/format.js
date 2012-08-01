@@ -98,3 +98,5 @@ function d3_format_group(value) {
   while (i > 0) t.push(value.substring(i -= 3, i + 3));
   return t.reverse().join(",") + f;
 }
+
+//Next: [core/formatPrefix.js](/d3/src/core/formatPrefix.html)

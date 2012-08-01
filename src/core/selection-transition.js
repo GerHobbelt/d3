@@ -12,3 +12,5 @@ d3_selectionPrototype.transition = function() {
 
   return d3_transition(subgroups, d3_transitionId || ++d3_transitionNextId, d3_timer_now());
 };
+
+//Next: [core/selection-root.js](/d3/src/core/selection-root.html)

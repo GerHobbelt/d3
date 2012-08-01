@@ -1,3 +1,4 @@
+//Finds the smallest and largest elements of the array. Optionally, when passed in a function as a second argument, the function gets mapped over the array while the same method is used to find the extent of the array.
 d3.extent = function(array, f) {
   var i = -1,
       n = array.length,
@@ -19,3 +20,5 @@ d3.extent = function(array, f) {
   }
   return [a, c];
 };
+
+//Next: [core/random.js](/d3/src/core/random.html)

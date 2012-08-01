@@ -4,3 +4,5 @@ d3_transitionPrototype.remove = function() {
     if (!this.__transition__ && (p = this.parentNode)) p.removeChild(this);
   });
 };
+
+//Next: [core/transition-delay.js](/d3/src/core/transition-delay.html)

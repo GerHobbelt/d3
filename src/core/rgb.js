@@ -282,3 +282,5 @@ var d3_rgb_names = d3.map({
 d3_rgb_names.forEach(function(key, value) {
   d3_rgb_names.set(key, d3_rgb_parse(value, d3_rgb, d3_hsl_rgb));
 });
+
+//Next: [core/hsl.js](/d3/src/core/hsl.html)
