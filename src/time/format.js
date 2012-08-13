@@ -29,10 +29,8 @@ d3.time.format = function(template) {
     if ("p" in d) d.H = d.H % 12 + d.p * 12;
 
     var date = new d3_time(0);
-    if ("j" in d) {
-      date.setFullYear(d.y, 0, 1);
-      date.setTime(+date + d.j * 864e5);
-    } else if ("w" in d && ("W" in d || "U" in d)) {
+    if ("j" in d) date.setFullYear(d.y, 0, d.j);
+    else if ("w" in d && ("W" in d || "U" in d)) {
       date.setFullYear(d.y, 0, 1);
       date.setTime(+date + 864e5 * ("W" in d
           ? (d.w + 6) % 7 + d.W * 7 - 1 - (date.getDay() + 5) % 7
@@ -234,7 +232,7 @@ function d3_time_parseDay(date, string, i) {
 function d3_time_parseDayOfYear(date, string, i) {
   d3_time_numberRe.lastIndex = 0;
   var n = d3_time_numberRe.exec(string.substring(i, i + 3));
-  return n ? (date.j = n[0] - 1, i + n[0].length) : -1;
+  return n ? (date.j = +n[0], i + n[0].length) : -1;
 }
 
 // Note: we don't validate that the hour is in the range [0,23] or [1,12].
