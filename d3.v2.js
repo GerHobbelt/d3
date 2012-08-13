@@ -6524,7 +6524,7 @@
       var date = new d3_time(0);
       if ("j" in d) date.setFullYear(d.y, 0, d.j); else if ("w" in d && ("W" in d || "U" in d)) {
         date.setFullYear(d.y, 0, 1);
-        date.setTime(+date + 864e5 * ("W" in d ? (d.w + 6) % 7 + d.W * 7 - 1 - (date.getDay() + 5) % 7 : d.w + d.U * 7 - 1 - (date.getDay() + 6) % 7));
+        date.setFullYear(d.y, 0, "W" in d ? (d.w + 6) % 7 + d.W * 7 - (date.getDay() + 5) % 7 : d.w + d.U * 7 - (date.getDay() + 6) % 7);
       } else date.setFullYear(d.y, d.m, d.d);
       date.setHours(d.H, d.M, d.S, d.L);
       return date;
