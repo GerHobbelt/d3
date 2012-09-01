@@ -157,12 +157,12 @@ d3.svg.axis = function() {
     return axis;
   };
 
-  axis.tickSize = function(x, y, z) {
-    if (!arguments.length) return tickMajorSize;
-    var n = arguments.length - 1;
-    tickMajorSize = +x;
-    tickMinorSize = n > 1 ? +y : tickMajorSize;
-    tickEndSize = n > 0 ? +arguments[n] : tickMajorSize;
+  axis.tickSize = function(major, minor, end) {
+    var n = arguments.length;
+    if (!n) return [tickMajorSize, tickMinorSize, tickEndSize];
+    tickMajorSize = +major;
+    tickMinorSize = n > 2 ? +minor : tickMajorSize;
+    tickEndSize = +arguments[n - 1];
     return axis;
   };
 
