@@ -632,11 +632,12 @@ function d3_dispatch_event(dispatch) {
 
   return event;
 }
-// TODO align
 d3.format = function(specifier) {
   var match = d3_format_re.exec(specifier),
       fill = match[1] || " ",
+      align = match[2] || ">",
       sign = match[3] || "",
+      basePrefix = match[4] || "",
       zfill = match[5],
       width = +match[6],
       comma = match[7],
@@ -648,8 +649,9 @@ d3.format = function(specifier) {
 
   if (precision) precision = +precision.substring(1);
 
-  if (zfill) {
-    fill = "0"; // TODO align = "=";
+  if (zfill || fill === "0" && align === "=") {
+    zfill = fill = "0";
+    align = "=";
     if (comma) width -= Math.floor((width - 1) / 4);
   }
 
@@ -657,22 +659,31 @@ d3.format = function(specifier) {
     case "n": comma = true; type = "g"; break;
     case "%": scale = 100; suffix = "%"; type = "f"; break;
     case "p": scale = 100; suffix = "%"; type = "r"; break;
+    case "b":
+    case "o":
+    case "x":
+    case "X": if (basePrefix) basePrefix = "0" + type.toLowerCase();
+    case "c":
     case "d": integer = true; precision = 0; break;
     case "s": scale = -1; type = "r"; break;
   }
+
+  if (basePrefix === "#") basePrefix = "";
 
   // If no precision is specified for r, fallback to general notation.
   if (type == "r" && !precision) type = "g";
 
   type = d3_format_types.get(type) || d3_format_typeDefault;
 
-  return function(value) {
+  var zcomma = zfill && comma;
+
+  function format(value) {
 
     // Return the empty string for floats formatted as ints.
     if (integer && (value % 1)) return "";
 
     // Convert negative to positive, and record the sign prefix.
-    var negative = value < 0 && (value = -value) ? "-" : sign;
+    var negative = value < 0 || value === 0 && 1 / value < 0 ? (value = -value, "-") : sign;
 
     // Apply the scale, computing it from the value's exponent for si format.
     if (scale < 0) {
@@ -687,29 +698,41 @@ d3.format = function(specifier) {
     value = type(value, precision);
 
     // If the fill character is 0, the sign and group is applied after the fill.
-    if (zfill) {
-      var length = value.length + negative.length;
-      if (length < width) value = new Array(width - length + 1).join(fill) + value;
-      if (comma) value = d3_format_group(value);
-      value = negative + value;
-    }
+    if (!zfill && comma) value = d3_format_group(value);
+    var length = basePrefix.length + value.length + (zcomma ? 0 : negative.length),
+        padding = length < width ? new Array(length = width - length + 1).join(fill) : "";
+    if (zcomma) value = d3_format_group(padding + value);
+    negative += basePrefix;
+    return (align === "<" ? negative + value + padding
+          : align === ">" ? padding + negative + value
+          : align === "^" ? padding.substring(0, length >>= 1)
+            + negative + value + padding.substring(length)
+          : negative + (zcomma ? value : padding + value)) + suffix;
+  }
 
-    // Otherwise (e.g., space-filling), the sign and group is applied before.
-    else {
-      if (comma) value = d3_format_group(value);
-      value = negative + value;
-      var length = value.length;
-      if (length < width) value = new Array(width - length + 1).join(fill) + value;
+  format.parse = function(d) {
+    var value = d;
+    if (scale < 0) {
+      var prefix = d3_formatPrefixIndex.get(value.substring(value.length - 1));
+      value = prefix ? prefix(+value.substring(0, value.length - 1)) : +value;
+    } else {
+      value = +value / scale;
     }
-
-    return value + suffix;
+    return value;
   };
+
+  return format;
 };
 
 // [[fill]align][sign][#][0][width][,][.precision][type]
 var d3_format_re = /(?:([^{])?([<>=^]))?([+\- ])?(#)?(0)?([0-9]+)?(,)?(\.[0-9]+)?([a-zA-Z%])?/;
 
 var d3_format_types = d3.map({
+  b: function(x) { return x.toString(2); },
+  c: function(x) { return String.fromCharCode(x); },
+  o: function(x) { return x.toString(8); },
+  x: function(x) { return x.toString(16); },
+  X: function(x) { return x.toString(16).toUpperCase(); },
   g: function(x, p) { return x.toPrecision(p); },
   e: function(x, p) { return x.toExponential(p); },
   E: function(x, p) {
@@ -745,7 +768,8 @@ function d3_format_group(value) {
   while (i > 0) t.push(value.substring(i -= 3, i + 3));
   return t.reverse().join(",") + f;
 }
-var d3_formatPrefixes = ["y","z","a","f","p","n","μ","m","","k","M","G","T","P","E","Z","Y"].map(d3_formatPrefix);
+var d3_formatPrefixIndex = new d3_Map,
+    d3_formatPrefixes = ["y","z","a","f","p","n","μ","m","","k","M","G","T","P","E","Z","Y"].map(d3_formatPrefix);
 
 d3.formatPrefix = function(value, precision) {
   var i = 0;
@@ -761,9 +785,12 @@ d3.formatPrefix = function(value, precision) {
 function d3_formatPrefix(d, i) {
   var k = Math.pow(10, Math.abs(8 - i) * 3);
   return {
-    scale: i > 8 ? function(d) { return d / k; } : function(d) { return d * k; },
+    scale: i > 8 ? (d3_formatPrefixIndex.set(d, g), f)
+                 : (d3_formatPrefixIndex.set(d, f), g),
     symbol: d
   };
+  function f(d) { return d / k; }
+  function g(d) { return d * k; }
 }
 /*
  * TERMS OF USE - EASING EQUATIONS

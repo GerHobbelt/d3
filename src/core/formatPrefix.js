@@ -1,4 +1,5 @@
-var d3_formatPrefixes = ["y","z","a","f","p","n","μ","m","","k","M","G","T","P","E","Z","Y"].map(d3_formatPrefix);
+var d3_formatPrefixIndex = new d3_Map,
+    d3_formatPrefixes = ["y","z","a","f","p","n","μ","m","","k","M","G","T","P","E","Z","Y"].map(d3_formatPrefix);
 
 d3.formatPrefix = function(value, precision) {
   var i = 0;
@@ -14,7 +15,10 @@ d3.formatPrefix = function(value, precision) {
 function d3_formatPrefix(d, i) {
   var k = Math.pow(10, Math.abs(8 - i) * 3);
   return {
-    scale: i > 8 ? function(d) { return d / k; } : function(d) { return d * k; },
+    scale: i > 8 ? (d3_formatPrefixIndex.set(d, g), f)
+                 : (d3_formatPrefixIndex.set(d, f), g),
     symbol: d
   };
+  function f(d) { return d / k; }
+  function g(d) { return d * k; }
 }
