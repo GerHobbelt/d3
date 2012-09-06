@@ -903,8 +903,8 @@ function d3_ease_circle(t) {
 function d3_ease_elastic(a, p) {
   var s;
   if (arguments.length < 2) p = 0.45;
-  if (arguments.length < 1) { a = 1; s = p / 4; }
-  else s = p / (2 * Math.PI) * Math.asin(1 / a);
+  if (arguments.length) s = p / (2 * Math.PI) * Math.asin(1 / a);
+  else { a = 1; s = p / 4; }
   return function(t) {
     return 1 + a * Math.pow(2, 10 * -t) * Math.sin((t - s) * 2 * Math.PI / p);
   };
@@ -2095,18 +2095,20 @@ function d3_selection_property(name, value) {
       ? propertyFunction : propertyConstant);
 }
 d3_selectionPrototype.text = function(value) {
-  return arguments.length < 1
-      ? this.node().textContent : this.each(typeof value === "function"
+  return arguments.length
+      ? this.each(typeof value === "function"
       ? function() { var v = value.apply(this, arguments); this.textContent = v == null ? "" : v; } : value == null
       ? function() { this.textContent = ""; }
-      : function() { this.textContent = value; });
+      : function() { this.textContent = value; })
+      : this.node().textContent;
 };
 d3_selectionPrototype.html = function(value) {
-  return arguments.length < 1
-      ? this.node().innerHTML : this.each(typeof value === "function"
+  return arguments.length
+      ? this.each(typeof value === "function"
       ? function() { var v = value.apply(this, arguments); this.innerHTML = v == null ? "" : v; } : value == null
       ? function() { this.innerHTML = ""; }
-      : function() { this.innerHTML = value; });
+      : function() { this.innerHTML = value; })
+      : this.node().innerHTML;
 };
 // TODO append(node)?
 // TODO append(function)?
@@ -2275,9 +2277,9 @@ function d3_selection_dataNode(data) {
 }
 d3_selectionPrototype.datum =
 d3_selectionPrototype.map = function(value) {
-  return arguments.length < 1
-      ? this.property("__data__")
-      : this.property("__data__", value);
+  return arguments.length
+      ? this.property("__data__", value)
+      : this.property("__data__");
 };
 d3_selectionPrototype.filter = function(filter) {
   var subgroups = [],
@@ -3178,7 +3180,7 @@ function d3_scale_log(linear, log) {
 
   scale.tickFormat = function(n, format) {
     if (arguments.length < 2) format = d3_scale_logFormat;
-    if (arguments.length < 1) return format;
+    if (!arguments.length) return format;
     var k = Math.max(.1, n / scale.ticks().length),
         f = log === d3_scale_logn ? (e = -1e-12, Math.floor) : (e = 1e-12, Math.ceil),
         e,
