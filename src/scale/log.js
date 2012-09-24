@@ -14,10 +14,10 @@ function d3_scale_log(linear, log) {
   };
 
   scale.domain = function(x) {
-    if (!arguments.length) return linear.domain().map(pow);
+    if (!arguments.length) return d3_array_map(linear.domain(), pow);
     log = x[0] < 0 ? d3_scale_logn : d3_scale_logp;
     pow = log.pow;
-    linear.domain(x.map(log));
+    linear.domain(d3_array_map(x, log));
     return scale;
   };
 

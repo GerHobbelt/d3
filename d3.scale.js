@@ -59,7 +59,7 @@ function d3_scale_linear(domain, range, interpolate, clamp) {
 
   scale.domain = function(x) {
     if (!arguments.length) return domain;
-    domain = x.map(Number);
+    domain = d3_array_map(x, Number)
     return rescale();
   };
 
@@ -187,10 +187,10 @@ function d3_scale_log(linear, log) {
   };
 
   scale.domain = function(x) {
-    if (!arguments.length) return linear.domain().map(pow);
+    if (!arguments.length) return d3_array_map(linear.domain(), pow);
     log = x[0] < 0 ? d3_scale_logn : d3_scale_logp;
     pow = log.pow;
-    linear.domain(x.map(log));
+    linear.domain(d3_array_map(x, log));
     return scale;
   };
 
@@ -273,8 +273,8 @@ function d3_scale_pow(linear, exponent) {
   };
 
   scale.domain = function(x) {
-    if (!arguments.length) return linear.domain().map(powb);
-    linear.domain(x.map(powp));
+    if (!arguments.length) return d3_array_map(linear.domain(), powb);
+    linear.domain(d3_array_map(x, powp));
     return scale;
   };
 
@@ -327,7 +327,7 @@ function d3_scale_ordinal(domain, ranger) {
   }
 
   function steps(start, step) {
-    return d3.range(domain.length).map(function(i) { return start + step * i; });
+    return d3_array_map(d3.range(domain.length), function(i) { return start + step * i; });
   }
 
   scale.domain = function(x) {
@@ -544,7 +544,7 @@ function d3_scale_identity(domain) {
 
   identity.domain = identity.range = function(x) {
     if (!arguments.length) return domain;
-    domain = x.map(identity);
+    domain = d3_array_map(x, identity);
     return identity;
   };
 
