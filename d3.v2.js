@@ -77,13 +77,6 @@ d3_array_forEach = function(obj, iterator, context) {
     }
   }
 };
-
-if (!nativeMap) {
-  Array.prototype.map = function(iterator) {
-    return d3_array_map(this, iterator)
-  }
-
-}
 })();
 var d3_selectionPrototype_text;
 var hasTextContent;
@@ -247,7 +240,7 @@ d3.mean = function(array, f) {
   return j ? m : undefined;
 };
 d3.median = function(array, f) {
-  if (arguments.length > 1) array = array.map(f);
+  if (arguments.length > 1) array = d3_array_map(array, f);
   array = array.filter(d3_number);
   return array.length ? d3.quantile(array.sort(d3.ascending), .5) : undefined;
 };
@@ -2750,7 +2743,7 @@ function d3_scale_linear(domain, range, interpolate, clamp) {
 
   scale.domain = function(x) {
     if (!arguments.length) return domain;
-    domain = x.map(Number);
+    domain = d3_array_map(x, Number)
     return rescale();
   };
 
@@ -2878,10 +2871,10 @@ function d3_scale_log(linear, log) {
   };
 
   scale.domain = function(x) {
-    if (!arguments.length) return linear.domain().map(pow);
+    if (!arguments.length) return d3_array_map(linear.domain(), pow);
     log = x[0] < 0 ? d3_scale_logn : d3_scale_logp;
     pow = log.pow;
-    linear.domain(x.map(log));
+    linear.domain(d3_array_map(x, log));
     return scale;
   };
 
@@ -2964,8 +2957,8 @@ function d3_scale_pow(linear, exponent) {
   };
 
   scale.domain = function(x) {
-    if (!arguments.length) return linear.domain().map(powb);
-    linear.domain(x.map(powp));
+    if (!arguments.length) return d3_array_map(linear.domain(), powb);
+    linear.domain(d3_array_map(x, powp));
     return scale;
   };
 
@@ -3018,7 +3011,7 @@ function d3_scale_ordinal(domain, ranger) {
   }
 
   function steps(start, step) {
-    return d3.range(domain.length).map(function(i) { return start + step * i; });
+    return d3_array_map(d3.range(domain.length), function(i) { return start + step * i; });
   }
 
   scale.invert = function(x) {
@@ -3240,7 +3233,7 @@ function d3_scale_identity(domain) {
 
   identity.domain = identity.range = function(x) {
     if (!arguments.length) return domain;
-    domain = x.map(identity);
+    domain = d3_array_map(x, identity);
     return identity;
   };
 
@@ -7365,11 +7358,11 @@ d3.csv.parseRows = function(text, f) {
   return rows;
 };
 d3.csv.format = function(rows) {
-  return rows.map(d3_csv_formatRow).join("\n");
+  return d3_array_map(rows, d3_csv_formatRow).join("\n");
 };
 
 function d3_csv_formatRow(row) {
-  return row.map(d3_csv_formatValue).join(",");
+  return d3_array_map(row, d3_csv_formatValue).join(",");
 }
 
 function d3_csv_formatValue(text) {
@@ -9695,7 +9688,7 @@ function d3_time_scale(linear, methods, format) {
   };
 
   scale.domain = function(x) {
-    if (!arguments.length) return linear.domain().map(d3_time_scaleDate);
+    if (!arguments.length) return d3_array_map(linear.domain(), d3_time_scaleDate);
     linear.domain(x);
     return scale;
   };
@@ -9712,7 +9705,7 @@ function d3_time_scale(linear, methods, format) {
           target = span / m,
           i = d3.bisect(d3_time_scaleSteps, target);
       if (i == d3_time_scaleSteps.length) return methods.year(extent, m);
-      if (!i) return linear.ticks(m).map(d3_time_scaleDate);
+      if (!i) return d3_array_map(linear.ticks(m), d3_time_scaleDate);
       if (Math.log(target / d3_time_scaleSteps[i - 1]) < Math.log(d3_time_scaleSteps[i] / target)) --i;
       m = methods[i];
       k = m[1];
@@ -9821,7 +9814,9 @@ var d3_time_scaleLinear = d3.scale.linear(),
     d3_time_scaleLocalFormat = d3_time_scaleFormat(d3_time_scaleLocalFormats);
 
 d3_time_scaleLocalMethods.year = function(extent, m) {
-  return d3_time_scaleLinear.domain(extent.map(d3_time_scaleGetYear)).ticks(m).map(d3_time_scaleSetYear);
+  return d3_array_map(
+    d3_time_scaleLinear.domain(d3_array_map(extent, d3_time_scaleGetYear))
+    .ticks(m), d3_time_scaleSetYear);
 };
 
 d3.time.scale = function() {

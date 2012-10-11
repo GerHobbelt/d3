@@ -12,7 +12,7 @@ function d3_scale_ordinal(domain, ranger) {
   }
 
   function steps(start, step) {
-    return d3.range(domain.length).map(function(i) { return start + step * i; });
+    return d3_array_map(d3.range(domain.length), function(i) { return start + step * i; });
   }
 
   scale.invert = function(x) {

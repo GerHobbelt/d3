@@ -15,8 +15,8 @@ function d3_scale_pow(linear, exponent) {
   };
 
   scale.domain = function(x) {
-    if (!arguments.length) return linear.domain().map(powb);
-    linear.domain(x.map(powp));
+    if (!arguments.length) return d3_array_map(linear.domain(), powb);
+    linear.domain(d3_array_map(x, powp));
     return scale;
   };
 

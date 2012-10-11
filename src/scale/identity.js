@@ -10,7 +10,7 @@ function d3_scale_identity(domain) {
 
   identity.domain = identity.range = function(x) {
     if (!arguments.length) return domain;
-    domain = x.map(identity);
+    domain = d3_array_map(x, identity);
     return identity;
   };
 
