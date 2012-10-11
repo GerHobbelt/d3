@@ -6,9 +6,10 @@ d3.layout.force = function() {
       drag,
       alpha,
       friction = d3_functor(.9),
-      linkDistance = d3_layout_forceLinkDistance,
-      linkStrength = d3_layout_forceLinkStrength,
+      linkDistance = d3_functor(20),
+      linkStrength = d3_functor(1),
       charge = d3_functor(-30),
+      repulsor = d3_functor(false),
       gravity = .1,
       theta = d3_functor(.8),
       interval,
@@ -16,6 +17,7 @@ d3.layout.force = function() {
       links = [],
       distances,
       strengths,
+      neighbors,
       epsilon = 0.1, // minimal distance-squared for which the approximation holds; any smaller distance is assumed to be this large to prevent instable approximations
       charges;
 
@@ -138,6 +140,7 @@ d3.layout.force = function() {
         }
       }
     }
+    repulsor.call(this, q, charges, distances, strengths);
 
     // position verlet integration
     i = -1; while (++i < n) {
@@ -165,6 +168,11 @@ d3.layout.force = function() {
     if (!arguments.length) return links;
     links = x;
     return force;
+  };
+
+  force.neighbours = function() {
+    neighbor(0);
+    return neighbors;
   };
 
   force.size = function(x) {
@@ -206,6 +214,12 @@ d3.layout.force = function() {
     return force;
   };
 
+  force.repulsor = function(x) {
+    if (!arguments.length) return repulsor;
+    repulsor = d3_functor(x);
+    return force;
+  };
+
   force.theta = function(x) {
     if (!arguments.length) return theta;
     theta = +x;
@@ -233,7 +247,6 @@ d3.layout.force = function() {
         m = links.length,
         w = size[0],
         h = size[1],
-        neighbors,
         o;
 
     for (i = 0; i < n; ++i) {
@@ -270,31 +283,39 @@ d3.layout.force = function() {
     function position(dimension, size, i) {
       var my_neighbors = neighbor(i),
           j = -1,
-          m = my_neighbors.length,
+          m = my_neighbors.outlinks.length,
           x;
-      while (++j < m) if (!isNaN(x = my_neighbors[j][dimension])) return x;
+      while (++j < m)
+        if (!isNaN(x = my_neighbors.outlinks[j].target[dimension]))
+          return x;
+      m = my_neighbors.inlinks.length;
+      while (++j < m)
+        if (!isNaN(x = my_neighbors.inlinks[j].source[dimension]))
+          return x;
       return Math.random() * size;
-    }
-
-    // initialize neighbors lazily
-    function neighbor(i) {
-      if (!neighbors) {
-        var j;
-        neighbors = [];
-        for (j = 0; j < n; ++j) {
-          neighbors[j] = [];
-        }
-        for (j = 0; j < m; ++j) {
-          var o = links[j];
-          neighbors[o.source.index].push(o.target);
-          neighbors[o.target.index].push(o.source);
-        }
-      }
-      return neighbors[i];
     }
 
     return force.resume();
   };
+
+  // initialize neighbors lazily
+  function neighbor(i) {
+    if (!neighbors) {
+      var j,
+          n = nodes.length,
+          m = links.length;
+      neighbors = [];
+      for (j = 0; j < n; ++j) {
+        neighbors[j] = { inlinks: [], outlinks: [] };
+      }
+      for (j = 0; j < m; ++j) {
+        var o = links[j];
+        neighbors[o.source.index].outlinks.push(o);
+        neighbors[o.target.index].inlinks.push(o);
+      }
+    }
+    return neighbors[i];
+  }
 
   force.resume = function() {
     return force.alpha(.1);
@@ -382,12 +403,4 @@ function d3_layout_forceAccumulate(quad, alpha, charges) {
   }
   quad.cx = cx / quad.charge;
   quad.cy = cy / quad.charge;
-}
-
-function d3_layout_forceLinkDistance(link) {
-  return 20;
-}
-
-function d3_layout_forceLinkStrength(link) {
-  return 1;
 }
