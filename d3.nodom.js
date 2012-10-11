@@ -38,13 +38,6 @@ d3_array_forEach = function(obj, iterator, context) {
     }
   }
 };
-
-if (!nativeMap) {
-  Array.prototype.map = function(iterator) {
-    return d3_array_map(this, iterator)
-  }
-
-}
 })();
 var d3_selectionPrototype_text;
 var hasTextContent;
@@ -67,13 +60,13 @@ if (hasTextContent) {
         : function() { this.innerText = value; });
   }
 }
-var d3;
-d3 = {version: "2.8.1"}; // semver
-if (window) {
-  window.d3 = d3;
-} else {
-  this.d3 = d3;
-}
+d3 = {version: "3.0.0pre"}; // semver
+
+var π = Math.PI,
+    ε = 1e-6,
+    d3_radians = π / 180,
+    d3_degrees = 180 / π,
+    d3_zero = function() { return 0; };
 function d3_class(ctor, properties) {
   try {
     for (var key in properties) {
@@ -166,9 +159,11 @@ var d3_map_prefix = "\0", // prevent collision with built-ins
 function d3_this() {
   return this;
 }
-d3.functor = function(v) {
+function d3_functor(v) {
   return typeof v === "function" ? v : function() { return v; };
-};
+}
+
+d3.functor = d3_functor;
 // Copies a variable number of methods from source to target.
 d3.rebind = function(target, source) {
   var i = 1, n = arguments.length, method;
@@ -186,10 +181,10 @@ function d3_rebind(target, source, method) {
   };
 }
 d3.ascending = function(a, b) {
-  return a < b ? -1 : a > b ? 1 : a >= b ? 0 : NaN;
+  return a < b ? -1 : a > b ? 1 : a >= b ? 0 : a >= a || a <= a ? -1 : b >= b || b <= b ? 1 : NaN;
 };
 d3.descending = function(a, b) {
-  return b < a ? -1 : b > a ? 1 : b >= a ? 0 : NaN;
+  return b < a ? -1 : b > a ? 1 : b >= a ? 0 : b >= b || b <= b ? -1 : a >= a || a <= a ? 1 : NaN;
 };
 d3.mean = function(array, f) {
   var n = array.length,
@@ -205,7 +200,7 @@ d3.mean = function(array, f) {
   return j ? m : undefined;
 };
 d3.median = function(array, f) {
-  if (arguments.length > 1) array = array.map(f);
+  if (arguments.length > 1) array = d3_array_map(array, f);
   array = array.filter(d3_number);
   return array.length ? d3.quantile(array.sort(d3.ascending), .5) : undefined;
 };
@@ -259,9 +254,10 @@ d3.extent = function(array, f) {
   return [a, c];
 };
 d3.random = {
-  normal: function(mean, deviation) {
-    if (arguments.length < 2) deviation = 1;
-    if (arguments.length < 1) mean = 0;
+  normal: function(µ, σ) {
+    var n = arguments.length;
+    if (n < 2) σ = 1;
+    if (n < 1) µ = 0;
     return function() {
       var x, y, r;
       do {
@@ -269,7 +265,22 @@ d3.random = {
         y = Math.random() * 2 - 1;
         r = x * x + y * y;
       } while (!r || r > 1);
-      return mean + deviation * x * Math.sqrt(-2 * Math.log(r) / r);
+      return µ + σ * x * Math.sqrt(-2 * Math.log(r) / r);
+    };
+  },
+  logNormal: function(µ, σ) {
+    var n = arguments.length;
+    if (n < 2) σ = 1;
+    if (n < 1) µ = 0;
+    var random = d3.random.normal();
+    return function() {
+      return Math.exp(µ + σ * random());
+    };
+  },
+  irwinHall: function(m) {
+    return function() {
+      for (var s = 0, j = 0; j < m; j++) s += Math.random();
+      return s / m;
     };
   }
 };
@@ -320,7 +331,7 @@ d3.bisector = function(f) {
       if (arguments.length < 3) lo = 0;
       if (arguments.length < 4) hi = a.length;
       while (lo < hi) {
-        var mid = lo + hi >> 1;
+        var mid = lo + hi >>> 1;
         if (f.call(a, a[mid], mid) < x) lo = mid + 1;
         else hi = mid;
       }
@@ -330,7 +341,7 @@ d3.bisector = function(f) {
       if (arguments.length < 3) lo = 0;
       if (arguments.length < 4) hi = a.length;
       while (lo < hi) {
-        var mid = lo + hi >> 1;
+        var mid = lo + hi >>> 1;
         if (x < f.call(a, a[mid], mid)) hi = mid;
         else lo = mid + 1;
       }
@@ -342,32 +353,6 @@ d3.bisector = function(f) {
 var d3_bisector = d3.bisector(function(d) { return d; });
 d3.bisectLeft = d3_bisector.left;
 d3.bisect = d3.bisectRight = d3_bisector.right;
-d3.first = function(array, f) {
-  var i = 0,
-      n = array.length,
-      a = array[0],
-      b;
-  if (arguments.length === 1) f = d3.ascending;
-  while (++i < n) {
-    if (f.call(array, a, b = array[i]) > 0) {
-      a = b;
-    }
-  }
-  return a;
-};
-d3.last = function(array, f) {
-  var i = 0,
-      n = array.length,
-      a = array[0],
-      b;
-  if (arguments.length === 1) f = d3.ascending;
-  while (++i < n) {
-    if (f.call(array, a, b = array[i]) <= 0) {
-      a = b;
-    }
-  }
-  return a;
-};
 d3.nest = function() {
   var nest = {},
       keys = [],
@@ -398,8 +383,8 @@ d3.nest = function() {
       }
     }
 
-    valuesByKey.forEach(function(keyValue) {
-      o[keyValue] = map(valuesByKey.get(keyValue), depth);
+    valuesByKey.forEach(function(keyValue, values) {
+      o[keyValue] = map(values, depth);
     });
 
     return o;
@@ -482,29 +467,8 @@ d3.permute = function(array, indexes) {
 d3.merge = function(arrays) {
   return Array.prototype.concat.apply([], arrays);
 };
-d3.split = function(array, f) {
-  var arrays = [],
-      values = [],
-      value,
-      i = -1,
-      n = array.length;
-  if (arguments.length < 2) f = d3_splitter;
-  while (++i < n) {
-    if (f.call(values, value = array[i], i)) {
-      values = [];
-    } else {
-      if (!values.length) arrays.push(values);
-      values.push(value);
-    }
-  }
-  return arrays;
-};
-
-function d3_splitter(d) {
-  return d == null;
-}
 function d3_collapse(s) {
-  return s.replace(/(^\s+)|(\s+$)/g, "").replace(/\s+/g, " ");
+  return s.trim().replace(/\s+/g, " ");
 }
 d3.range = function(start, stop, step) {
   if (arguments.length < 3) {
@@ -540,52 +504,110 @@ d3.round = function(x, n) {
       ? Math.round(x * (n = Math.pow(10, n))) / n
       : Math.round(x);
 };
-d3.xhr = function(url, mime, callback) {
-  var req = new XMLHttpRequest;
-  if (arguments.length < 3) callback = mime, mime = null;
-  else if (mime && req.overrideMimeType) req.overrideMimeType(mime);
-  req.open("GET", url, true);
-  if (mime) req.setRequestHeader("Accept", mime);
-  req.onreadystatechange = function() {
-    if (req.readyState === 4) callback(req.status < 300 ? req : null);
-  };
-  req.send(null);
-};
-d3.text = function(url, mime, callback) {
-  function ready(req) {
-    callback(req && req.responseText);
-  }
-  if (arguments.length < 3) {
-    callback = mime;
-    mime = null;
-  }
-  d3.xhr(url, mime, ready);
-};
-d3.json = function(url, callback) {
-  d3.text(url, "application/json", function(text) {
-    callback(text ? JSON.parse(text) : null);
-  });
-};
-d3.html = function(url, callback) {
-  d3.text(url, "text/html", function(text) {
-    if (text != null) { // Treat empty string as valid HTML.
-      var range = document.createRange();
-      range.selectNode(document.body);
-      text = range.createContextualFragment(text);
+d3.xhr = function(url, mimeType, callback) {
+  var xhr = {},
+      dispatch = d3.dispatch("progress", "load", "error"),
+      headers = {},
+      response = d3_identity,
+      request = new XMLHttpRequest;
+
+  request.onreadystatechange = function() {
+    if (request.readyState === 4) {
+      var s = request.status;
+      !s && request.response || s >= 200 && s < 300 || s === 304
+          ? dispatch.load.call(xhr, response.call(xhr, request))
+          : dispatch.error.call(xhr, request);
     }
-    callback(text);
+  };
+
+  request.onprogress = function(event) {
+    var o = d3.event;
+    d3.event = event;
+    try { dispatch.progress.call(xhr, request); }
+    finally { d3.event = o; }
+  };
+
+  xhr.header = function(name, value) {
+    name = (name + "").toLowerCase();
+    if (arguments.length < 2) return headers[name];
+    if (value == null) delete headers[name];
+    else headers[name] = value + "";
+    return xhr;
+  };
+
+  // If mimeType is non-null and no Accept header is set, a default is used.
+  xhr.mimeType = function(value) {
+    if (!arguments.length) return mimeType;
+    mimeType = value == null ? null : value + "";
+    return xhr;
+  };
+
+  // Specify how to convert the response content to a specific type;
+  // changes the callback value on "load" events.
+  xhr.response = function(value) {
+    response = value;
+    return xhr;
+  };
+
+  // Convenience methods.
+  ["get", "post"].forEach(function(method) {
+    xhr[method] = function() {
+      return xhr.send.apply(xhr, [method].concat(d3_array(arguments)));
+    };
   });
+
+  // If callback is non-null, it will be used for error and load events.
+  xhr.send = function(method, data, callback) {
+    if (arguments.length === 2 && typeof data === "function") callback = data, data = null;
+    request.open(method, url, true);
+    if (mimeType != null && !("accept" in headers)) headers["accept"] = mimeType + ",*/*";
+    for (var name in headers) request.setRequestHeader(name, headers[name]);
+    if (mimeType != null && request.overrideMimeType) request.overrideMimeType(mimeType);
+    if (callback != null) xhr.on("error", callback).on("load", function(request) { callback(null, request); });
+    request.send(data == null ? null : data);
+    return xhr;
+  };
+
+  xhr.abort = function() {
+    request.abort();
+    return xhr;
+  };
+
+  d3.rebind(xhr, dispatch, "on");
+
+  if (arguments.length === 2 && typeof mimeType === "function") callback = mimeType, mimeType = null;
+  return callback == null ? xhr : xhr.get(callback);
 };
-d3.xml = function(url, mime, callback) {
-  function ready(req) {
-    callback(req && req.responseXML);
-  }
-  if (arguments.length < 3) {
-    callback = mime;
-    mime = null;
-  }
-  d3.xhr(url, mime, ready);
+d3.text = function() {
+  return d3.xhr.apply(d3, arguments).response(d3_text);
 };
+
+function d3_text(request) {
+  return request.responseText;
+}
+d3.json = function(url, callback) {
+  return d3.xhr(url, "application/json", callback).response(d3_json);
+};
+
+function d3_json(request) {
+  return JSON.parse(request.responseText);
+}
+d3.html = function(url, callback) {
+  return d3.xhr(url, "text/html", callback).response(d3_html);
+};
+
+function d3_html(request) {
+  var range = document.createRange();
+  range.selectNode(document.body);
+  return range.createContextualFragment(request.responseText);
+}
+d3.xml = function() {
+  return d3.xhr.apply(d3, arguments).response(d3_xml);
+};
+
+function d3_xml(request) {
+  return request.responseXML;
+}
 var d3_nsPrefix = {
   svg: "http://www.w3.org/2000/svg",
   xhtml: "http://www.w3.org/1999/xhtml",
@@ -709,12 +731,12 @@ d3.format = function(specifier) {
     if (integer && (value % 1)) return "";
 
     // Convert negative to positive, and record the sign prefix.
-    var negative = (value < 0) && (value = -value) ? "\u2212" : sign;
+    var negative = value < 0 && (value = -value) ? "-" : sign;
 
     // Apply the scale, computing it from the value's exponent for si format.
     if (scale < 0) {
       var prefix = d3.formatPrefix(value, precision);
-      value *= prefix.scale;
+      value = prefix.scale(value);
       suffix = prefix.symbol;
     } else {
       value *= scale;
@@ -749,6 +771,15 @@ var d3_format_re = /(?:([^{])?([<>=^]))?([+\- ])?(#)?(0)?([0-9]+)?(,)?(\.[0-9]+)
 var d3_format_types = d3.map({
   g: function(x, p) { return x.toPrecision(p); },
   e: function(x, p) { return x.toExponential(p); },
+  E: function(x, p) {
+    var rv;
+    var p1 = d3_format_precision(x, 1);
+    if (p1 >= -5 && p1 <= 3)
+      rv = x.toFixed(Math.max(0, p, p1));
+    else
+      rv = x.toExponential(p);
+    return rv;
+  },
   f: function(x, p) { return x.toFixed(p); },
   r: function(x, p) { return d3.round(x, p = d3_format_precision(x, p)).toFixed(Math.max(0, Math.min(20, p))); }
 });
@@ -756,6 +787,10 @@ var d3_format_types = d3.map({
 function d3_format_precision(x, p) {
   return p - (x ? 1 + Math.floor(Math.log(x + Math.pow(10, 1 + Math.floor(Math.log(x) / Math.LN10) - p)) / Math.LN10) : 1);
 }
+
+d3.formatPrecision = function(x, p) {
+  return d3_format_precision(x, p || 0);
+};
 
 function d3_format_typeDefault(x) {
   return x + "";
@@ -782,12 +817,12 @@ d3.formatPrefix = function(value, precision) {
 };
 
 function d3_formatPrefix(d, i) {
+  var k = Math.pow(10, Math.abs(8 - i) * 3);
   return {
-    scale: Math.pow(10, (8 - i) * 3),
+    scale: i > 8 ? function(d) { return d / k; } : function(d) { return d * k; },
     symbol: d
   };
 }
-
 /*
  * TERMS OF USE - EASING EQUATIONS
  *
@@ -823,9 +858,7 @@ function d3_formatPrefix(d, i) {
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-var d3_ease_quad = d3_ease_poly(2),
-    d3_ease_cubic = d3_ease_poly(3),
-    d3_ease_default = function() { return d3_ease_identity; };
+var d3_ease_default = function() { return d3_identity; };
 
 var d3_ease = d3.map({
   linear: d3_ease_default,
@@ -841,7 +874,7 @@ var d3_ease = d3.map({
 });
 
 var d3_ease_mode = d3.map({
-  "in": d3_ease_identity,
+  "in": d3_identity,
   "out": d3_ease_reverse,
   "in-out": d3_ease_reflect,
   "out-in": function(f) { return d3_ease_reflect(d3_ease_reverse(f)); }
@@ -852,7 +885,7 @@ d3.ease = function(name) {
       t = i >= 0 ? name.substring(0, i) : name,
       m = i >= 0 ? name.substring(i + 1) : "in";
   t = d3_ease.get(t) || d3_ease_default;
-  m = d3_ease_mode.get(m) || d3_ease_identity;
+  m = d3_ease_mode.get(m) || d3_identity;
   return d3_ease_clamp(m(t.apply(null, Array.prototype.slice.call(arguments, 1))));
 };
 
@@ -874,8 +907,20 @@ function d3_ease_reflect(f) {
   };
 }
 
-function d3_ease_identity(t) {
-  return t;
+function d3_ease_quad(t) {
+  return t * t;
+}
+
+function d3_ease_cubic(t) {
+  return t * t * t;
+}
+
+// Optimized clamp(reflect(poly(3))).
+function d3_ease_cubicInOut(t) {
+  if (t <= 0) return 0;
+  if (t >= 1) return 1;
+  var t2 = t * t, t3 = t2 * t;
+  return 4 * (t < .5 ? t3 : 3 * (t - t2) + t3 - .75);
 }
 
 function d3_ease_poly(e) {
@@ -885,7 +930,7 @@ function d3_ease_poly(e) {
 }
 
 function d3_ease_sin(t) {
-  return 1 - Math.cos(t * Math.PI / 2);
+  return 1 - Math.cos(t * π / 2);
 }
 
 function d3_ease_exp(t) {
@@ -900,9 +945,9 @@ function d3_ease_elastic(a, p) {
   var s;
   if (arguments.length < 2) p = 0.45;
   if (arguments.length < 1) { a = 1; s = p / 4; }
-  else s = p / (2 * Math.PI) * Math.asin(1 / a);
+  else s = p / (2 * π) * Math.asin(1 / a);
   return function(t) {
-    return 1 + a * Math.pow(2, 10 * -t) * Math.sin((t - s) * 2 * Math.PI / p);
+    return 1 + a * Math.pow(2, 10 * -t) * Math.sin((t - s) * 2 * π / p);
   };
 }
 
@@ -987,7 +1032,7 @@ d3.interpolateRound = function(a, b) {
 d3.interpolateString = function(a, b) {
   var m, // current match
       i, // current index
-      j, // current index (for coallescing)
+      j, // current index (for coalescing)
       s0 = 0, // start index of current string prefix
       s1 = 0, // end index of current string prefix
       s = [], // string constants and placeholders
@@ -1010,13 +1055,13 @@ d3.interpolateString = function(a, b) {
   // Find all numbers in a.
   for (i = 0, n = q.length; (m = d3_interpolate_number.exec(a)) && i < n; ++i) {
     o = q[i];
-    if (o.x == m[0]) { // The numbers match, so coallesce.
+    if (o.x == m[0]) { // The numbers match, so coalesce.
       if (o.i) {
         if (s[o.i + 1] == null) { // This match is followed by another number.
           s[o.i - 1] += o.x;
           s.splice(o.i, 1);
           for (j = i + 1; j < n; ++j) q[j].i--;
-        } else { // This match is followed by a string, so coallesce twice.
+        } else { // This match is followed by a string, so coalesce twice.
           s[o.i - 1] += o.x + s[o.i + 1];
           s.splice(o.i, 2);
           for (j = i + 1; j < n; ++j) q[j].i -= 2;
@@ -1024,7 +1069,7 @@ d3.interpolateString = function(a, b) {
       } else {
           if (s[o.i + 1] == null) { // This match is followed by another number.
           s[o.i] = o.x;
-        } else { // This match is followed by a string, so coallesce twice.
+        } else { // This match is followed by a string, so coalesce twice.
           s[o.i] = o.x + s[o.i + 1];
           s.splice(o.i + 1, 1);
           for (j = i + 1; j < n; ++j) q[j].i--;
@@ -1043,7 +1088,7 @@ d3.interpolateString = function(a, b) {
     o = q.pop();
     if (s[o.i + 1] == null) { // This match is followed by another number.
       s[o.i] = o.x;
-    } else { // This match is followed by a string, so coallesce twice.
+    } else { // This match is followed by a string, so coalesce twice.
       s[o.i] = o.x + s[o.i + 1];
       s.splice(o.i + 1, 1);
     }
@@ -1087,6 +1132,7 @@ d3.interpolateTransform = function(a, b) {
   }
 
   if (ra != rb) {
+    if (ra - rb > 180) rb += 360; else if (rb - ra > 180) ra += 360; // shortest path
     q.push({i: s.push(s.pop() + "rotate(", null, ")") - 2, x: d3.interpolateNumber(ra, rb)});
   } else if (rb) {
     s.push(s.pop() + "rotate(" + rb + ")");
@@ -1140,8 +1186,38 @@ d3.interpolateHsl = function(a, b) {
       h1 = b.h - h0,
       s1 = b.s - s0,
       l1 = b.l - l0;
+  if (h1 > 180) h1 -= 360; else if (h1 < -180) h1 += 360; // shortest path
   return function(t) {
-    return d3_hsl_rgb(h0 + h1 * t, s0 + s1 * t, l0 + l1 * t).toString();
+    return d3_hsl_rgb(h0 + h1 * t, s0 + s1 * t, l0 + l1 * t) + "";
+  };
+};
+
+d3.interpolateLab = function(a, b) {
+  a = d3.lab(a);
+  b = d3.lab(b);
+  var al = a.l,
+      aa = a.a,
+      ab = a.b,
+      bl = b.l - al,
+      ba = b.a - aa,
+      bb = b.b - ab;
+  return function(t) {
+    return d3_lab_rgb(al + bl * t, aa + ba * t, ab + bb * t) + "";
+  };
+};
+
+d3.interpolateHcl = function(a, b) {
+  a = d3.hcl(a);
+  b = d3.hcl(b);
+  var ah = a.h,
+      ac = a.c,
+      al = a.l,
+      bh = b.h - ah,
+      bc = b.c - ac,
+      bl = b.l - al;
+  if (bh > 180) bh -= 360; else if (bh < -180) bh += 360; // shortest path
+  return function(t) {
+    return d3_hcl_lab(ah + bh * t, ac + bc * t, al + bl * t) + "";
   };
 };
 
@@ -1181,21 +1257,21 @@ d3.interpolateObject = function(a, b) {
     for (k in i) c[k] = i[k](t);
     return c;
   };
-}
+};
 
-var d3_interpolate_number = /[-+]?(?:\d*\.?\d+)(?:[eE][-+]?\d+)?/g;
+var d3_interpolate_number = /[-+]?(?:\d+\.?\d*|\.?\d+)(?:[eE][-+]?\d+)?/g;
 
-function d3_interpolateByName(n) {
-  return n == "transform"
+function d3_interpolateByName(name) {
+  return name == "transform"
       ? d3.interpolateTransform
       : d3.interpolate;
 }
 
 d3.interpolators = [
   d3.interpolateObject,
-  function(a, b) { return (b instanceof Array) && d3.interpolateArray(a, b); },
+  function(a, b) { return b instanceof Array && d3.interpolateArray(a, b); },
   function(a, b) { return (typeof a === "string" || typeof b === "string") && d3.interpolateString(a + "", b + ""); },
-  function(a, b) { return (typeof b === "string" ? d3_rgb_names.has(b) || /^(#|rgb\(|hsl\()/.test(b) : b instanceof d3_Rgb || b instanceof d3_Hsl) && d3.interpolateRgb(a, b); },
+  function(a, b) { return (typeof b === "string" ? d3_rgb_names.has(b) || /^(#|rgb\(|hsl\()/.test(b) : b instanceof d3_Color) && d3.interpolateRgb(a, b); },
   function(a, b) { return !isNaN(a = +a) && !isNaN(b = +b) && d3.interpolateNumber(a, b); }
 ];
 function d3_uninterpolateNumber(a, b) {
@@ -1224,7 +1300,9 @@ function d3_Rgb(r, g, b) {
   this.b = b;
 }
 
-d3_Rgb.prototype.brighter = function(k) {
+var d3_rgbPrototype = d3_Rgb.prototype = new d3_Color;
+
+d3_rgbPrototype.brighter = function(k) {
   k = Math.pow(0.7, arguments.length ? k : 1);
   var r = this.r,
       g = this.g,
@@ -1240,7 +1318,7 @@ d3_Rgb.prototype.brighter = function(k) {
       Math.min(255, Math.floor(b / k)));
 };
 
-d3_Rgb.prototype.darker = function(k) {
+d3_rgbPrototype.darker = function(k) {
   k = Math.pow(0.7, arguments.length ? k : 1);
   return d3_rgb(
       Math.floor(k * this.r),
@@ -1248,11 +1326,11 @@ d3_Rgb.prototype.darker = function(k) {
       Math.floor(k * this.b));
 };
 
-d3_Rgb.prototype.hsl = function() {
+d3_rgbPrototype.hsl = function() {
   return d3_rgb_hsl(this.r, this.g, this.b);
 };
 
-d3_Rgb.prototype.toString = function() {
+d3_rgbPrototype.toString = function() {
   return "#" + d3_rgb_hex(this.r) + d3_rgb_hex(this.g) + d3_rgb_hex(this.b);
 };
 
@@ -1331,6 +1409,20 @@ function d3_rgb_hsl(r, g, b) {
     s = h = 0;
   }
   return d3_hsl(h, s, l);
+}
+
+function d3_rgb_lab(r, g, b) {
+  r = d3_rgb_xyz(r);
+  g = d3_rgb_xyz(g);
+  b = d3_rgb_xyz(b);
+  var x = d3_xyz_lab((0.4124564 * r + 0.3575761 * g + 0.1804375 * b) / d3_lab_X),
+      y = d3_xyz_lab((0.2126729 * r + 0.7151522 * g + 0.0721750 * b) / d3_lab_Y),
+      z = d3_xyz_lab((0.0193339 * r + 0.1191920 * g + 0.9503041 * b) / d3_lab_Z);
+  return d3_lab(116 * y - 16, 500 * (x - y), 200 * (y - z));
+}
+
+function d3_rgb_xyz(r) {
+  return (r /= 255) <= 0.04045 ? r / 12.92 : Math.pow((r + 0.055) / 1.055, 2.4);
 }
 
 function d3_rgb_parseNumber(c) { // either integer or percentage
@@ -1508,22 +1600,20 @@ function d3_Hsl(h, s, l) {
   this.l = l;
 }
 
-d3_Hsl.prototype.brighter = function(k) {
+var d3_hslPrototype = d3_Hsl.prototype = new d3_Color;
+
+d3_hslPrototype.brighter = function(k) {
   k = Math.pow(0.7, arguments.length ? k : 1);
   return d3_hsl(this.h, this.s, this.l / k);
 };
 
-d3_Hsl.prototype.darker = function(k) {
+d3_hslPrototype.darker = function(k) {
   k = Math.pow(0.7, arguments.length ? k : 1);
   return d3_hsl(this.h, this.s, k * this.l);
 };
 
-d3_Hsl.prototype.rgb = function() {
+d3_hslPrototype.rgb = function() {
   return d3_hsl_rgb(this.h, this.s, this.l);
-};
-
-d3_Hsl.prototype.toString = function() {
-  return this.rgb().toString();
 };
 
 function d3_hsl_rgb(h, s, l) {

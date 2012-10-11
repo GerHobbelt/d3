@@ -25,13 +25,29 @@ d3.behavior.zoom = function() {
 
   zoom.translate = function(x) {
     if (!arguments.length) return translate;
+    if (translate0) {
+      if (Array.isArray(translate0)) translate0 = point(translate0);
+      else for (var k in translate0) translate0[k] = point(translate0[k]);
+    }
     translate = x.map(Number);
+    if (translate0) {
+      if (Array.isArray(translate0)) translate0 = location(translate0);
+      else for (var k in translate0) translate0[k] = location(translate0[k]);
+    }
     return zoom;
   };
 
   zoom.scale = function(x) {
     if (!arguments.length) return scale;
+    if (translate0) {
+      if (Array.isArray(translate0)) translate0 = point(translate0);
+      else for (var k in translate0) translate0[k] = point(translate0);
+    }
     scale = +x;
+    if (translate0) {
+      if (Array.isArray(translate0)) translate0 = location(translate0);
+      else for (var k in translate0) translate0[k] = location(translate0);
+    }
     return zoom;
   };
 
@@ -136,13 +152,15 @@ d3.behavior.zoom = function() {
     touches.forEach(function(t) { translate0[t.identifier] = location(t); });
     d3_eventCancel();
 
-    if ((touches.length === 1) && (now - touchtime < 500)) { // dbltap
-      var p = touches[0], l = location(touches[0]);
-      scaleTo(scale * 2);
-      translateTo(p, l);
-      dispatch(event.of(this, arguments));
+    if (touches.length === 1) {
+      if (now - touchtime < 500) { // dbltap
+        var p = touches[0], l = location(touches[0]);
+        scaleTo(scale * 2);
+        translateTo(p, l);
+        dispatch(event.of(this, arguments));
+      }
+      touchtime = now;
     }
-    touchtime = now;
   }
 
   function touchmove() {
@@ -156,6 +174,7 @@ d3.behavior.zoom = function() {
       scaleTo(d3.event.scale * scale0);
     }
     translateTo(p0, l0);
+    touchtime = null;
     dispatch(event.of(this, arguments));
   }
 

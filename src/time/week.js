@@ -1,4 +1,4 @@
-d3_array_forEach(d3_time_weekdays, function(day, i) {
+d3_time_daySymbols.forEach(function(day, i) {
   day = day.toLowerCase();
   i = 7 - i;
 

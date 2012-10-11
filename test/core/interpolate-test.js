@@ -16,6 +16,9 @@ suite.addBatch({
     },
     "interpolates colors": function(interpolate) {
       assert.equal(interpolate("#abcdef", "#fedcba")(.4), "#ccd3da");
+      assert.equal(interpolate("#abcdef", d3.rgb("#fedcba"))(.4), "#ccd3da");
+      assert.equal(interpolate("#abcdef", d3.hsl("#fedcba"))(.4), "#ccd3da");
+      assert.equal(interpolate("#abcdef", d3.lab("#fedcba"))(.4), "#ccd3da");
     },
     "interpolates strings": function(interpolate) {
       assert.equal(interpolate("width:10px;", "width:50px;")(.2), "width:18px;");
@@ -143,22 +146,22 @@ suite.addBatch({
       return d3.interpolateHsl;
     },
     "parses string input": function(interpolate) {
-      assert.equal(interpolate("steelblue", "#f00")(.2), "#38c3a2");
-      assert.equal(interpolate("steelblue", "#f00")(.6), "#96e11c");
+      assert.equal(interpolate("steelblue", "#f00")(.2), "#383dc3");
+      assert.equal(interpolate("steelblue", "#f00")(.6), "#dd1ce1");
     },
     "parses d3.hsl input": function(interpolate) {
-      assert.equal(interpolate(d3.hsl("steelblue"), "#f00")(.2), "#38c3a2");
-      assert.equal(interpolate("steelblue", d3.hsl(0, 1, .5))(.6), "#96e11c");
+      assert.equal(interpolate(d3.hsl("steelblue"), "#f00")(.2), "#383dc3");
+      assert.equal(interpolate("steelblue", d3.hsl(0, 1, .5))(.6), "#dd1ce1");
     },
     "parses d3.rgb input": function(interpolate) {
-      assert.equal(interpolate(d3.rgb("steelblue"), "#f00")(.2), "#38c3a2");
-      assert.equal(interpolate("steelblue", d3.rgb(255, 0, 0))(.6), "#96e11c");
+      assert.equal(interpolate(d3.rgb("steelblue"), "#f00")(.2), "#383dc3");
+      assert.equal(interpolate("steelblue", d3.rgb(255, 0, 0))(.6), "#dd1ce1");
     },
     "interpolates in HSL color space": function(interpolate) {
-      assert.equal(interpolate("steelblue", "#f00")(.2), "#38c3a2");
+      assert.equal(interpolate("steelblue", "#f00")(.2), "#383dc3");
     },
     "outputs a hexadecimal string": function(interpolate) {
-      assert.equal(interpolate("steelblue", "#f00")(.2), "#38c3a2");
+      assert.equal(interpolate("steelblue", "#f00")(.2), "#383dc3");
     }
   }
 });

@@ -56,7 +56,7 @@ d3.svg.chord = function() {
   }
 
   function arc(r, p, a) {
-    return "A" + r + "," + r + " 0 " + +(a > Math.PI) + ",1 " + p;
+    return "A" + r + "," + r + " 0 " + +(a > π) + ",1 " + p;
   }
 
   function curve(p0, c0, c1, p1) {

@@ -2,28 +2,46 @@
 
 NODE_PATH ?= ./node_modules
 JS_COMPILER = $(NODE_PATH)/uglify-js/bin/uglifyjs
+JS_BEAUTIFIER = $(NODE_PATH)/uglify-js/bin/uglifyjs -b -i 2 -nm -ns
 JS_TESTER = $(NODE_PATH)/vows/bin/vows
+PACKAGE_JSON = package.json
+LOCALE ?= en_US
+
+# when node or any of these tools has not been installed, ignore them.
+ifeq ($(wildcard $(JS_COMPILER)),)
+JS_COMPILER = cat
+NODE_PATH = 
+PACKAGE_JSON =
+endif
+ifeq ($(wildcard $(JS_BEAUTIFIER)),)
+JS_BEAUTIFIER = cat
+NODE_PATH = 
+PACKAGE_JSON =
+endif
+ifeq ($(wildcard $(JS_TESTER)),)
+JS_TESTER = echo "no test rig installed"
+NODE_PATH = 
+PACKAGE_JSON =
+endif
 
 all: \
 	d3.latest.js \
-	d3.v2.js
-
-everything: \
-	d3.latest.js \
-	d3.v2.js \
-	d3.v2.min.js \
-	package.json
+	d3.nodom.js \
+	d3.js \
+	d3.min.js \
+	component.json \
+	$(PACKAGE_JSON)
 
 # Modify this rule to build your own custom release.
 
-.INTERMEDIATE d3.latest.js d3.v2.js: \
+.INTERMEDIATE d3.latest.js d3.js: \
 	src/start.js \
 	d3.core.js \
 	d3.scale.js \
 	d3.svg.js \
 	d3.behavior.js \
 	d3.layout.js \
-	d3.csv.js \
+	d3.dsv.js \
 	d3.geo.js \
 	d3.geom.js \
 	d3.time.js \
@@ -54,15 +72,12 @@ d3.nodom.js: \
 	src/core/transpose.js \
 	src/core/zip.js \
 	src/core/bisect.js \
-	src/core/first.js \
-	src/core/last.js \
 	src/core/nest.js \
 	src/core/keys.js \
 	src/core/values.js \
 	src/core/entries.js \
 	src/core/permute.js \
 	src/core/merge.js \
-	src/core/split.js \
 	src/core/collapse.js \
 	src/core/range.js \
 	src/core/requote.js \
@@ -113,15 +128,12 @@ d3.core.js: \
 	src/core/transpose.js \
 	src/core/zip.js \
 	src/core/bisect.js \
-	src/core/first.js \
-	src/core/last.js \
 	src/core/nest.js \
 	src/core/keys.js \
 	src/core/values.js \
 	src/core/entries.js \
 	src/core/permute.js \
 	src/core/merge.js \
-	src/core/split.js \
 	src/core/collapse.js \
 	src/core/range.js \
 	src/core/requote.js \
@@ -137,10 +149,15 @@ d3.core.js: \
 	src/core/formatPrefix.js \
 	src/core/ease.js \
 	src/core/event.js \
+	src/core/transform.js \
 	src/core/interpolate.js \
 	src/core/uninterpolate.js \
+	src/core/color.js \
 	src/core/rgb.js \
 	src/core/hsl.js \
+	src/core/hcl.js \
+	src/core/lab.js \
+	src/core/xyz.js \
 	src/core/selection.js \
 	src/core/selection-select.js \
 	src/core/selection-selectAll.js \
@@ -170,6 +187,7 @@ d3.core.js: \
 	src/core/transition.js \
 	src/core/transition-select.js \
 	src/core/transition-selectAll.js \
+	src/core/transition-filter.js \
 	src/core/transition-attr.js \
 	src/core/transition-style.js \
 	src/core/transition-text.js \
@@ -178,8 +196,9 @@ d3.core.js: \
 	src/core/transition-duration.js \
 	src/core/transition-each.js \
 	src/core/transition-transition.js \
+	src/core/transition-tween.js \
+	src/core/tween.js \
 	src/core/timer.js \
-	src/core/transform.js \
 	src/core/mouse.js \
 	src/core/touches.js \
 	src/core/noop.js
@@ -197,6 +216,7 @@ d3.scale.js: \
 	src/scale/category.js \
 	src/scale/quantile.js \
 	src/scale/quantize.js \
+	src/scale/threshold.js \
 	src/scale/identity.js
 
 d3.svg.js: \
@@ -209,8 +229,6 @@ d3.svg.js: \
 	src/svg/chord.js \
 	src/svg/diagonal.js \
 	src/svg/diagonal-radial.js \
-	src/svg/mouse.js \
-	src/svg/touches.js \
 	src/svg/symbol.js \
 	src/svg/axis.js \
 	src/svg/brush.js
@@ -238,25 +256,34 @@ d3.layout.js: \
 
 d3.geo.js: \
 	src/geo/geo.js \
-	src/geo/azimuthal.js \
-	src/geo/albers.js \
-	src/geo/bonne.js \
-	src/geo/equirectangular.js \
-	src/geo/mercator.js \
 	src/geo/type.js \
-	src/geo/path.js \
+	src/geo/albers-usa.js \
+	src/geo/albers.js \
+	src/geo/azimuthal-equal-area.js \
+	src/geo/azimuthal-equidistant.js \
 	src/geo/bounds.js \
 	src/geo/circle.js \
+	src/geo/compose.js \
+	src/geo/equirectangular.js \
+	src/geo/gnomonic.js \
+	src/geo/graticule.js \
 	src/geo/greatArc.js \
-	src/geo/greatCircle.js
+	src/geo/mercator.js \
+	src/geo/orthographic.js \
+	src/geo/path.js \
+	src/geo/projection.js \
+	src/geo/rotation.js \
+	src/geo/stereographic.js \
+	src/geo/azimuthal.js
 
-d3.csv.js: \
-	src/csv/csv.js \
-	src/csv/parse.js \
-	src/csv/format.js
+d3.dsv.js: \
+	src/dsv/dsv.js \
+	src/dsv/csv.js \
+	src/dsv/tsv.js
 
 d3.time.js: \
 	src/time/time.js \
+	src/time/format-$(LOCALE).js \
 	src/time/format.js \
 	src/time/format-utc.js \
 	src/time/format-iso.js \
@@ -273,7 +300,6 @@ d3.time.js: \
 
 d3.geom.js: \
 	src/geom/geom.js \
-	src/geom/contour.js \
 	src/geom/hull.js \
 	src/geom/polygon.js \
 	src/geom/voronoi.js \
@@ -285,17 +311,23 @@ test: all
 
 %.min.js: %.js Makefile
 	@rm -f $@
-	$(JS_COMPILER) < $< > $@
-
-d3%.js: Makefile
-	@rm -f $@
-	cat $(filter %.js,$^) > $@
+	cat $< | $(JS_COMPILER) > $@
 	@chmod a-w $@
 
-package.json: src/package.js
+d3%js: Makefile
+	@rm -f $@
+	cat $(filter %.js,$^) | $(JS_BEAUTIFIER) > $@
+	@chmod a-w $@
+
+component.json: src/component.js
+	@rm -f $@
+	node src/component.js > $@
+	@chmod a-w $@
+
+$(PACKAGE_JSON): src/package.js
 	@rm -f $@
 	node src/package.js > $@
 	@chmod a-w $@
 
 clean:
-	rm -f d3*.js package.json
+	rm -f d3*.js $(PACKAGE_JSON) component.json
