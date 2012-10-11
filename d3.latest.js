@@ -5428,13 +5428,29 @@ d3.behavior.zoom = function() {
 
   zoom.translate = function(x) {
     if (!arguments.length) return translate;
+    if (translate0) {
+      if (Array.isArray(translate0)) translate0 = point(translate0);
+      else for (var k in translate0) translate0[k] = point(translate0[k]);
+    }
     translate = x.map(Number);
+    if (translate0) {
+      if (Array.isArray(translate0)) translate0 = location(translate0);
+      else for (var k in translate0) translate0[k] = location(translate0[k]);
+    }
     return zoom;
   };
 
   zoom.scale = function(x) {
     if (!arguments.length) return scale;
+    if (translate0) {
+      if (Array.isArray(translate0)) translate0 = point(translate0);
+      else for (var k in translate0) translate0[k] = point(translate0);
+    }
     scale = +x;
+    if (translate0) {
+      if (Array.isArray(translate0)) translate0 = location(translate0);
+      else for (var k in translate0) translate0[k] = location(translate0);
+    }
     return zoom;
   };
 
@@ -7582,17 +7598,22 @@ function d3_dsv(delimiter, mimeType) {
 
   dsv.parse = function(text) {
     var header;
-    return dsv.parseRows(text, function(row, i) {
-      if (i) {
-        var o = {}, j = -1, m = header.length;
-        while (++j < m) o[header[j]] = j < row.length ? row[j] : null;
-        return o;
-      } else {
-        header = row;
-        return null;
-      }
-    });
-  };
+
+    function process(text) {
+      return dsv.parseRows(text, function(row, i) {
+        if (header) {
+          var o = {}, j = -1, m = header.length;
+          while (++j < m) o[header[j]] = j < row.length ? row[j] : null;
+          return o;
+        } else {
+          header = row;
+          return null;
+        }
+      });
+    }
+
+    return (arguments.length) ? process(text) : process;
+  }
 
   dsv.parseRows = function(text, f) {
     var EOL = {}, // sentinel value for end-of-line
