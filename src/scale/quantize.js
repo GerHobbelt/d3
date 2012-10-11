@@ -28,7 +28,7 @@ function d3_scale_quantize(x0, x1, range) {
     return rescale();
   };
 
-  scale.ticks = function(m) {
+  scale.ticks = function(m, subdiv_count) {
     if (i <= 0) return [];
     // produce nice tick values (erase the long decimal tails due to floating point calc inaccuracy),
     // x1 is not inclusive

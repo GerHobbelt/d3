@@ -14,8 +14,8 @@ function d3_scale_identity(domain) {
     return identity;
   };
 
-  identity.ticks = function(m) {
-    return d3_scale_linearTicks(domain, m);
+  identity.ticks = function(m, subdiv_count) {
+    return d3_scale_linearTicks(domain, m, subdiv_count);
   };
 
   identity.tickFormat = function(m) {

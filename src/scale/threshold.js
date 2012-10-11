@@ -21,7 +21,7 @@ function d3_scale_threshold(domain, range) {
     return scale;
   };
 
-  scale.ticks = function(m) {
+  scale.ticks = function(m, subdiv_count) {
     var l = Math.min(domain.length, range.length - 1);
     if (l > 0) {
       var t = [], i;

@@ -26,7 +26,7 @@ function d3_scale_log(linear, log) {
     return scale;
   };
 
-  scale.ticks = function() {
+  scale.ticks = function(m, subdiv_count) {
     var extent = d3_scaleExtent(linear.domain()),
         ticks = [];
     if (extent.every(isFinite)) {

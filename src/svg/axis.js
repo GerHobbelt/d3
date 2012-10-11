@@ -10,17 +10,21 @@ d3.svg.axis = function() {
       tickFormat_ = null,
       tickFormatExtended_,
       tickFilter = d3_functor(true),
-      tickSubdivide = null;
+      tickSubdivide = 0;
 
   function axis(g) {
-    // Ticks, or domain values for ordinal scales.
-    var ticks = (tickValues == null ? (scale.ticks ? scale.ticks.apply(scale, tickArguments_) : scale.domain()) : tickValues)
-                  .map(d3_svg_axisMapTicks),
+    // Ticks (+ optional subticks), or domain values for ordinal scales.
+    var ticks = (tickValues == null ? 
+                 (scale.ticks ? 
+                  scale.ticks.apply(scale, tickArguments_, tickSubdivide) : 
+                  { range: scale.domain().map(d3_svg_axisMapTicks), submodulus: 0 }) : 
+                 tickValues.range ? 
+                  tickValues : 
+                  { range: tickValues.map(d3_svg_axisMapTicks), submodulus: 0 }),
         tickFormat = tickFormat_ == null ? (scale.tickFormat ? scale.tickFormat.apply(scale, tickArguments_) : String) : tickFormat_;
 
-    // Minor ticks.
-    var subticks = d3_svg_axisSubdivide(scale, ticks, tickSubdivide);
-    subticks = subticks.filter(function(d, i, a) {
+    // Minor ticks?
+    var subticks = ticks.range.filter(function(d, i, a) {
       return tickFilter(d, d.index, ticks, i, a);
     });
 
@@ -37,7 +41,7 @@ d3.svg.axis = function() {
         var subtickExit = d3.transition(subtick.exit()).style("opacity", 1e-6).remove();
         var subtickUpdate = d3.transition(subtick).style("opacity", 1);
 
-        // Major ticks.
+        // Draw the ticks.
         var tick = g.selectAll("g.major").data(ticks, function(d, i) {
               return String(d.value);
             }),
@@ -249,7 +253,7 @@ d3.svg.axis = function() {
 
   axis.tickSubdivide = function(x) {
     if (!arguments.length) return tickSubdivide;
-    tickSubdivide = (x != null ? typeof x !== "function" ? d3_svg_axisTickSubDivideOneTick(+x) : x : null);
+    tickSubdivide = +x;
     return axis;
   };
 
@@ -272,81 +276,6 @@ function d3_svg_axisY(selection, y) {
   selection.attr("transform", function(d) {
     return "translate(0," + y(d.value) + ")";
   });
-}
-
-function d3_svg_axisSubdivide(scale, ticks, subdiv) {
-  var subticks = [];
-  if (subdiv && ticks.length > 1) {
-    var extent = d3_scaleExtent(scale.domain()),
-        i,
-        n = ticks.length;
-    for (i = 0; i <= n; i++) {
-      subticks = subdiv(subticks, ticks, i, n, extent);
-    }
-  }
-  return subticks;
-}
-
-// Return a function which produces an array of subtick objects for one tick interval:
-function d3_svg_axisTickSubDivideOneTick(modulus) {
-  modulus++;
-  return function(subticks, ticks, i, n, extent) {
-    var t0, t1, delta, s, j, v;
-
-    if (i == 0) {
-      t0 = ticks[0];
-      t1 = ticks[1];
-      delta = (t1.value - t0.value) / modulus;
-      for (j = modulus; j-- > 1; ) {
-        v = t0.value - j * delta;
-        if (v > extent[0]) {
-          subticks.push({
-            value: v,
-            index: -1,
-            base: t0,
-            subindex: -j,
-            modulus: modulus,
-            majors: ticks
-          });
-        }
-      }
-    } else if (i == n) {
-      t0 = ticks[n - 2];
-      t1 = ticks[n - 1];
-      delta = (t1.value - t0.value) / modulus;
-      for (j = modulus; j-- > 1; ) {
-        v = t1.value + j * delta;
-        if (v < extent[1]) {
-          subticks.push({
-            value: v,
-            index: n - 1,
-            base: t1,
-            subindex: j,
-            modulus: modulus,
-            majors: ticks
-          });
-        }
-      }
-    } else {
-      t0 = ticks[i - 1];
-      t1 = ticks[i];
-      delta = (t1.value - t0.value) / modulus;
-      for (j = modulus; j-- > 1; ) {
-        v = t0.value + j * delta;
-        if (v > extent[0]) {
-          subticks.push({
-            value: v,
-            index: i - 1,
-            base: t0,
-            subindex: j,
-            modulus: modulus,
-            majors: ticks
-          });
-        }
-      }
-    }
-    return subticks;
-  };
 }
 
 function d3_svg_axisMapTicks(v, i, ticks) {

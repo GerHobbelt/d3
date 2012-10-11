@@ -18,7 +18,7 @@ function d3_time_scale(linear, methods, format) {
     return scale.domain(d3_scale_nice(scale.domain(), function() { return m; }));
   };
 
-  scale.ticks = function(m, k) {
+  scale.ticks = function(m, k, subdiv_count) {
     var extent = d3_time_scaleExtent(scale.domain());
     if (typeof m !== "function") {
       var span = extent[1] - extent[0],
