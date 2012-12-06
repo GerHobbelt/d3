@@ -14,12 +14,26 @@ var vis = d3.select("#chart").append("svg")
 
 d3.json("../data/flare.json", function(json) {
   var nodes = cluster.nodes(json);
+  var links = cluster.links(nodes);
 
   var link = vis.selectAll("path.link")
-      .data(cluster.links(nodes))
+      .data(links)
     .enter().append("path")
       .attr("class", "link")
-      .attr("d", diagonal);
+      .attr("d", function(d) {
+        if (d.source.depth == 0) {
+          // special treatment for root node: out-angle is in-angle
+          return diagonal({
+            source: {
+              x: d.target.x,
+              y: d.source.y
+            },
+            target: d.target
+          });
+        } else {
+          return diagonal(d);
+        }
+      });
 
   var node = vis.selectAll("g.node")
       .data(nodes)
@@ -31,9 +45,8 @@ d3.json("../data/flare.json", function(json) {
       .attr("r", 4.5);
 
   node.append("text")
-      .attr("dx", function(d) { return d.x < 180 ? 8 : -8; })
       .attr("dy", ".31em")
       .attr("text-anchor", function(d) { return d.x < 180 ? "start" : "end"; })
-      .attr("transform", function(d) { return d.x < 180 ? null : "rotate(180)"; })
+      .attr("transform", function(d) { return d.x < 180 ? "translate(8)" : "rotate(180)translate(-8)"; })
       .text(function(d) { return d.name; });
 });

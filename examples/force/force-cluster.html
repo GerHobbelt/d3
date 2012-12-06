@@ -2,14 +2,17 @@
 <html>
   <head>
     <title>Clustered Network</title>
-    <script type="text/javascript" src="../../d3.v2.js"></script>
+    <script type="text/javascript" src="../../d3.js"></script>
     <style type="text/css">
+
 svg {
   border: 1px solid #ccc;
 }
+
 body {
   font: 10px sans-serif;
 }
+
 circle.node {
   fill: lightsteelblue;
   stroke: #555;
@@ -19,19 +22,22 @@ circle.leaf {
   stroke: #fff;
   stroke-width: 1.5px;
 }
+
 path.hull {
   fill: lightsteelblue;
   fill-opacity: 0.3;
 }
+
 line.link {
   stroke: #333;
   stroke-opacity: 0.5;
   pointer-events: none;
 }
-    </style>
-  </head>
-  <body>
-    <script type="text/javascript">
+
+</style>
+<body>
+<script>
+
 var width = 960,     // svg width
     height = 600,     // svg height
     dr = 4,      // default point radius
@@ -114,11 +120,11 @@ function network(data, prev, index, expand) {
       }
       l.nodes.push(n);
     }
-	// always count group size as we also use it to tweak the force graph strengths/distances
+    // always count group size as we also use it to tweak the force graph strengths/distances
     l.size += 1;
-	n.group_data = l;
+    n.group_data = l;
   }
-  
+
   for (i in gm) { gm[i].link_count = 0; }
 
   // determine links
@@ -126,10 +132,10 @@ function network(data, prev, index, expand) {
     var e = data.links[k],
         u = index(e.source),
         v = index(e.target);
-	if (u != v) {
-	  gm[u].link_count++;
-	  gm[v].link_count++;
-	}
+    if (u != v) {
+      gm[u].link_count++;
+      gm[v].link_count++;
+    }
     u = expand[u] ? nm[e.source.name] : nm[u];
     v = expand[v] ? nm[e.target.name] : nm[v];
     var i = (u<v ? u+"|"+v : v+"|"+u),
@@ -157,12 +163,12 @@ function convexHulls(nodes, index, offset) {
   }
 
   // create convex hulls
-  var hullset = [];
-  for (i in hulls) {
-    hullset.push({group: i, path: d3.geom.hull(hulls[i])});
-  }
-
-  return hullset;
+  return d3.entries(hulls).map(function(entry) {
+    return {
+      group: entry.key,
+      path: d3.geom.hull(entry.value)
+    };
+  });
 }
 
 function drawCluster(d) {
@@ -177,7 +183,7 @@ var vis = body.append("svg")
    .attr("width", width)
    .attr("height", height);
 
-d3.json("miserables.json", function(json) {
+d3.json("miserables.json", function(error, json) {
   data = json;
   for (var i=0; i<data.links.length; ++i) {
     o = data.links[i];
@@ -207,31 +213,31 @@ function init() {
       .links(net.links)
       .size([width, height])
       .linkDistance(function(l, i) {
-	    var n1 = l.source, n2 = l.target;
-		// larger distance for bigger groups:
-		// both between single nodes and _other_ groups (where size of own node group still counts),
-		// and between two group nodes.
-		// 
-		// reduce distance for groups with very few outer links,
-		// again both in expanded and grouped form, i.e. between individual nodes of a group and
-		// nodes of another group or other group node or between two group nodes.
-		//
-		// The latter was done to keep the single-link groups ('blue', rose, ...) close.
-		return 30 + 
-		  Math.min(20 * Math.min((n1.size || (n1.group != n2.group ? n1.group_data.size : 0)), 
-		                         (n2.size || (n1.group != n2.group ? n2.group_data.size : 0))), 
-				   -30 + 
-				   30 * Math.min((n1.link_count || (n1.group != n2.group ? n1.group_data.link_count : 0)),
-				                 (n2.link_count || (n1.group != n2.group ? n2.group_data.link_count : 0))), 
-				   100);
-	    //return 150;
-	  })
-	  .linkStrength(function(l, i) {
-		return 1;
-	  })
-	  .gravity(0.05)   // gravity+charge tweaked to ensure good 'grouped' view (e.g. green group not smack between blue&orange, ...
-	  .charge(-600)    // ... charge is important to turn single-linked groups to the outside
-	  .friction(0.5)   // friction adjusted to get dampened display: less bouncy bouncy ball [Swedish Chef, anyone?]
+      var n1 = l.source, n2 = l.target;
+      // larger distance for bigger groups:
+      // both between single nodes and _other_ groups (where size of own node group still counts),
+      // and between two group nodes.
+      //
+      // reduce distance for groups with very few outer links,
+      // again both in expanded and grouped form, i.e. between individual nodes of a group and
+      // nodes of another group or other group node or between two group nodes.
+      //
+      // The latter was done to keep the single-link groups ('blue', rose, ...) close.
+      return 30 +
+        Math.min(20 * Math.min((n1.size || (n1.group != n2.group ? n1.group_data.size : 0)),
+                               (n2.size || (n1.group != n2.group ? n2.group_data.size : 0))),
+             -30 +
+             30 * Math.min((n1.link_count || (n1.group != n2.group ? n1.group_data.link_count : 0)),
+                           (n2.link_count || (n1.group != n2.group ? n2.group_data.link_count : 0))),
+             100);
+        //return 150;
+      })
+      .linkStrength(function(l, i) {
+      return 1;
+      })
+      .gravity(0.05)   // gravity+charge tweaked to ensure good 'grouped' view (e.g. green group not smack between blue&orange, ...
+      .charge(-600)    // ... charge is important to turn single-linked groups to the outside
+      .friction(0.5)   // friction adjusted to get dampened display: less bouncy bouncy ball [Swedish Chef, anyone?]
       .start();
 
   hullg.selectAll("path.hull").remove();
@@ -241,9 +247,9 @@ function init() {
       .attr("class", "hull")
       .attr("d", drawCluster)
       .style("fill", function(d) { return fill(d.group); })
-      .on("click", function(d) { 
-	    expand[d.group] = false; init(); 
-	  });
+      .on("click", function(d) {
+      expand[d.group] = false; init();
+    });
 
   link = linkg.selectAll("line.link").data(net.links, linkid);
   link.exit().remove();
@@ -265,8 +271,8 @@ function init() {
       .attr("cy", function(d) { return d.y; })
       .style("fill", function(d) { return fill(d.group); })
       .on("click", function(d) {
-        expand[d.group] = !expand[d.group]; 
-		init(); 
+        expand[d.group] = !expand[d.group];
+        init();
       });
 
   node.call(force.drag);

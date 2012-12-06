@@ -28,8 +28,8 @@ d3.nest = function() {
       }
     }
 
-    valuesByKey.forEach(function(keyValue) {
-      o[keyValue] = map(valuesByKey.get(keyValue), depth);
+    valuesByKey.forEach(function(keyValue, values) {
+      o[keyValue] = map(values, depth);
     });
 
     return o;
@@ -43,7 +43,10 @@ d3.nest = function() {
         key;
 
     for (key in map) {
-      a.push({key: key, values: entries(map[key], depth)});
+      a.push({
+        key: key, 
+        values: entries(map[key], depth)
+      });
     }
 
     if (sortKey) a.sort(function(a, b) {
