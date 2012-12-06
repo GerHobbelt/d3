@@ -74,8 +74,8 @@ d3.layout.force = function() {
 
   field = function(x, y, w, h) {
       return {
-          x: w/2.-x,
-          y: h/2.-y,
+          x: w/2. - x,
+          y: h/2. - y
       };
   };
 
@@ -117,11 +117,13 @@ d3.layout.force = function() {
       }
     }
 
-    // apply field forces
+    // apply gravity forces
     if (k = alpha * gravity) {
+      x = size[0];
+      y = size[1];
       for (i = 0; i < n; ++i) {
         o = nodes[i];
-        f = field(o.x, o.y, size[0], size[1]);
+        f = field(o.x, o.y, x, y);
         o.x += f.x * k;
         o.y += f.y * k;
       }
@@ -396,10 +398,10 @@ function d3_layout_forceAccumulate(quad, alpha, charges) {
   quad.cy = cy / quad.charge;
 }
 
-function d3_layout_forceLinkDistance(link) {
+function d3_layout_forceLinkDistance(/*link*/) {
   return 20;
 }
 
-function d3_layout_forceLinkStrength(link) {
+function d3_layout_forceLinkStrength(/*link*/) {
   return 1;
 }
