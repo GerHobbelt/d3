@@ -19,10 +19,10 @@ suite.addBatch({
       assert.strictEqual(f(42), "00000042");
       assert.strictEqual(f(42000000), "42000000");
       assert.strictEqual(f(420000000), "420000000");
-      assert.strictEqual(f(-4), "−0000004");
-      assert.strictEqual(f(-42), "−0000042");
-      assert.strictEqual(f(-4200000), "−4200000");
-      assert.strictEqual(f(-42000000), "−42000000");
+      assert.strictEqual(f(-4), "-0000004");
+      assert.strictEqual(f(-42), "-0000042");
+      assert.strictEqual(f(-4200000), "-4200000");
+      assert.strictEqual(f(-42000000), "-42000000");
     },
     "can space fill": function(format) {
       var f = format("8d");
@@ -30,10 +30,10 @@ suite.addBatch({
       assert.strictEqual(f(42), "      42");
       assert.strictEqual(f(42000000), "42000000");
       assert.strictEqual(f(420000000), "420000000");
-      assert.strictEqual(f(-4), "      −4");
-      assert.strictEqual(f(-42), "     −42");
-      assert.strictEqual(f(-4200000), "−4200000");
-      assert.strictEqual(f(-42000000), "−42000000");
+      assert.strictEqual(f(-4), "      -4");
+      assert.strictEqual(f(-42), "     -42");
+      assert.strictEqual(f(-4200000), "-4200000");
+      assert.strictEqual(f(-42000000), "-42000000");
     },
     "can output fixed-point notation": function(format) {
       assert.strictEqual(format(".1f")(0.49), "0.5");
@@ -64,10 +64,10 @@ suite.addBatch({
       assert.strictEqual(f(42), "4.2e+1");
       assert.strictEqual(f(42000000), "4.2e+7");
       assert.strictEqual(f(420000000), "4.2e+8");
-      assert.strictEqual(f(-4), "−4e+0");
-      assert.strictEqual(f(-42), "−4.2e+1");
-      assert.strictEqual(f(-4200000), "−4.2e+6");
-      assert.strictEqual(f(-42000000), "−4.2e+7");
+      assert.strictEqual(f(-4), "-4e+0");
+      assert.strictEqual(f(-42), "-4.2e+1");
+      assert.strictEqual(f(-4200000), "-4.2e+6");
+      assert.strictEqual(f(-42000000), "-4.2e+7");
     },
     "can output SI prefix notation": function(format) {
       var f = format("s");
@@ -78,6 +78,7 @@ suite.addBatch({
       assert.strictEqual(f(999.5), "999.5");
       assert.strictEqual(f(999500), "999.5k");
       assert.strictEqual(f(1000), "1k");
+      assert.strictEqual(f(1400), "1.4k");
       assert.strictEqual(f(1500.5), "1.5005k");
       assert.strictEqual(f(.000001), "1μ");
     },
@@ -107,9 +108,9 @@ suite.addBatch({
       assert.strictEqual(f(.042), "4%");
       assert.strictEqual(f(.42), "42%");
       assert.strictEqual(f(4.2), "420%");
-      assert.strictEqual(f(-.042), "−4%");
-      assert.strictEqual(f(-.42), "−42%");
-      assert.strictEqual(f(-4.2), "−420%");
+      assert.strictEqual(f(-.042), "-4%");
+      assert.strictEqual(f(-.42), "-42%");
+      assert.strictEqual(f(-4.2), "-420%");
     },
     "can output a percentage with rounding and sign": function(format) {
       var f = format("+.2p");
@@ -117,10 +118,10 @@ suite.addBatch({
       assert.strictEqual(f(.0123), "+1.2%");
       assert.strictEqual(f(.123), "+12%");
       assert.strictEqual(f(1.23), "+120%");
-      assert.strictEqual(f(-.00123), "−0.12%");
-      assert.strictEqual(f(-.0123), "−1.2%");
-      assert.strictEqual(f(-.123), "−12%");
-      assert.strictEqual(f(-1.23), "−120%");
+      assert.strictEqual(f(-.00123), "-0.12%");
+      assert.strictEqual(f(-.0123), "-1.2%");
+      assert.strictEqual(f(-.123), "-12%");
+      assert.strictEqual(f(-1.23), "-120%");
     },
     "can round to significant digits": function(format) {
       assert.strictEqual(format(".2r")(0), "0.0");
@@ -149,10 +150,10 @@ suite.addBatch({
       assert.strictEqual(f(42), "42");
       assert.strictEqual(f(42000000), "42,000,000");
       assert.strictEqual(f(420000000), "420,000,000");
-      assert.strictEqual(f(-4), "−4");
-      assert.strictEqual(f(-42), "−42");
-      assert.strictEqual(f(-4200000), "−4,200,000");
-      assert.strictEqual(f(-42000000), "−42,000,000");
+      assert.strictEqual(f(-4), "-4");
+      assert.strictEqual(f(-42), "-42");
+      assert.strictEqual(f(-4200000), "-4,200,000");
+      assert.strictEqual(f(-42000000), "-42,000,000");
     },
     "can group thousands and zero fill": function(format) {
       assert.strictEqual(format("01,d")(0), "0");
@@ -163,6 +164,7 @@ suite.addBatch({
       assert.strictEqual(format("08,d")(0), "0,000,000");
       assert.strictEqual(format("013,d")(0), "0,000,000,000");
       assert.strictEqual(format("021,d")(0), "0,000,000,000,000,000");
+      assert.strictEqual(format("013,d")(-42000000), "-0,042,000,000");
     },
     "can group thousands and zero fill with overflow": function(format) {
       assert.strictEqual(format("01,d")(1), "1");
@@ -198,10 +200,10 @@ suite.addBatch({
       assert.strictEqual(f(42), "42");
       assert.strictEqual(f(42000000), "42,000,000");
       assert.strictEqual(f(420000000), "420,000,000");
-      assert.strictEqual(f(-4), "−4");
-      assert.strictEqual(f(-42), "−42");
-      assert.strictEqual(f(-4200000), "−4,200,000");
-      assert.strictEqual(f(-42000000), "−42,000,000");
+      assert.strictEqual(f(-4), "-4");
+      assert.strictEqual(f(-42), "-42");
+      assert.strictEqual(f(-4200000), "-4,200,000");
+      assert.strictEqual(f(-42000000), "-42,000,000");
     },
     "can group thousands, space fill, and round to significant digits": function(format) {
       assert.strictEqual(format("10,.1f")(123456.49), " 123,456.5");
@@ -219,6 +221,90 @@ suite.addBatch({
     "will not display non-integers in integer format": function(format) {
       assert.strictEqual(format("d")(4.2), "");
     },
+    "unicode character": function(format) {
+      assert.strictEqual(format("c")(9731), "☃");
+    },
+    "binary": function(format) {
+      assert.strictEqual(format("b")(10), "1010");
+    },
+    "binary with prefix": function(format) {
+      assert.strictEqual(format("#b")(10), "0b1010");
+    },
+    "octal": function(format) {
+      assert.strictEqual(format("o")(10), "12");
+    },
+    "octal with prefix": function(format) {
+      assert.strictEqual(format("#o")(10), "0o12");
+    },
+    "hexadecimal (lowercase)": function(format) {
+      assert.strictEqual(format("x")(3735928559), "deadbeef");
+    },
+    "hexadecimal (lowercase) with prefix": function(format) {
+      assert.strictEqual(format("#x")(3735928559), "0xdeadbeef");
+    },
+    "hexadecimal (uppercase)": function(format) {
+      assert.strictEqual(format("X")(3735928559), "DEADBEEF");
+    },
+    "hexadecimal (uppercase) with prefix": function(format) {
+      assert.strictEqual(format("#X")(3735928559), "0xDEADBEEF");
+    },
+    "fill respects prefix": function(format) {
+      assert.strictEqual(format("#20x")(3735928559), "          0xdeadbeef");
+    },
+    "align left": function(format) {
+      assert.strictEqual(format("<1,d")(0), "0");
+      assert.strictEqual(format("<1,d")(0), "0");
+      assert.strictEqual(format("<2,d")(0), "0 ");
+      assert.strictEqual(format("<3,d")(0), "0  ");
+      assert.strictEqual(format("<5,d")(0), "0    ");
+      assert.strictEqual(format("<8,d")(0), "0       ");
+      assert.strictEqual(format("<13,d")(0), "0            ");
+      assert.strictEqual(format("<21,d")(0), "0                    ");
+    },
+    "align right": function(format) {
+      assert.strictEqual(format(">1,d")(0), "0");
+      assert.strictEqual(format(">1,d")(0), "0");
+      assert.strictEqual(format(">2,d")(0), " 0");
+      assert.strictEqual(format(">3,d")(0), "  0");
+      assert.strictEqual(format(">5,d")(0), "    0");
+      assert.strictEqual(format(">8,d")(0), "       0");
+      assert.strictEqual(format(">13,d")(0), "            0");
+      assert.strictEqual(format(">21,d")(0), "                    0");
+    },
+    "align center": function(format) {
+      assert.strictEqual(format("^1,d")(0), "0");
+      assert.strictEqual(format("^1,d")(0), "0");
+      assert.strictEqual(format("^2,d")(0), " 0");
+      assert.strictEqual(format("^3,d")(0), " 0 ");
+      assert.strictEqual(format("^5,d")(0), "  0  ");
+      assert.strictEqual(format("^8,d")(0), "    0   ");
+      assert.strictEqual(format("^13,d")(0), "      0      ");
+      assert.strictEqual(format("^21,d")(0), "          0          ");
+    },
+    "pad after sign": function(format) {
+      assert.strictEqual(format("=+1,d")(0), "+0");
+      assert.strictEqual(format("=+1,d")(0), "+0");
+      assert.strictEqual(format("=+2,d")(0), "+0");
+      assert.strictEqual(format("=+3,d")(0), "+ 0");
+      assert.strictEqual(format("=+5,d")(0), "+   0");
+      assert.strictEqual(format("=+8,d")(0), "+      0");
+      assert.strictEqual(format("=+13,d")(0), "+           0");
+      assert.strictEqual(format("=+21,d")(0), "+                   0");
+    },
+    "a space can denote positive numbers": function(format) {
+      assert.strictEqual(format(" 1,d")(-1), "-1");
+      assert.strictEqual(format(" 1,d")(0), " 0");
+      assert.strictEqual(format(" 2,d")(0), " 0");
+      assert.strictEqual(format(" 3,d")(0), "  0");
+      assert.strictEqual(format(" 5,d")(0), "    0");
+      assert.strictEqual(format(" 8,d")(0), "       0");
+      assert.strictEqual(format(" 13,d")(0), "            0");
+      assert.strictEqual(format(" 21,d")(0), "                    0");
+    },
+    "can format negative zero": function(format) {
+      assert.strictEqual(format("1d")(-0), "-0");
+      assert.strictEqual(format("1f")(-0), "-0");
+    },
     "supports \"n\" as an alias for \",g\"": function(format) {
       var f = format("n");
       assert.strictEqual(f(.0042), "0.0042");
@@ -227,10 +313,10 @@ suite.addBatch({
       assert.strictEqual(f(42), "42");
       assert.strictEqual(f(42000000), "42,000,000");
       assert.strictEqual(f(420000000), "420,000,000");
-      assert.strictEqual(f(-4), "−4");
-      assert.strictEqual(f(-42), "−42");
-      assert.strictEqual(f(-4200000), "−4,200,000");
-      assert.strictEqual(f(-42000000), "−42,000,000");
+      assert.strictEqual(f(-4), "-4");
+      assert.strictEqual(f(-42), "-42");
+      assert.strictEqual(f(-4200000), "-4,200,000");
+      assert.strictEqual(f(-42000000), "-42,000,000");
     }
   }
 });

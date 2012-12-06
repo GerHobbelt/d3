@@ -2,9 +2,9 @@ d3.layout.pie = function() {
   var value = Number,
       sort = d3_layout_pieSortByValue,
       startAngle = 0,
-      endAngle = 2 * Math.PI;
+      endAngle = 2 * π;
 
-  function pie(data, i) {
+  function pie(data) {
 
     // Compute the numeric values for each data element.
     var values = data.map(function(d, i) { return +value.call(pie, d, i); });
@@ -30,6 +30,7 @@ d3.layout.pie = function() {
     // They are stored in the original data's order.
     var arcs = [];
     index.forEach(function(i) {
+      var d;
       arcs[i] = {
         data: data[i],
         value: d = values[i],

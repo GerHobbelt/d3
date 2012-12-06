@@ -11,7 +11,7 @@ suite.addBatch({
       return d3.transition();
     },
     "selects the document": function(transition) {
-      assert.domEqual(transition[0][0].node, document);
+      assert.domEqual(transition[0][0], document);
     },
     "is an instanceof d3.transition": function(transition) {
       assert.isTrue(transition instanceof d3.transition);
@@ -34,32 +34,37 @@ suite.export(module);
 
 var suite = vows.describe("transition");
 
+// Subtransitions
 suite.addBatch({
-
-  // Subtransitions
   "select": require("./transition-test-select"),
   "selectAll": require("./transition-test-selectAll"),
   "transition": require("./transition-test-transition"),
+  "filter": require("./transition-test-filter")
+});
 
-  // Content
+// Content
+suite.addBatch({
   "attr": require("./transition-test-attr"),
   "attrTween": require("./transition-test-attrTween"),
   "style": require("./transition-test-style"),
   "styleTween": require("./transition-test-styleTween"),
   "text": require("./transition-test-text"),
-  "remove": require("./transition-test-remove"),
+  "remove": require("./transition-test-remove")
+});
 
-  // Animation
+// Animation
+suite.addBatch({
   "delay": require("./transition-test-delay"),
-  "duration": require("./transition-test-duration"),
+  "duration": require("./transition-test-duration")
+});
 
-  // Control
+// Control
+suite.addBatch({
   "each": require("./transition-test-each"),
   "call": require("./transition-test-call"),
   "tween": require("./transition-test-tween"),
   "id": require("./transition-test-id"),
   "time": require("./transition-test-time")
-
 });
 
 suite.export(module);
