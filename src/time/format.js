@@ -77,6 +77,8 @@ function d3_time_formatPad(value, fill, width) {
   return length < width ? new Array(width - length + 1).join(fill) + value : value;
 }
 
+console.log("d3_time_day, etc: ", d3_time_days, d3_time_dayAbbreviations, d3_time_months, d3_time_monthAbbreviations);
+
 var d3_time_dayRe = d3_time_formatRe(d3_time_days),
     d3_time_dayAbbrevRe = d3_time_formatRe(d3_time_dayAbbreviations),
     d3_time_monthRe = d3_time_formatRe(d3_time_months),
