@@ -277,9 +277,10 @@ src/core/format-$(LOCALE).js: src/locale.js src/core/format-locale.js
 src/time/format-$(LOCALE).js: src/locale.js src/time/format-locale.js
 	LC_TIME=$(LOCALE) locale -ck LC_TIME | node src/locale.js src/time/format-locale.js > $@
 
-.INTERMEDIATE: \
-	src/core/format-$(LOCALE).js \
-	src/time/format-$(LOCALE).js
+#.INTERMEDIATE: \
+#	src/core/format-$(LOCALE).js \
+#	src/time/format-$(LOCALE).js
 
 clean:
-	rm -f d3*.js package.json component.json
+	@rm -f d3*.js package.json component.json
+	@touch src/locale.js
