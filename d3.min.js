@@ -14,7 +14,7 @@ try {
   };
 }
 d3 = {
-    version: "3.0.0" // semver
+    version: "3.0.2" // semver
 };
 
 var π = Math.PI,
@@ -7453,7 +7453,8 @@ d3.layout.treemap = function() {
           best = Infinity, // the best row score so far
           score, // the current row score
           u = mode === "slice" ? rect.dx
-            : mode === "dice" || mode === "slice-dice" && node.depth & 1 ? rect.dy
+            : mode === "dice" ? rect.dy
+            : mode === "slice-dice" ? node.depth & 1 ? rect.dy : rect.dx
             : Math.min(rect.dx, rect.dy), // initial orientation
           n;
       scale(remaining, rect.dx * rect.dy / node.value);
@@ -7769,10 +7770,6 @@ var d3_geo_streamObjectType = {
   FeatureCollection: function(object, listener) {
     var features = object.features, i = -1, n = features.length;
     while (++i < n) d3_geo_streamGeometry(features[i].geometry, listener);
-  },
-  GeometryCollection: function(object, listener) {
-    var geometries = object.geometries, i = -1, n = geometries.length;
-    while (++i < n) d3_geo_streamGeometry(geometries[i], listener);
   }
 };
 
@@ -7801,6 +7798,10 @@ var d3_geo_streamGeometryType = {
   MultiPolygon: function(object, listener) {
     var coordinates = object.coordinates, i = -1, n = coordinates.length;
     while (++i < n) d3_geo_streamPolygon(coordinates[i], listener);
+  },
+  GeometryCollection: function(object, listener) {
+    var geometries = object.geometries, i = -1, n = geometries.length;
+    while (++i < n) d3_geo_streamGeometry(geometries[i], listener);
   }
 };
 
@@ -8077,9 +8078,9 @@ var d3_geo_azimuthalEquidistant = d3_geo_azimuthal(
 (d3.geo.azimuthalEquidistant = function() {
   return d3_geo_projection(d3_geo_azimuthalEquidistant);
 }).raw = d3_geo_azimuthalEquidistant;
-d3.geo.bounds = d3_geo_bounds();
+d3.geo.bounds = d3_geo_bounds(d3_identity);
 
-function d3_geo_bounds(projection) {
+function d3_geo_bounds(projectStream) {
   var x0, y0, x1, y1;
 
   var bound = {
@@ -8091,8 +8092,6 @@ function d3_geo_bounds(projection) {
     polygonStart: function() { bound.lineEnd = boundPolygonLineEnd; },
     polygonEnd: function() { bound.point = boundPoint; }
   };
-
-  var projectBound = projection ? projection.stream(bound) : bound;
 
   function boundPoint(x, y) {
     if (x < x0) x0 = x;
@@ -8107,7 +8106,7 @@ function d3_geo_bounds(projection) {
 
   return function(feature) {
     y1 = x1 = -(x0 = y0 = Infinity);
-    d3.geo.stream(feature, projectBound);
+    d3.geo.stream(feature, projectStream(bound));
     return [[x0, y0], [x1, y1]];
   };
 }
@@ -8131,12 +8130,20 @@ var d3_geo_centroidDimension,
     d3_geo_centroidZ;
 
 var d3_geo_centroid = {
-  sphere: d3_noop,
+  sphere: function() {
+    if (d3_geo_centroidDimension < 2) {
+      d3_geo_centroidDimension = 2;
+      d3_geo_centroidW = d3_geo_centroidX = d3_geo_centroidY = d3_geo_centroidZ = 0;
+    }
+  },
   point: d3_geo_centroidPoint,
   lineStart: d3_geo_centroidLineStart,
   lineEnd: d3_geo_centroidLineEnd,
   polygonStart: function() {
-    d3_geo_centroidDimension = 2;
+    if (d3_geo_centroidDimension < 2) {
+      d3_geo_centroidDimension = 2;
+      d3_geo_centroidW = d3_geo_centroidX = d3_geo_centroidY = d3_geo_centroidZ = 0;
+    }
     d3_geo_centroid.lineStart = d3_geo_centroidRingStart;
   },
   polygonEnd: function() {
@@ -8158,10 +8165,6 @@ function d3_geo_centroidPoint(λ, φ) {
 function d3_geo_centroidRingStart() {
   var λ00, φ00; // first point
 
-  if (d3_geo_centroidDimension < 2) {
-    d3_geo_centroidDimension = 2;
-    d3_geo_centroidW = d3_geo_centroidX = d3_geo_centroidY = d3_geo_centroidZ = 0;
-  }
   d3_geo_centroidDimension = 1;
   d3_geo_centroidLineStart();
   d3_geo_centroidDimension = 2;
@@ -8180,11 +8183,10 @@ function d3_geo_centroidRingStart() {
 function d3_geo_centroidLineStart() {
   var x0, y0, z0; // previous point
 
-  if (d3_geo_centroidDimension !== 1) {
-    if (d3_geo_centroidDimension < 1) {
-      d3_geo_centroidDimension = 1;
-      d3_geo_centroidW = d3_geo_centroidX = d3_geo_centroidY = d3_geo_centroidZ = 0;
-    } else return;
+  if (d3_geo_centroidDimension > 1) return;
+  if (d3_geo_centroidDimension < 1) {
+    d3_geo_centroidDimension = 1;
+    d3_geo_centroidW = d3_geo_centroidX = d3_geo_centroidY = d3_geo_centroidZ = 0;
   }
 
   d3_geo_centroid.point = function(λ, φ) {
@@ -8223,7 +8225,7 @@ d3.geo.circle = function() {
 
   function circle() {
     var center = typeof origin === "function" ? origin.apply(this, arguments) : origin,
-        rotate = d3_geo_rotation(center[0] * d3_radians, center[1] * d3_radians, 0),
+        rotate = d3_geo_rotation(-center[0] * d3_radians, -center[1] * d3_radians, 0).invert,
         ring = [];
 
     interpolate(null, null, 1, {
@@ -8973,7 +8975,7 @@ d3.geo.path = function() {
   };
 
   path.bounds = function(object) {
-    return d3_geo_bounds(projection)(object);
+    return d3_geo_bounds(projectStream)(object);
   };
 
   path.projection = function(_) {
