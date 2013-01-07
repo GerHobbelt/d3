@@ -3,7 +3,7 @@ d3.mouse = function(container) {
 };
 
 var d3_mouse_getScreenCTM;
-if (/WebKit/.test(navigator.userAgent)) {
+if (typeof navigator !== "undefined" && /WebKit/.test(navigator.userAgent)) {
   var d3_mouse_bug44083 = -1; // https://bugs.webkit.org/show_bug.cgi?id=44083
   var d3_mouse_zoom_bug = -1; // ToDo: file bug report?
   d3_mouse_getScreenCTM = function(container, e) {
