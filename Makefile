@@ -319,12 +319,14 @@ ifneq ($(whereis node),)				# only do these when you have NodeJS installed
 	LC_TIME=$(LOCALE) locale -ck LC_TIME | node src/locale.js src/time/format-locale.js > $@
 endif
 
-.INTERMEDIATE: \
-	src/core/format-$(LOCALE).js \
-	src/time/format-$(LOCALE).js
+#.INTERMEDIATE: \
+#	src/core/format-$(LOCALE).js \
+#	src/time/format-$(LOCALE).js
 
 clean:
-	rm -f d3*.js 
+	@rm -f d3*.js 
 ifneq ($(whereis node),)				# only do these when you have NodeJS installed
-	rm -f $(PACKAGE_JSON) component.json
+	@rm -f $(PACKAGE_JSON) component.json
 endif
+	@touch src/locale.js
+
