@@ -130,4 +130,4 @@ function d3_geo_clipLineSegment(a, b) {
       listener.point(λ3, φ3);
     }
   }
-};
+}

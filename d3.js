@@ -5718,6 +5718,11 @@
     var angle = Math.acos(Math.max(-1, Math.min(1, -a[1])));
     return ((-a[2] < 0 ? -angle : angle) + 2 * Math.PI - ε) % (2 * Math.PI);
   }
+  d3.geo.clip = function(object) {
+    if (object.type === "LineString") {
+      return d3_geo_clipLineSegment(object.coordinates[0], object.coordinates[1]);
+    }
+  };
   function d3_geo_clip(pointVisible, clipLine, interpolate) {
     return function(listener) {
       var line = clipLine(listener);
@@ -6584,11 +6589,8 @@
       return projection;
     };
     projection.clip = function(_) {
-      if (!arguments.length) return clipObject;
-      if ((clipObject = _) == null) return projection.clipAngle(clipAngle);
-      if (_.type === "LineString") {
-        clip = d3_geo_clipLineSegment(clipObject.coordinates[0], clipObject.coordinates[1]);
-      }
+      if (!arguments.length) return clip;
+      clip = _;
       return projection;
     };
     projection.scale = function(_) {

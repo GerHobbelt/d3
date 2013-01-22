@@ -1,3 +1,11 @@
+// TODO support multiple line segments, line strings and even polygons.
+// TODO rename?
+d3.geo.clip = function(object) {
+  if (object.type === "LineString") {
+    return d3_geo_clipLineSegment(object.coordinates[0], object.coordinates[1]);
+  }
+};
+
 function d3_geo_clip(pointVisible, clipLine, interpolate) {
   return function(listener) {
     var line = clipLine(listener);

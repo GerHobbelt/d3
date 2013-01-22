@@ -39,12 +39,8 @@ function d3_geo_projectionMutator(projectAt) {
   };
 
   projection.clip = function(_) {
-    if (!arguments.length) return clipObject;
-    if ((clipObject = _) == null) return projection.clipAngle(clipAngle);
-    // TODO support multiple line segments, line strings and even polygons.
-    if (_.type === "LineString") {
-      clip = d3_geo_clipLineSegment(clipObject.coordinates[0], clipObject.coordinates[1]);
-    }
+    if (!arguments.length) return clip;
+    clip = _;
     return projection;
   };
 
