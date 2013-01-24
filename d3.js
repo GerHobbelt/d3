@@ -5718,11 +5718,6 @@
     var angle = Math.acos(Math.max(-1, Math.min(1, -a[1])));
     return ((-a[2] < 0 ? -angle : angle) + 2 * Math.PI - ε) % (2 * Math.PI);
   }
-  d3.geo.clip = function(object) {
-    if (object.type === "LineString") {
-      return d3_geo_clipLineSegment(object.coordinates[0], object.coordinates[1]);
-    }
-  };
   function d3_geo_clip(pointVisible, clipLine, interpolate) {
     return function(listener) {
       var line = clipLine(listener);
@@ -5941,6 +5936,12 @@
     return area;
   }
   var d3_geo_clipAntimeridian = d3_geo_clip(d3_true, d3_geo_clipAntimeridianLine, d3_geo_clipAntimeridianInterpolate);
+  d3_geo_clipAntimeridian.feature = function() {
+    return {
+      type: "LineString",
+      coordinates: [ [ 180, 90 ], [ 180, 0 ], [ 180, -90 ] ]
+    };
+  };
   function d3_geo_clipAntimeridianLine(listener) {
     var λ0 = NaN, φ0 = NaN, sλ0 = NaN, clean;
     return {
@@ -6008,8 +6009,11 @@
     }
   }
   function d3_geo_clipCircle(degrees) {
-    var radians = degrees * d3_radians, cr = Math.cos(radians), interpolate = d3_geo_circleInterpolate(radians, 6 * d3_radians);
-    return d3_geo_clip(visible, clipLine, interpolate);
+    var radians = degrees * d3_radians, cr = Math.cos(radians), interpolate = d3_geo_circleInterpolate(radians, 6 * d3_radians), circle = d3.geo.circle().angle(degrees), clip = d3_geo_clip(visible, clipLine, interpolate);
+    clip.feature = function() {
+      return circle();
+    };
+    return clip;
     function visible(λ, φ) {
       return Math.cos(λ) * Math.cos(φ) > cr;
     }
@@ -6067,15 +6071,15 @@
       return d3_geo_spherical(q);
     }
   }
+  function d3_geo_clipGeometry(geometry) {
+    return geometry.type === "LineString" ? d3_geo_clipLineSegment(geometry.coordinates[0], geometry.coordinates[1]) : null;
+  }
   function d3_geo_clipLineSegment(a, b) {
     var cλ0 = a[0] * d3_radians, cλ1 = b[0] * d3_radians, δcλ = cλ1 - cλ0, csλ = Math.abs(δcλ) > π, cφ0 = a[1] * d3_radians, cφ1 = b[1] * d3_radians, t;
     if (δcλ < 0) t = cλ0, cλ0 = cλ1, cλ1 = t, t = cφ0, cφ0 = cφ1, cφ1 = t;
     var cosφ, x0 = (cosφ = Math.cos(cφ0)) * Math.cos(cλ0), y0 = cosφ * Math.sin(cλ0), z0 = Math.sin(cφ0), x1 = (cosφ = Math.cos(cφ1)) * Math.cos(cλ1), y1 = cosφ * Math.sin(cλ1), z1 = Math.sin(cφ1), cnx = y0 * z1 - z0 * y1, cny = z0 * x1 - x0 * z1, cnz = x0 * y1 - y0 * x1, m = Math.sqrt(cnx * cnx + cny * cny + cnz * cnz);
     cnx /= m, cny /= m, cnz /= m;
-    return d3_geo_clip(pointVisible, clipLine, interpolate);
-    function pointVisible() {
-      return true;
-    }
+    return d3_geo_clip(d3_true, clipLine, interpolate);
     function clipLine(listener) {
       var λ0, φ0, x0, y0, z0, next = false, clean;
       return {
@@ -6588,9 +6592,9 @@
       clip = _ == null ? (clipAngle = _, d3_geo_clipAntimeridian) : d3_geo_clipCircle(clipAngle = +_);
       return projection;
     };
-    projection.clip = function(_) {
-      if (!arguments.length) return clip;
-      clip = _;
+    projection.clipGeometry = function(_) {
+      if (!arguments.length) return clip.geometry();
+      clip = d3_geo_clipGeometry(_);
       return projection;
     };
     projection.scale = function(_) {

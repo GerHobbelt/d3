@@ -1,6 +1,7 @@
 // TODO d3_geo_clip needs to use smarter sorting of points around the clip
 // edge; right now it sorts them by azimuth relative to [180°, 0], which works
 // for many cases, but not all.
+// TODO support multiple segments.
 function d3_geo_clipLineSegment(a, b) {
   var cλ0 = a[0] * d3_radians,
       cλ1 = b[0] * d3_radians,
@@ -10,7 +11,7 @@ function d3_geo_clipLineSegment(a, b) {
       cφ1 = b[1] * d3_radians,
       t;
 
-  // Ensure λ0 ≤ λ1.
+  // Ensure cλ0 ≤ cλ1.
   if (δcλ < 0) t = cλ0, cλ0 = cλ1, cλ1 = t, t = cφ0, cφ0 = cφ1, cφ1 = t;
 
   // Great-circle normal, [cnx, cny, cnz].
@@ -27,12 +28,7 @@ function d3_geo_clipLineSegment(a, b) {
       m = Math.sqrt(cnx * cnx + cny * cny + cnz * cnz);
   cnx /= m, cny /= m, cnz /= m;
 
-  return d3_geo_clip(pointVisible, clipLine, interpolate);
-
-  function pointVisible() {
-    // TODO hide points that are within ε of the clip line.
-    return true;
-  }
+  return d3_geo_clip(d3_true, clipLine, interpolate);
 
   function clipLine(listener) {
     var λ0, φ0, x0, y0, z0, // previous point
