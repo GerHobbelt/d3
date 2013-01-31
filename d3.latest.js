@@ -129,10 +129,10 @@
     };
   }
   d3.ascending = function(a, b) {
-    return a < b ? -1 : a > b ? 1 : a >= b ? 0 : NaN;
+    return a < b ? -1 : a > b ? 1 : a >= b ? 0 : a >= a || a <= a ? -1 : b >= b || b <= b ? 1 : NaN;
   };
   d3.descending = function(a, b) {
-    return b < a ? -1 : b > a ? 1 : b >= a ? 0 : NaN;
+    return b < a ? -1 : b > a ? 1 : b >= a ? 0 : b >= b || b <= b ? -1 : a >= a || a <= a ? 1 : NaN;
   };
   d3.mean = function(array, f) {
     var n = array.length, a, m = 0, i = -1, j = 0;
@@ -2637,6 +2637,9 @@
         return start + step * i;
       });
     }
+    scale.invert = function(x) {
+      return domain[d3.bisect(range, x) - 1];
+    };
     scale.domain = function(x) {
       if (!arguments.length) return domain;
       domain = [];
@@ -3294,9 +3297,26 @@
   };
   d3.svg.chord = function() {
     var source = d3_source, target = d3_target, radius = d3_svg_chordRadius, startAngle = d3_svg_arcStartAngle, endAngle = d3_svg_arcEndAngle;
+    function dist2(p0, p1) {
+      var x = p1[0] - p0[0];
+      var y = p1[1] - p0[1];
+      return x * x + y * y;
+    }
+    function lerp(p0, t, p1) {
+      return [ (p1[0] - p0[0]) * t, (p1[1] - p0[1]) * t ];
+    }
     function chord(d, i) {
       var s = subgroup(this, source, d, i), t = subgroup(this, target, d, i);
-      return "M" + s.p0 + arc(s.r, s.p1, s.a1 - s.a0) + (equals(s, t) ? curve(s.r, s.p1, s.r, s.p0) : curve(s.r, s.p1, t.r, t.p0) + arc(t.r, t.p1, t.a1 - t.a0) + curve(t.r, t.p1, s.r, s.p0)) + "Z";
+      var c0, c1;
+      var lrp = .66;
+      if (dist2(s.p0, t.p1) > dist2(s.p1, t.p0)) {
+        c0 = lerp([ 0, 0 ], lrp, s.p0);
+        c1 = lerp([ 0, 0 ], lrp, t.p1);
+      } else {
+        c0 = lerp([ 0, 0 ], lrp, s.p1);
+        c1 = lerp([ 0, 0 ], lrp, t.p0);
+      }
+      return "M" + s.p0 + arc(s.r, s.p1, s.a1 - s.a0) + (equals(s, t) ? curve(s.p1, c0, c1, s.p0) : curve(s.p1, c0, c1, t.p0) + arc(t.r, t.p1, t.a1 - t.a0) + curve(t.p1, c1, c0, s.p0)) + "Z";
     }
     function subgroup(self, f, d, i) {
       var subgroup = f.call(self, d, i), r = radius.call(self, subgroup, i), a0 = startAngle.call(self, subgroup, i) + d3_svg_arcOffset, a1 = endAngle.call(self, subgroup, i) + d3_svg_arcOffset;
@@ -3314,8 +3334,8 @@
     function arc(r, p, a) {
       return "A" + r + "," + r + " 0 " + +(a > π) + ",1 " + p;
     }
-    function curve(r0, p0, r1, p1) {
-      return "Q 0,0 " + p1;
+    function curve(p0, c0, c1, p1) {
+      return "C " + c0 + " " + c1 + " " + p1;
     }
     chord.radius = function(v) {
       if (!arguments.length) return radius;
@@ -3967,6 +3987,492 @@
     sw: "nesw-resize"
   };
   var d3_svg_brushResizes = [ [ "n", "e", "s", "w", "nw", "ne", "se", "sw" ], [ "e", "w" ], [ "n", "s" ], [] ];
+  d3.raphael = function(paper) {
+    var root = new D3RaphaelRoot(paper);
+    return d3_raphael_selection([ [ root.paper ] ], root);
+  };
+  function throw_raphael_not_supported() {
+    console.error("Not Supported!");
+    throw "Not Supported!";
+  }
+  function d3_raphael_pathArrayToString(pa) {
+    var ret = "";
+    for (var i = 0; i < pa.length; i++) {
+      var p = pa[i];
+      ret += p[0];
+      if (p[1]) ret += p[1].join(",");
+    }
+    return ret;
+  }
+  function d3_raphael_functify(f) {
+    return typeof f === "function" ? f : function() {
+      return f;
+    };
+  }
+  if (typeof Raphael !== "undefined") {
+    var ruleCache = {};
+    function d3_raphael_getCSSRule(ruleName) {
+      ruleName = ruleName.toLowerCase();
+      if (ruleCache[ruleName] !== undefined) {
+        return ruleCache[ruleName];
+      }
+      if (document.styleSheets) {
+        for (var i = 0; i < document.styleSheets.length; i++) {
+          var styleSheet = document.styleSheets[i];
+          var ii = 0;
+          var cssRule = false;
+          do {
+            if (styleSheet.cssRules) {
+              cssRule = styleSheet.cssRules[ii];
+            } else {
+              cssRule = styleSheet.rules[ii];
+            }
+            if (cssRule) {
+              if (cssRule.selectorText.toLowerCase() == ruleName) {
+                return ruleCache[ruleName] = cssRule;
+              }
+            }
+            ii++;
+          } while (cssRule);
+        }
+      }
+      return ruleCache[ruleName] = false;
+    }
+    function d3_raphael_getCSSAttributes(selector) {
+      var rules = d3_raphael_getCSSRule(selector), attributes = {};
+      if (!rules) return false;
+      rules = rules.style.cssText.split(";");
+      for (var i = 0; i < rules.length; i++) {
+        var rule = rules[i].split(":");
+        if (rule[0] !== undefined && rule[1] !== undefined) var key = rule[0].replace(" ", ""), value = rule[1].replace(" ", "");
+        attributes[key] = value;
+      }
+      return attributes;
+    }
+    function d3_raphael_addClassesToClassName(className, addClass) {
+      var addClasses = addClass.split(" ");
+      var setClass = " " + className + " ";
+      for (var i = -1, m = addClasses.length; ++i < m; ) {
+        if (!~setClass.indexOf(" " + addClasses[i] + " ")) {
+          setClass += addClasses[i] + " ";
+        }
+      }
+      return setClass.slice(1, -1);
+    }
+    Raphael.st.addClass = function(addClass, parentSelector) {
+      if (Raphael.svg) {
+        for (var i = 0; i < this.length; i++) {
+          this[i].addClass(addClass);
+        }
+      } else {
+        var sel = "." + addClass;
+        sel = parentSelector ? parentSelector + " " + sel : sel;
+        var attributes = d3_raphael_getCSSAttributes(sel);
+        for (var i = 0; i < this.length; i++) {
+          this[i].attr(attributes);
+          this[i].node.className = d3_raphael_addClassesToClassName(this[i].node.className, addClass);
+        }
+      }
+    };
+    Raphael.el.addClass = function(addClass, parentSelector) {
+      if (Raphael.svg) {
+        var cssClass = this.node.getAttribute("class") !== null ? this.node.getAttribute("class") + " " + addClass : addClass;
+        this.node.setAttribute("class", cssClass);
+      } else {
+        var sel = "." + addClass;
+        sel = parentSelector ? parentSelector + " " + sel : sel;
+        var attributes = d3_raphael_getCSSAttributes(sel);
+        this.attr(attributes);
+        this.node.className = d3_raphael_addClassesToClassName(this.node.className, addClass);
+      }
+    };
+  }
+  if (typeof Raphael !== "undefined") {
+    function d3_raphael_addCustomAttributes(paper) {
+      paper.ca.d = function(path) {
+        return {
+          path: path
+        };
+      };
+    }
+  }
+  function d3_raphael_selector(s, d3_paper, first) {
+    var found = [];
+    var selectorParts = s.split(".");
+    var type = null;
+    if (selectorParts[0] === "") {
+      selectorParts.shift();
+    } else {
+      type = selectorParts.shift();
+    }
+    var requiredClasses = selectorParts;
+    var isMatch = function(el) {
+      if (type && el.type !== type) {
+        return false;
+      }
+      if (requiredClasses.length > 0) {
+        var classAttribute = el.node.getAttribute("class");
+        var elClassIndex = {};
+        if (classAttribute) {
+          var elClasses = classAttribute.split(" ");
+          for (var i = -1, m = elClasses.length; ++i < m; ) {
+            elClassIndex[elClasses[i]] = true;
+          }
+        }
+        for (var i = -1, m = requiredClasses.length; ++i < m; ) {
+          if (!elClassIndex[requiredClasses[i]]) {
+            return false;
+          }
+        }
+      }
+      return true;
+    };
+    d3_paper.forEach(function(el) {
+      if (isMatch(el)) {
+        found.push(el);
+        return !first;
+      }
+    });
+    return found;
+  }
+  var D3RaphaelRoot = function(paper) {
+    d3_raphael_addCustomAttributes(paper);
+    this.paper = paper;
+  };
+  D3RaphaelRoot.prototype.select = function(s) {
+    return d3_raphael_selection([ d3_raphael_selector(s, this, true) ], this);
+  };
+  D3RaphaelRoot.prototype.selectAll = function(s) {
+    return d3_raphael_selection([ d3_raphael_selector(s, this, false) ], this);
+  };
+  D3RaphaelRoot.prototype.create = function(type) {
+    if (d3_raphael_paperShapes.indexOf(type) < 0) throw "Unsupported shape: " + type;
+    return this[type]();
+  };
+  var d3_raphael_paperShapes = [ "circle", "ellipse", "rect", "text", "path" ];
+  var d3_raphael_paperDelegateMethods = d3_raphael_paperShapes.concat([ "forEach" ]);
+  function d3_raphael_rootToPaperDelegate(method_name) {
+    return function() {
+      return this.paper[method_name].apply(this.paper, arguments);
+    };
+  }
+  for (var i = 0; i < d3_raphael_paperDelegateMethods.length; i++) {
+    var method_name = d3_raphael_paperDelegateMethods[i];
+    D3RaphaelRoot.prototype[method_name] = d3_raphael_rootToPaperDelegate(method_name);
+  }
+  var d3_raphael_selection = function(groups, d3_raphael_root) {
+    d3_arraySubclass(groups, d3_raphael_selectionPrototype);
+    groups.root = d3_raphael_root;
+    return groups;
+  };
+  var d3_raphael_selectionPrototype = [];
+  d3_raphael_selectionPrototype.data = function(value, key_function) {
+    var old_d3_selection_enter = d3_selection_enter, old_d3_selection = d3_selection;
+    var selection = this;
+    d3_selection_enter = function(elems) {
+      return d3_raphael_enterSelection(elems, selection.root);
+    };
+    d3_selection = function(elems) {
+      return d3_raphael_selection(elems, selection.root);
+    };
+    var update = d3_selectionPrototype.data.call(this, value, key_function);
+    d3_selection_enter = old_d3_selection_enter;
+    d3_selection = old_d3_selection;
+    var enter = update.enter;
+    update.enter = function() {
+      return enter();
+    };
+    var exit = update.exit;
+    update.exit = function() {
+      return exit();
+    };
+    return update;
+  };
+  d3_raphael_selectionPrototype.append = function(type) {
+    var groups = [], group, nodeData;
+    for (var j = 0; j < this.length; j++) {
+      groups.push(group = []);
+      for (var i = 0; i < this[j].length; i++) {
+        if (nodeData = this[j][i]) {
+          var newNode = this.root.create(type);
+          if ("__data__" in nodeData) newNode.__data__ = nodeData.__data__;
+          group.push(newNode);
+        } else {
+          group.push(null);
+        }
+      }
+    }
+    return d3_raphael_selection(groups, this.root);
+  };
+  d3_raphael_selectionPrototype.attr = function(name, value) {
+    var valueF = typeof value === "function" ? value : function() {
+      return value;
+    };
+    this.each(function() {
+      var value = valueF.apply(this, arguments);
+      switch (name) {
+       case "class":
+        this.addClass(value);
+        break;
+
+       default:
+        this.attr(name, value);
+      }
+    });
+    return this;
+  };
+  d3_raphael_selectionPrototype.classed = function(name, add) {
+    var addF = d3_raphael_functify(add);
+    this.each(function() {
+      if (addF.apply(this, arguments)) this.addClass(name); else throw_raphael_not_supported();
+    });
+    return this;
+  };
+  d3_raphael_selectionPrototype.text = function(value) {
+    var valueF = d3_raphael_functify(value);
+    this.each(function() {
+      this.attr("text", valueF.apply(this, arguments));
+    });
+    return this;
+  };
+  var d3_raphael_supported_event_types = [ "click", "dblclick", "mousedown", "mousemove", "mouseout", "mouseover", "mouseup", "touchcancel", "touchend", "touchmove", "touchstart" ];
+  d3_raphael_selectionPrototype.on = function(type, handler, capture) {
+    if (capture) throw_raphael_not_supported();
+    if (!~d3_raphael_supported_event_types.indexOf(type)) {
+      throw_raphael_not_supported();
+    }
+    var name = "__d34r_on" + type, i = type.indexOf(".");
+    if (i > 0) type = type.substring(0, i);
+    if (arguments.length < 2) return (i = this.node[name]) && i._;
+    return this.each(function(d, i) {
+      var raphaelElement = this, o = raphaelElement[name];
+      if (o) {
+        raphaelElement["un" + type](o);
+        delete raphaelElement[name];
+      }
+      if (handler) {
+        var wrappedHandler = function(event) {
+          var o = d3.event;
+          d3.event = event;
+          try {
+            handler.call(raphaelElement, raphaelElement.__data__, i);
+          } finally {
+            d3.event = o;
+          }
+        };
+        raphaelElement[type](wrappedHandler);
+        wrappedHandler._ = handler;
+        raphaelElement[name] = wrappedHandler;
+      }
+    });
+  };
+  d3_raphael_selectionPrototype.select = function(s) {
+    return this.root.select(s);
+  };
+  d3_raphael_selectionPrototype.selectAll = function(s) {
+    return this.root.selectAll(s);
+  };
+  d3_raphael_selectionPrototype.each = d3_selectionPrototype.each;
+  d3_raphael_selectionPrototype.empty = d3_selectionPrototype.empty;
+  d3_raphael_selectionPrototype.node = d3_selectionPrototype.node;
+  d3_raphael_selectionPrototype.property = d3_selectionPrototype.property;
+  d3_raphael_selectionPrototype.call = d3_selectionPrototype.call;
+  d3_raphael_selectionPrototype.datum = d3_selectionPrototype.datum;
+  d3_raphael_selectionPrototype.remove = function() {
+    return this.each(function() {
+      this.remove();
+    });
+  };
+  d3_raphael_selectionPrototype.transition = function(shouldTransition) {
+    if (shouldTransition === false) return this;
+    var old_d3_transitionPrototype = d3_transitionPrototype;
+    d3_transitionPrototype = d3_raphael_transitionPrototype;
+    var transition = d3_selectionPrototype.transition.call(this);
+    d3_transitionPrototype = old_d3_transitionPrototype;
+    return transition;
+  };
+  d3_raphael_selectionPrototype.style = throw_raphael_not_supported;
+  d3_raphael_selectionPrototype.html = throw_raphael_not_supported;
+  d3_raphael_selectionPrototype.insert = throw_raphael_not_supported;
+  d3_raphael_selectionPrototype.filter = throw_raphael_not_supported;
+  d3_raphael_selectionPrototype.sort = throw_raphael_not_supported;
+  d3_raphael_selectionPrototype.order = throw_raphael_not_supported;
+  function d3_raphael_enterSelection(groups, d3_raphael_root) {
+    d3_arraySubclass(groups, d3_raphael_enterSelectionPrototype);
+    groups.root = d3_raphael_root;
+    return groups;
+  }
+  var d3_raphael_enterSelectionPrototype = [];
+  d3_raphael_enterSelectionPrototype.append = function(type) {
+    if (d3_raphael_paperShapes.indexOf(type) < 0) throw TypeError("Type Not Supported");
+    var groups = [], group, upgroup, nodeData;
+    for (var j = 0; j < this.length; j++) {
+      groups.push(group = []);
+      upgroup = this[j].update;
+      for (var i = 0; i < this[j].length; i++) {
+        if (nodeData = this[j][i]) {
+          var newNode = this.root[type]();
+          if ("__data__" in nodeData) newNode.__data__ = nodeData.__data__;
+          group.push(newNode);
+          upgroup[i] = newNode;
+        } else {
+          group.push(null);
+        }
+      }
+    }
+    return d3_raphael_selection(groups, this.root);
+  };
+  d3_raphael_enterSelectionPrototype.empty = d3_selectionPrototype.empty;
+  d3_raphael_enterSelectionPrototype.node = d3_selectionPrototype.node;
+  d3_raphael_enterSelectionPrototype.insert = throw_raphael_not_supported;
+  var d3_raphael_transitionPrototype = [];
+  d3_raphael_transitionPrototype.attr = d3_transitionPrototype.attr;
+  d3_raphael_transitionPrototype.attrTween = function(name, tween) {
+    function attrTween(d, i) {
+      var f = tween.call(this, d, i, this.attr(name));
+      return f === d3_transitionRemove ? (this.attr(name, null), null) : f && function(t) {
+        this.attr(name, f(t));
+      };
+    }
+    return this.tween("attr." + name, attrTween);
+  };
+  d3_raphael_transitionPrototype.delay = d3_transitionPrototype.duration;
+  d3_raphael_transitionPrototype.duration = d3_transitionPrototype.duration;
+  d3_raphael_transitionPrototype.duration = d3_transitionPrototype.duration;
+  d3_raphael_transitionPrototype.text = d3_raphael_selectionPrototype.text;
+  d3_raphael_transitionPrototype.remove = d3_transitionPrototype.remove;
+  d3_raphael_transitionPrototype.style = throw_raphael_not_supported;
+  d3_raphael_transitionPrototype.styleTween = throw_raphael_not_supported;
+  d3_raphael_transitionPrototype.select = throw_raphael_not_supported;
+  d3_raphael_transitionPrototype.selectAll = throw_raphael_not_supported;
+  if (typeof Sizzle === "function") {
+    var d3_raphael_obj_from_dom = function(domElems, d3_paper) {
+      var elemCount = domElems.length;
+      var domElemIndex = {};
+      for (var i = -1; ++i < elemCount; ) {
+        domElemIndex[domElems[i].raphaelid] = true;
+      }
+      var raphaelElems = [];
+      var bot = d3_paper.paper.bottom;
+      while (bot && raphaelElems.length < elemCount) {
+        if (domElemIndex[bot.id]) {
+          raphaelElems.push(bot);
+        }
+        bot = bot.next;
+      }
+      return raphaelElems;
+    };
+    D3RaphaelRoot.prototype.select = function(s) {
+      return d3_raphael_selection([ d3_raphael_obj_from_dom(Sizzle(s, this.paper.canvas)[0], this) ], this);
+    };
+    D3RaphaelRoot.prototype.selectAll = function(s) {
+      return d3_raphael_selection([ d3_raphael_obj_from_dom(Sizzle.uniqueSort(Sizzle(s, this.paper.canvas)), this) ], this);
+    };
+  }
+  d3.raphael.axis = function() {
+    var scale = d3.scale.linear(), orient = "bottom", tickMajorSize = 6, tickMinorSize = 6, tickEndSize = 6, tickPadding = 3, tickArguments_ = [ 10 ], tickValues = null, tickFormat_, tickSubdivide = 0;
+    var top = 0, left = 0;
+    var classPrefix = "";
+    function axis(selection) {
+      selection.each(function() {
+        var g = selection.root.select("");
+        var ticks = tickValues == null ? scale.ticks ? scale.ticks.apply(scale, tickArguments_) : scale.domain() : tickValues, tickFormat = tickFormat_ == null ? scale.tickFormat ? scale.tickFormat.apply(scale, tickArguments_) : String : tickFormat_;
+        var tick = g.selectAll("g").data(ticks, String), tickEnter = tick.enter().append("path").classed(classPrefix + "path", true);
+        var text = tick.append("text").attr("text", tickFormat);
+        var range = d3_scaleRange(scale), path = g.selectAll(".domain").data([ 0 ]), pathEnter = path.enter().append("path").classed(classPrefix + "pathdomain", true);
+        var scale1 = scale.copy(), scale0 = this.__chart__ || scale1;
+        this.__chart__ = scale1;
+        switch (orient) {
+         case "top":
+          {
+            tick.attr("path", function(d) {
+              return d3_raphael_pathArrayToString([ [ "M", [ left + scale1(d), top ] ], [ "l", [ 0, -tickMajorSize ] ] ]);
+            });
+            text.attr("x", function(d) {
+              return scale1(d) + left + (scale1.rangeBand ? scale1.rangeBand() / 2 : 0);
+            }).attr("y", top - 7).attr("text-anchor", "middle");
+            path.attr("path", "M" + (range[0] + left) + "," + (-tickEndSize + top) + "v" + tickEndSize + "H" + (range[1] + left) + "v" + -tickEndSize);
+            break;
+          }
+
+         case "bottom":
+          {
+            tick.attr("path", function(d) {
+              return d3_raphael_pathArrayToString([ [ "M", [ left + scale1(d), top ] ], [ "l", [ 0, tickMajorSize ] ] ]);
+            });
+            text.attr("x", function(d) {
+              return scale1(d) + left + (scale1.rangeBand ? scale1.rangeBand() / 2 : 0);
+            }).attr("y", top + tickMajorSize + 7).attr("text-anchor", "middle");
+            path.attr("path", "M" + (range[0] + left) + "," + (tickEndSize + top) + "v" + -tickEndSize + "H" + (range[1] + left) + "v" + tickEndSize);
+            break;
+          }
+
+         case "left":
+          {
+            tick.attr("path", function(d) {
+              return d3_raphael_pathArrayToString([ [ "M", [ left, scale1(d) + top ] ], [ "l", [ -tickMajorSize, 0 ] ] ]);
+            });
+            path.attr("path", "M" + (-tickEndSize + left) + "," + (range[0] + top) + "h" + tickEndSize + "V" + (range[1] + top) + "h" + -tickEndSize);
+            text.attr("x", left - 5).attr("y", function(d) {
+              return scale1(d) + top + (scale1.rangeBand ? scale1.rangeBand() / 2 : 0);
+            }).attr("text-anchor", "end");
+            break;
+          }
+
+         default:
+          {
+            throw "Unsupported " + orient;
+          }
+        }
+      });
+    }
+    axis.scale = function(x) {
+      if (!arguments.length) return scale;
+      scale = x;
+      return axis;
+    };
+    axis.orient = function(x) {
+      if (!arguments.length) return orient;
+      orient = x;
+      return axis;
+    };
+    axis.ticks = function() {
+      if (!arguments.length) return tickArguments_;
+      tickArguments_ = arguments;
+      return axis;
+    };
+    axis.tickFormat = function(x) {
+      if (!arguments.length) return tickFormat_;
+      tickFormat_ = x;
+      return axis;
+    };
+    axis.tickSize = function(x, y, z) {
+      if (!arguments.length) return tickMajorSize;
+      var n = arguments.length - 1;
+      tickMajorSize = +x;
+      tickMinorSize = n > 1 ? +y : tickMajorSize;
+      tickEndSize = n > 0 ? +arguments[n] : tickMajorSize;
+      return axis;
+    };
+    axis.tickValues = function(x) {
+      if (!arguments.length) return tickValues;
+      tickValues = x;
+      return axis;
+    };
+    axis.top = function(val) {
+      if (typeof val === "undefined") return top; else top = val;
+      return this;
+    };
+    axis.left = function(val) {
+      if (typeof val === "undefined") return left; else left = val;
+      return this;
+    };
+    axis.classPrefix = function(val) {
+      if (typeof val === "undefined") return classPrefix; else classPrefix = val;
+      return this;
+    };
+    return axis;
+  };
   d3.behavior = {};
   d3.behavior.drag = function() {
     var event = d3_eventDispatch(drag, "drag", "dragstart", "dragend"), origin = null;
@@ -4229,72 +4735,141 @@
     return sharedNode;
   }
   d3.layout.chord = function() {
-    var chord = {}, chords, groups, matrix, n, padding = 0, sortGroups, sortSubgroups, sortChords;
+    var chord = {}, chords, groups, matrix, relationships, n, padding = 0, sortGroups, sortSubgroups, sortChords;
     function relayout() {
       var subgroups = {}, groupSums = [], groupIndex = d3.range(n), subgroupIndex = [], k, x, x0, i, j;
       chords = [];
       groups = [];
-      k = 0, i = -1;
-      while (++i < n) {
-        x = 0, j = -1;
-        while (++j < n) {
-          x += matrix[i][j];
+      if (matrix) {
+        k = 0, i = -1;
+        while (++i < n) {
+          x = 0, j = -1;
+          while (++j < n) {
+            x += matrix[i][j];
+          }
+          groupSums.push(x);
+          subgroupIndex.push(d3.range(n));
+          k += x;
         }
-        groupSums.push(x);
-        subgroupIndex.push(d3.range(n));
-        k += x;
-      }
-      if (sortGroups) {
-        groupIndex.sort(function(a, b) {
-          return sortGroups(groupSums[a], groupSums[b]);
-        });
-      }
-      if (sortSubgroups) {
-        subgroupIndex.forEach(function(d, i) {
-          d.sort(function(a, b) {
-            return sortSubgroups(matrix[i][a], matrix[i][b]);
+        if (sortGroups) {
+          groupIndex.sort(function(a, b) {
+            return sortGroups(groupSums[a], groupSums[b]);
           });
-        });
-      }
-      k = (2 * π - padding * n) / k;
-      x = 0, i = -1;
-      while (++i < n) {
-        x0 = x, j = -1;
-        while (++j < n) {
-          var di = groupIndex[i], dj = subgroupIndex[di][j], v = matrix[di][dj], a0 = x, a1 = x += v * k;
-          subgroups[di + "-" + dj] = {
-            index: di,
-            subindex: dj,
-            startAngle: a0,
-            endAngle: a1,
-            value: v
-          };
         }
-        groups[di] = {
-          index: di,
-          startAngle: x0,
-          endAngle: x,
-          value: (x - x0) / k
-        };
-        x += padding;
-      }
-      i = -1;
-      while (++i < n) {
-        j = i - 1;
-        while (++j < n) {
-          var source = subgroups[i + "-" + j], target = subgroups[j + "-" + i];
-          if (source.value || target.value) {
-            chords.push(source.value < target.value ? {
-              source: target,
-              target: source
-            } : {
-              source: source,
-              target: target
+        if (sortSubgroups) {
+          subgroupIndex.forEach(function(d, i) {
+            d.sort(function(a, b) {
+              return sortSubgroups(matrix[i][a], matrix[i][b]);
             });
+          });
+        }
+        k = (2 * π - padding * n) / k;
+        x = 0, i = -1;
+        while (++i < n) {
+          x0 = x, j = -1;
+          while (++j < n) {
+            var di = groupIndex[i], dj = subgroupIndex[di][j], v = matrix[di][dj], a0 = x, a1 = x += v * k;
+            subgroups[di + "-" + dj] = {
+              index: di,
+              subindex: dj,
+              startAngle: a0,
+              endAngle: a1,
+              value: v
+            };
+          }
+          groups[di] = {
+            index: di,
+            startAngle: x0,
+            endAngle: x,
+            value: (x - x0) / k
+          };
+          x += padding;
+        }
+        i = -1;
+        while (++i < n) {
+          j = i - 1;
+          while (++j < n) {
+            var source = subgroups[i + "-" + j], target = subgroups[j + "-" + i];
+            if (source.value || target.value) {
+              chords.push(source.value < target.value ? {
+                source: target,
+                target: source
+              } : {
+                source: source,
+                target: target
+              });
+            }
+          }
+        }
+        if (sortChords) resort();
+      } else if (relationships) {
+        k = 0;
+        relationships.forEach(function(rel) {
+          x = rel.value;
+          groupSums[rel.source] = groupSums[rel.source] || 0 + x;
+          k += x;
+          if (rel.source !== rel.target) {
+            k += x;
+            groupSums[rel.target] = groupSums[rel.target] || 0 + x;
+          }
+        });
+        var n0 = 0;
+        groupSums.forEach(function(sum) {
+          if (sum) n0++;
+        });
+        k = (2 * Math.PI - padding * n0) / k;
+        var gp, chd;
+        x = 0;
+        i = -1;
+        while (++i < n) {
+          gp = {
+            index: i,
+            startAngle: x,
+            value: 0
+          };
+          j = 0;
+          relationships.forEach(function(rel) {
+            if (rel.source !== i || rel.value === 0) return;
+            gp.value += rel.value;
+            chd = subgroups[i + "-" + rel.target] || (subgroups[i + "-" + rel.target] = {});
+            chd.source = {
+              index: i,
+              subindex: j,
+              startAngle: x,
+              endAngle: x += rel.value * k,
+              value: rel.value
+            };
+            if (rel.target === i) chd.target = chd.source;
+            j++;
+          });
+          relationships.forEach(function(rel) {
+            if (rel.source === i) return;
+            if (rel.target !== i || rel.value === 0) return;
+            gp.value += rel.value;
+            chd = subgroups[rel.source + "-" + i] || (subgroups[rel.source + "-" + i] = {});
+            chd.target = {
+              index: i,
+              subindex: j,
+              startAngle: x,
+              endAngle: x += rel.value * k,
+              value: rel.value
+            };
+            j++;
+          });
+          if (!gp.value) continue;
+          gp.endAngle = x;
+          groups.push(gp);
+          x += padding;
+        }
+        i = -1;
+        while (++i < n) {
+          j = -1;
+          while (++j < n) {
+            gp = subgroups[i + "-" + j];
+            if (gp) chords.push(gp);
           }
         }
       }
-      if (sortChords) resort();
     }
     function resort() {
       chords.sort(function(a, b) {
@@ -4305,6 +4880,26 @@
       if (!arguments.length) return matrix;
       n = (matrix = x) && matrix.length;
       chords = groups = null;
+      return chord;
+    };
+    chord.relationships = function(x) {
+      if (!arguments.length) return relationships;
+      relationships = x;
+      chords = groups = null;
+      relationships.forEach(function(rel) {
+        n = Math.max(n || 0, rel.source + 1, rel.target + 1);
+      });
+      return chord;
+    };
+    chord.addRelationship = function(sourceIndex, targetIndex, value) {
+      relationships = relationships || [];
+      relationships.push({
+        source: sourceIndex,
+        target: targetIndex,
+        value: value
+      });
+      chords = groups = null;
+      n = Math.max(n || 0, sourceIndex + 1, targetIndex + 1);
       return chord;
     };
     chord.padding = function(x) {
@@ -4341,6 +4936,164 @@
     };
     return chord;
   };
+  d3.layout.chordratio = function() {
+    var chord = {}, chords, groups, subgroups, matrix, n, m, padding = 0, normalize = 0, sortGroups, sortSubgroups, sortChords;
+    function relayout() {
+      var subgroupMap = {}, groupSums = [], groupIndex = d3.range(n), subgroupIndex = [], k, x, x0, i, j;
+      chords = [];
+      subgroups = [];
+      groups = [];
+      k = 0, i = -1;
+      while (++i < n) {
+        x = 0, j = -1;
+        while (++j < m) {
+          x += matrix[i][j];
+        }
+        groupSums.push(x);
+        subgroupIndex.push(d3.range(m));
+        k += x;
+      }
+      if (sortGroups) {
+        groupIndex.sort(function(a, b) {
+          return sortGroups(groupSums[a], groupSums[b]);
+        });
+      }
+      if (sortSubgroups) {
+        subgroupIndex.forEach(function(d, i) {
+          d.sort(function(a, b) {
+            return sortSubgroups(matrix[i][a], matrix[i][b]);
+          });
+        });
+      }
+      var scale = [];
+      if (normalize) {
+        i = -1;
+        while (++i < n) {
+          scale[i] = groupSums[i] > 0 ? 1 / groupSums[i] : 1;
+        }
+        k = (2 * Math.PI - padding * n) / n;
+      } else {
+        i = -1;
+        while (++i < n) {
+          scale[i] = 1;
+        }
+        k = (2 * Math.PI - padding * n) / k;
+      }
+      x = 0, i = -1;
+      while (++i < n) {
+        x0 = x, j = -1;
+        while (++j < m) {
+          var di = groupIndex[i], dj = subgroupIndex[di][j], v = matrix[di][dj];
+          if (v > 0) {
+            var a0 = x, a1 = x += v * k * scale[di];
+            subgroups.push(subgroupMap[di + "." + dj] = {
+              index: di,
+              subindex: dj,
+              startAngle: a0,
+              endAngle: a1,
+              value: v
+            });
+          }
+        }
+        if (normalize && groupSums[di] == 0) {
+          x += k;
+        }
+        groups[di] = {
+          index: di,
+          startAngle: x0,
+          endAngle: x,
+          value: groupSums[di] * scale[di]
+        };
+        x += padding;
+      }
+      j = -1;
+      while (++j < m) {
+        var maxItem = -1;
+        var maxValue = 0;
+        var items = [];
+        i = -1;
+        while (++i < n) {
+          if (subgroupMap.hasOwnProperty(i + "." + j)) {
+            var item = subgroupMap[i + "." + j];
+            if (item.value > 0) {
+              if (maxValue < item.value) {
+                maxValue = item.value;
+                maxItem = items.length;
+              }
+              items.push(item);
+            }
+          }
+        }
+        if (items.length > 1) {
+          var source = items[maxItem];
+          items.splice(maxItem, 1);
+          i = -1;
+          while (++i < items.length) {
+            chords.push({
+              source: source,
+              target: items[i]
+            });
+          }
+        }
+      }
+      if (sortChords) resort();
+    }
+    function resort() {
+      chords.sort(function(a, b) {
+        return sortChords((a.source.value + a.target.value) / 2, (b.source.value + b.target.value) / 2);
+      });
+    }
+    chord.matrix = function(x) {
+      if (!arguments.length) return matrix;
+      n = (matrix = x) && matrix.length;
+      m = matrix && matrix.length > 0 && matrix[0].length;
+      chords = groups = null;
+      return chord;
+    };
+    chord.padding = function(x) {
+      if (!arguments.length) return padding;
+      padding = x;
+      chords = subgroups = groups = null;
+      return chord;
+    };
+    chord.normalize = function(x) {
+      if (!arguments.length) return normalize;
+      normalize = x;
+      chords = groups = null;
+      return chord;
+    };
+    chord.sortGroups = function(x) {
+      if (!arguments.length) return sortGroups;
+      sortGroups = x;
+      chords = subgroups = groups = null;
+      return chord;
+    };
+    chord.sortSubgroups = function(x) {
+      if (!arguments.length) return sortSubgroups;
+      sortSubgroups = x;
+      chords = subgroups = null;
+      return chord;
+    };
+    chord.sortChords = function(x) {
+      if (!arguments.length) return sortChords;
+      sortChords = x;
+      if (chords) resort();
+      return chord;
+    };
+    chord.chords = function() {
+      if (!chords) relayout();
+      return chords;
+    };
+    chord.groups = function() {
+      if (!groups) relayout();
+      return groups;
+    };
+    chord.subgroups = function() {
+      if (!subgroups) relayout();
+      return subgroups;
+    };
+    return chord;
+  };
   d3.layout.force = function() {
     var force = {}, event = d3.dispatch("start", "tick", "end"), size = [ 1, 1 ], drag, alpha, friction = d3_functor(.9), linkDistance = d3_layout_forceLinkDistance, linkStrength = d3_layout_forceLinkStrength, charge = d3_functor(-30), gravity = .1, theta = d3_functor(.8), interval, nodes = [], links = [], distances, strengths, epsilon = .1, charges;
     function repulse(node, i) {
@@ -4362,6 +5115,12 @@
         return false;
       };
     }
+    field = function(x, y, w, h) {
+      return {
+        x: w / 2 - x,
+        y: h / 2 - y
+      };
+    };
     force.tick = function() {
       if ((alpha *= .99) < .005) {
         event.end({
@@ -4388,13 +5147,13 @@
         }
       }
       if (k = alpha * gravity) {
-        x = size[0] / 2;
-        y = size[1] / 2;
-        i = -1;
-        while (++i < n) {
+        x = size[0];
+        y = size[1];
+        for (i = 0; i < n; ++i) {
           o = nodes[i];
-          o.x += (x - o.x) * k;
-          o.y += (y - o.y) * k;
+          f = field(o.x, o.y, x, y);
+          o.x += f.x * k;
+          o.y += f.y * k;
         }
       }
       f = 0;
@@ -4470,6 +5229,11 @@
     force.gravity = function(x) {
       if (!arguments.length) return gravity;
       gravity = +x;
+      return force;
+    };
+    force.field = function(f) {
+      if (!arguments.length) return field;
+      field = f;
       return force;
     };
     force.theta = function(x) {
@@ -4552,7 +5316,8 @@
       this.on("mouseover.force", d3_layout_forceMouseover).on("mouseout.force", d3_layout_forceMouseout).call(drag);
     };
     function dragmove(d) {
-      d.px = d3.event.x, d.py = d3.event.y;
+      d.px = d3.event.x;
+      d.py = d3.event.y;
       force.resume();
     }
     return d3.rebind(force, event, "on");
