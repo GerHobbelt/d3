@@ -66,10 +66,11 @@ d3.svg.axis = function() {
         var lineEnter = tickEnter.select("line.tick"),
             lineUpdate = tickUpdate.select("line.tick"),
             text = tick.select("text.tick-text").text(function(d, i) {
-              if (tickFormatExtended_ == null)
+              if (tickFormatExtended_ == null) {
                 return tickFormat(d.value);
-              else
+              } else {
                 return tickFormatExtended_(d, i);
+              }
             }),
             textEnter = tickEnter.select("text.tick-text"),
             textUpdate = tickUpdate.select("text.tick-text");
@@ -77,17 +78,13 @@ d3.svg.axis = function() {
         switch (orient) {
           case "bottom": {
             tickTransform = d3_svg_axisX;
-            subtickEnter.attr("x2", 0).attr("y2", function(d, i) {
-              return +tickMinorSize(d, i);
-            });
-            subtickUpdate.attr("x2", 0).attr("y2", function(d, i) {
-              return +tickMinorSize(d, i);
-            });
-            lineEnter.attr("x2", 0).attr("y2", +tickMajorSize(d, i));
+            subtickEnter.attr("x2", 0).attr("y2", tickMinorSize);
+            subtickUpdate.attr("x2", 0).attr("y2", tickMinorSize);
+            lineEnter.attr("x2", 0).attr("y2", tickMajorSize);
             textEnter.attr("x", 0).attr("y", function(d, i) {
               return Math.max(+tickMajorSize(d, i), 0) + tickPadding;
             });
-            lineUpdate.attr("x2", 0).attr("y2", +tickMajorSize(d, i));
+            lineUpdate.attr("x2", 0).attr("y2", tickMajorSize);
             textUpdate.attr("x", 0).attr("y", function (d, i) {
               return Math.max(+tickMajorSize(d, i), 0) + tickPadding;
             });
@@ -145,13 +142,13 @@ d3.svg.axis = function() {
           }
           case "right": {
             tickTransform = d3_svg_axisY;
-            subtickEnter.attr("x2", +tickMinorSize(d, i));
-            subtickUpdate.attr("x2", +tickMinorSize(d, i)).attr("y2", 0);
-            lineEnter.attr("x2", +tickMajorSize(d, i));
+            subtickEnter.attr("x2", tickMinorSize);
+            subtickUpdate.attr("x2", tickMinorSize).attr("y2", 0);
+            lineEnter.attr("x2", tickMajorSize);
             textEnter.attr("x", function(d, i) {
               return Math.max(+tickMajorSize(d, i), 0) + tickPadding;
             });
-            lineUpdate.attr("x2", +tickMajorSize(d, i)).attr("y2", 0);
+            lineUpdate.attr("x2", tickMajorSize).attr("y2", 0);
             textUpdate.attr("x", function(d, i) {
               return Math.max(+tickMajorSize(d, i), 0) + tickPadding;
             }).attr("y", 0);
