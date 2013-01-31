@@ -62,10 +62,11 @@ d3.svg.axis = function() {
         var lineEnter = tickEnter.select("line.tick"),
             lineUpdate = tickUpdate.select("line.tick"),
             text = tick.select("text.tick-text").text(function(d, i) {
-              if (tickFormatExtended_ == null)
+              if (tickFormatExtended_ == null) {
                 return tickFormat(d.value);
-              else
+              } else {
                 return tickFormatExtended_(d, i);
+              }
             }),
             textEnter = tickEnter.select("text.tick-text"),
             textUpdate = tickUpdate.select("text.tick-text");
@@ -73,12 +74,8 @@ d3.svg.axis = function() {
         switch (orient) {
           case "bottom": {
             tickTransform = d3_svg_axisX;
-            subtickEnter.attr("x2", 0).attr("y2", function(d, i) {
-              return +tickMinorSize(d, i);
-            });
-            subtickUpdate.attr("x2", 0).attr("y2", function(d, i) {
-              return +tickMinorSize(d, i);
-            });
+            subtickEnter.attr("x2", 0).attr("y2", tickMinorSize);
+            subtickUpdate.attr("x2", 0).attr("y2", tickMinorSize);
             lineEnter.attr("x2", 0).attr("y2", tickMajorSize);
             textEnter.attr("x", 0).attr("y", function(d, i) {
               return Math.max(+tickMajorSize(d, i), 0) + tickPadding;
@@ -232,11 +229,11 @@ d3.svg.axis = function() {
     return axis;
   };
 
-  axis.tickSize = function(x, y) {
+  axis.tickSize = function(major, minor) {
     var n = arguments.length;
     if (!n) return [tickMajorSize, tickMinorSize, tickEndSize];
     tickMajorSize = d3_functor(major);
-    tickMinorSize = n > 2 ? d3_functor(minor) : tickMajorSize;
+    tickMinorSize = n > 1 ? d3_functor(minor) : tickMajorSize;
     tickEndSize = d3_functor(arguments[n - 1]);
     return axis;
   };

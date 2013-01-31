@@ -66,6 +66,7 @@ d3.core.js: \
 	src/core/number.js \
 	src/core/sum.js \
 	src/core/quantile.js \
+	src/core/shuffle.js \
 	src/core/transpose.js \
 	src/core/zip.js \
 	src/core/bisect.js \
@@ -210,21 +211,35 @@ d3.layout.js: \
 
 d3.geo.js: \
 	src/geo/geo.js \
-	src/geo/type.js \
+	src/geo/stream.js \
+	src/geo/spherical.js \
+	src/geo/cartesian.js \
+	src/geo/resample.js \
 	src/geo/albers-usa.js \
 	src/geo/albers.js \
 	src/geo/azimuthal-equal-area.js \
 	src/geo/azimuthal-equidistant.js \
 	src/geo/bounds.js \
+	src/geo/centroid.js \
 	src/geo/circle.js \
+	src/geo/clip.js \
+	src/geo/clip-antimeridian.js \
+	src/geo/clip-circle.js \
 	src/geo/compose.js \
 	src/geo/equirectangular.js \
 	src/geo/gnomonic.js \
 	src/geo/graticule.js \
+	src/geo/interpolate.js \
 	src/geo/greatArc.js \
 	src/geo/mercator.js \
 	src/geo/orthographic.js \
 	src/geo/path.js \
+	src/geo/path-buffer.js \
+	src/geo/path-context.js \
+	src/geo/path-area.js \
+	src/geo/path-centroid.js \
+	src/geo/area.js \
+	src/geo/centroid.js \
 	src/geo/projection.js \
 	src/geo/rotation.js \
 	src/geo/stereographic.js \
@@ -235,7 +250,6 @@ d3.dsv.js: \
 	src/dsv/csv.js \
 	src/dsv/tsv.js
 
-TIME_LOCALE_DEPS = 
 ifneq ($(whereis node),)				# only do these when you have NodeJS installed
 TIME_LOCALE_DEPS = src/time/format-$(LOCALE).js
 else
@@ -319,12 +333,14 @@ ifneq ($(whereis node),)				# only do these when you have NodeJS installed
 	LC_TIME=$(LOCALE) locale -ck LC_TIME | node src/locale.js src/time/format-locale.js > $@
 endif
 
-.INTERMEDIATE: \
-	src/core/format-$(LOCALE).js \
-	src/time/format-$(LOCALE).js
+#.INTERMEDIATE: \
+#	src/core/format-$(LOCALE).js \
+#	src/time/format-$(LOCALE).js
 
 clean:
-	rm -f d3*.js 
+	@rm -f d3*.js 
 ifneq ($(whereis node),)				# only do these when you have NodeJS installed
-	rm -f $(PACKAGE_JSON) component.json
+	@rm -f $(PACKAGE_JSON) component.json
 endif
+	@touch src/locale.js
+

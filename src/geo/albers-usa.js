@@ -34,18 +34,6 @@ d3.geo.albersUsa = function() {
         : lower48;
   }
 
-  albersUsa.point = function(coordinates, context) {
-    return projection(coordinates).point(coordinates, context);
-  };
-
-  albersUsa.line = function(coordinates, context) {
-    return projection(coordinates[0]).line(coordinates, context);
-  };
-
-  albersUsa.polygon = function(coordinates, context) {
-    return projection(coordinates[0][0]).polygon(coordinates, context);
-  };
-
   albersUsa.scale = function(x) {
     if (!arguments.length) return lower48.scale();
     lower48.scale(x);

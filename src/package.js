@@ -17,13 +17,11 @@ require("util").puts(JSON.stringify({
     }
   },
   "dependencies": {
-    "jsdom": "0.2.14",
-    "sizzle": "1.1.x"
+    "jsdom": "0.3.4"
   },
   "devDependencies": {
-    "uglify-js2": "2.1.6",
-    "vows": "0.6.x",
-    "canvas": "0.13.0" // for node-canvas example
+    "uglify-js": "2.2.3",
+    "vows": "0.7.0"
   },
   "scripts": {"test": "./node_modules/vows/bin/vows"}
 }, null, 2));

@@ -1,5 +1,6 @@
 _site
 .DS_Store
+*.zip
 /.idea/
 /d3.iml
 

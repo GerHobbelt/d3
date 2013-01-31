@@ -21,7 +21,8 @@ suite.addBatch({
         coordinates: [-63, 18]
       });
       assert.deepEqual(testContext.buffer(), [
-        {type: "point", x: 165, y: 160},
+        {type: "moveTo", x: 165, y: 160},
+        {type: "arc", x: 165, y: 160, r: 4.5}
       ]);
     },
 
@@ -31,9 +32,9 @@ suite.addBatch({
         coordinates: [[-63, 18], [-62, 18], [-62, 17]]
       });
       assert.deepEqual(testContext.buffer(), [
-        {type: "point", x: 165, y: 160},
-        {type: "point", x: 170, y: 160},
-        {type: "point", x: 170, y: 165}
+        {type: "moveTo", x: 165, y: 160}, {type: "arc", x: 165, y: 160, r: 4.5},
+        {type: "moveTo", x: 170, y: 160}, {type: "arc", x: 170, y: 160, r: 4.5},
+        {type: "moveTo", x: 170, y: 165}, {type: "arc", x: 170, y: 165, r: 4.5}
       ]);
     },
 
@@ -68,19 +69,77 @@ suite.addBatch({
       ]);
     },
 
-    "returns null when passed null or undefined": function(path) {
-      assert.isNull(path(null));
-      assert.isNull(path(undefined));
-      assert.isNull(path());
+    "GeometryCollection": function(path) {
+      path({
+        type: "GeometryCollection",
+        geometries: [{type: "Point", coordinates: [0, 0]}]
+      });
+      assert.deepEqual(testContext.buffer(), [
+        {type: "moveTo", x: 480, y: 250}, {type: "arc", x: 480, y: 250, r: 4.5}
+      ]);
     },
-    "bogus type name": function(path) {
-      assert.isNull(path({
-        type: "Feature",
-        geometry: {
-          type: "__proto__",
-          coordinates: [[[-63.03, 18.02], [-63.14, 18.06], [-63.01, 18.07], [-63.03, 18.02]]]
-        },
-      }));
+
+    "FeatureCollection": function(path) {
+      path({
+        type: "FeatureCollection",
+        features: [{type: "Feature", geometry: {type: "Point", coordinates: [0, 0]}}]
+      });
+      assert.deepEqual(testContext.buffer(), [
+        {type: "moveTo", x: 480, y: 250}, {type: "arc", x: 480, y: 250, r: 4.5}
+      ]);
+    },
+
+    "with a null projection": {
+      topic: function() {
+        return d3.geo.path().context(testContext).projection(null);
+      },
+      "Polygon": function(path) {
+        path({
+          type: "Feature",
+          geometry: {
+            type: "Polygon",
+            coordinates: [[[-63, 18], [-62, 18], [-62, 17], [-63, 18]]]
+          },
+        });
+        assert.deepEqual(testContext.buffer(), [
+          {type: "moveTo", x: -63, y: 18},
+          {type: "lineTo", x: -62, y: 18},
+          {type: "lineTo", x: -62, y: 17},
+          {type: "closePath"}
+        ]);
+      }
+    },
+
+    "winding order": {
+      "tiny polygon": function(path) {
+        path({type: "Polygon", coordinates: [[
+          [-0.06904102953339501, 0.346043661846373],
+          [-6.725674252975136e-15, 0.3981303360336475],
+          [-6.742247658534323e-15, -0.08812465346531581],
+          [-0.17301258217724075, -0.12278150669440671],
+          [-0.06904102953339501, 0.346043661846373]]]});
+        assert.equal(testContext.buffer().filter(function(d) { return d.type === "moveTo"; }).length, 1);
+      }
+    },
+
+    "with no context": {
+      topic: function(path) {
+        return d3.geo.path().projection(path.projection());
+      },
+      "returns null when passed null or undefined": function(path) {
+        assert.equal(path(null), null);
+        assert.equal(path(undefined), null);
+        assert.equal(path(), null);
+      },
+      "returns null with bogus type name": function(path) {
+        assert.equal(path({
+          type: "Feature",
+          geometry: {
+            type: "__proto__",
+            coordinates: [[[-63.03, 18.02], [-63.14, 18.06], [-63.01, 18.07], [-63.03, 18.02]]]
+          },
+        }), null);
+      }
     },
 
     "projection": {
@@ -96,6 +155,21 @@ suite.addBatch({
         var path = d3.geo.path(), radius = function() { return 5; };
         assert.strictEqual(path.pointRadius(), 4.5);
         assert.strictEqual(path.pointRadius(radius).pointRadius(), radius);
+      },
+      "coerces point radius to a number": {
+        "constant": function() {
+          var path = d3.geo.path();
+          assert.strictEqual(path.pointRadius("6").pointRadius(), 6);
+        },
+        "function": function(path) {
+          var radius = path.pointRadius();
+          try {
+            path.pointRadius(function() { return "6"; })({type: "Point", coordinates: [0, 0]});
+            assert.strictEqual(testContext.buffer().filter(function(d) { return d.type === "arc"; })[0].r, 6);
+          } finally {
+            path.pointRadius(radius);
+          }
+        }
       }
     },
 
@@ -104,14 +178,30 @@ suite.addBatch({
         return path.area;
       },
       "no holes": function(area) {
-        assert.strictEqual(area({type: "Polygon", coordinates: [[[100, 0], [101, 0], [101, 1], [100, 1], [100, 0]]]}), 25);
+        assert.strictEqual(area({type: "Polygon", coordinates: [[[100, 0], [100, 1], [101, 1], [101, 0], [100, 0]]]}), 25);
       },
       "holes": function(area) {
-        assert.strictEqual(area({type: "Polygon", coordinates: [[[100, 0], [101, 0], [101, 1], [100, 1], [100, 0]],
+        assert.strictEqual(area({type: "Polygon", coordinates: [[[100, 0], [100, 1], [101, 1], [101, 0], [100, 0]],
                                                                 [[100.2, .2], [100.8, .2], [100.8, .8], [100.2, .8], [100.2, .2]]]}), 16);
       },
       "Sphere": function(area) {
         assert.strictEqual(area({type: "Sphere"}), 1620000);
+      },
+      "supports fallback stream": function() {
+        var path = d3.geo.path(),
+            area = path.area({type: "Polygon", coordinates: [[[-122, 37], [-71, 42], [-80, 25], [-122, 37]]]});
+        assert.inDelta(area, 109021.503, 1e-3);
+      }
+    },
+
+    "bounds": {
+      "supports fallback stream": function() {
+        var path = d3.geo.path(),
+            bounds = path.bounds({type: "LineString", coordinates: [[-122, 37], [-74, 40], [-100, 0]]});
+        assert.inDelta(bounds[0][0], -5.1214, 1e-3);
+        assert.inDelta(bounds[0][1], 174.825, 1e-3);
+        assert.inDelta(bounds[1][0], 794.602, 1e-3);
+        assert.inDelta(bounds[1][1], 856.501, 1e-3);
       }
     },
 
@@ -124,7 +214,7 @@ suite.addBatch({
       },
       "MultiPoint": {
         "empty": function(centroid) {
-          assert.isNull(centroid({type: "MultiPoint", coordinates: []}));
+          assert.isUndefined(centroid({type: "MultiPoint", coordinates: []}));
         },
         "single point": function(centroid) {
           assert.deepEqual(centroid({type: "MultiPoint", coordinates: [[0, 0]]}), [480, 250]);
@@ -135,15 +225,15 @@ suite.addBatch({
       },
       "LineString": {
         "empty": function(centroid) {
-          assert.isNull(centroid({type: "LineString", coordinates: []}));
+          assert.isUndefined(centroid({type: "LineString", coordinates: []}));
         },
         "two points": function(centroid) {
           assert.deepEqual(centroid({type: "LineString", coordinates: [[100, 0], [0, 0]]}), [730, 250]);
           assert.deepEqual(centroid({type: "LineString", coordinates: [[0, 0], [100, 0], [101, 0]]}), [732.5, 250]);
         },
         "two points, one unique": function(centroid) {
-          assert.isNull(centroid({type: "LineString", coordinates: [[-122, 37], [-122, 37]]}));
-          assert.isNull(centroid({type: "LineString", coordinates: [[ -74, 40], [ -74, 40]]}));
+          assert.isUndefined(centroid({type: "LineString", coordinates: [[-122, 37], [-122, 37]]}));
+          assert.isUndefined(centroid({type: "LineString", coordinates: [[ -74, 40], [ -74, 40]]}));
         },
         "three points; two unique": function(centroid) {
           assert.deepEqual(centroid({type: "LineString", coordinates: [[-122, 37], [-74, 40], [-74, 40]]}), [-10, 57.5]);
@@ -157,40 +247,16 @@ suite.addBatch({
       },
       "Polygon": {
         "single ring": function(centroid) {
-          assert.deepEqual(centroid({type: "Polygon", coordinates: [[[100, 0], [101, 0], [101, 1], [100, 1], [100, 0]]]}), [982.5, 247.5]);
+          assert.deepEqual(centroid({type: "Polygon", coordinates: [[[100, 0], [100, 1], [101, 1], [101, 0], [100, 0]]]}), [982.5, 247.5]);
         },
         "zero area": function(centroid) {
-          assert.isNull(centroid({type: "Polygon", coordinates: [[[1, 0], [2, 0], [3, 0], [1, 0]]]}));
+          assert.isUndefined(centroid({type: "Polygon", coordinates: [[[1, 0], [2, 0], [3, 0], [1, 0]]]}));
         },
         "two rings, one zero area": function(centroid) {
-          assert.deepEqual(centroid({type: "Polygon", coordinates: [[[100, 0], [101, 0], [101, 1], [100, 1], [100, 0]], [[100.1, 0], [100.2, 0], [100.3, 0], [100.1, 0]]]}), [982.5, 247.5]);
-        },
-        "anticlockwise exterior and interior": function(centroid) {
-          assert.inDelta(centroid({
-            type: "Polygon",
-            coordinates: [
-              [[-2, -2], [2, -2], [2, 2], [-2, 2], [-2, -2]],
-              [[ 0, -1], [1, -1], [1, 1], [ 0, 1], [ 0, -1]]
-            ]
-          }), [479.642857, 250], 1e-6);
-        },
-        "clockwise exterior and interior": function(centroid) {
-          assert.inDelta(centroid({
-            type: "Polygon",
-            coordinates: [
-              [[-2, -2], [2, -2], [2, 2], [-2, 2], [-2, -2]].reverse(),
-              [[ 0, -1], [1, -1], [1, 1], [ 0, 1], [ 0, -1]].reverse()
-            ]
-          }), [479.642857, 250], 1e-6);
-        },
-        "anticlockwise exterior, clockwise interior": function(centroid) {
-          assert.inDelta(centroid({
-            type: "Polygon",
-            coordinates: [
-              [[-2, -2], [2, -2], [2, 2], [-2, 2], [-2, -2]],
-              [[ 0, -1], [1, -1], [1, 1], [ 0, 1], [ 0, -1]].reverse()
-            ]
-          }), [479.642857, 250], 1e-6);
+          assert.deepEqual(centroid({type: "Polygon", coordinates: [
+            [[100,   0], [100,   1], [101,   1], [101,   0], [100, 0]],
+            [[100.1, 0], [100.2, 0], [100.3, 0], [100.1, 0]
+          ]]}), [982.5, 247.5]);
         },
         "clockwise exterior, anticlockwise interior": function(centroid) {
           assert.inDelta(centroid({
@@ -204,30 +270,79 @@ suite.addBatch({
       },
       "MultiPolygon": {
         "empty": function(centroid) {
-          assert.isNull(centroid({type: "MultiPolygon", coordinates: []}));
+          assert.isUndefined(centroid({type: "MultiPolygon", coordinates: []}));
         },
         "single polygon": function(centroid) {
-          assert.deepEqual(centroid({type: "MultiPolygon", coordinates: [[[[100, 0], [101, 0], [101, 1], [100, 1], [100, 0]]]]}), [982.5, 247.5]);
+          assert.deepEqual(centroid({type: "MultiPolygon", coordinates: [[[[100, 0], [100, 1], [101, 1], [101, 0], [100, 0]]]]}), [982.5, 247.5]);
         },
         "two polygons": function(centroid) {
-          assert.deepEqual(centroid({type: "MultiPolygon", coordinates: [[[[100, 0], [101, 0], [101, 1], [100, 1], [100, 0]]], [[[0, 0], [1, 0], [1, -1], [0, -1], [0, 0]]]]}), [732.5, 250]);
+          assert.deepEqual(centroid({type: "MultiPolygon", coordinates: [
+            [[[100, 0], [100, 1], [101, 1], [101, 0], [100, 0]]],
+            [[[0, 0], [1, 0], [1, -1], [0, -1], [0, 0]]]
+          ]}), [732.5, 250]);
         },
         "two polygons, one zero area": function(centroid) {
-          assert.deepEqual(centroid({type: "MultiPolygon", coordinates: [[[[100, 0], [101, 0], [101, 1], [100, 1], [100, 0]]], [[[0, 0], [1, 0], [2, 0], [0, 0]]]]}), [982.5, 247.5]);
+          assert.deepEqual(centroid({type: "MultiPolygon", coordinates: [
+            [[[100, 0], [100, 1], [101, 1], [101, 0], [100, 0]]],
+            [[[0, 0], [1, 0], [2, 0], [0, 0]]]
+          ]}), [982.5, 247.5]);
         }
       },
       "GeometryCollection": {
-        "is undefined": function(centroid) {
-          assert.isUndefined(centroid({type: "GeometryCollection", geometries: []}));
+        "Point": function(centroid) {
+          assert.deepEqual(centroid({type: "GeometryCollection", geometries: [{type: "Point", coordinates: [0, 0]}]}), [480, 250]);
+        },
+        "Point and LineString": function(centroid) {
+          assert.deepEqual(centroid({type: "GeometryCollection", geometries: [
+            {type: "LineString", coordinates: [[179, 0], [180, 0]]},
+            {type: "Point", coordinates: [0, 0]}
+          ]}), [1377.5, 250]);
+        },
+        "Point, LineString and Polygon": function(centroid) {
+          assert.deepEqual(centroid({type: "GeometryCollection", geometries: [
+            {type: "Polygon", coordinates: [[[-180, 0], [-180, 1], [-179, 1], [-179, 0], [-180, 0]]]},
+            {type: "LineString", coordinates: [[179, 0], [180, 0]]},
+            {type: "Point", coordinates: [0, 0]}
+          ]}), [-417.5, 247.5]);
         }
       },
       "FeatureCollection": {
-        "is undefined": function(centroid) {
-          assert.isUndefined(centroid({type: "FeatureCollection", features: []}));
+        "Point": function(centroid) {
+          assert.deepEqual(centroid({type: "FeatureCollection", features: [{type: "Feature", geometry: {type: "Point", coordinates: [0, 0]}}]}), [480, 250]);
+        },
+        "Point and LineString": function(centroid) {
+          assert.deepEqual(centroid({type: "FeatureCollection", features: [
+            {type: "Feature", geometry: {type: "LineString", coordinates: [[179, 0], [180, 0]]}},
+            {type: "Feature", geometry: {type: "Point", coordinates: [0, 0]}}
+          ]}), [1377.5, 250]);
+        },
+        "Point, LineString and Polygon": function(centroid) {
+          assert.deepEqual(centroid({type: "FeatureCollection", features: [
+            {type: "Feature", geometry: {type: "Polygon", coordinates: [[[-180, 0], [-180, 1], [-179, 1], [-179, 0], [-180, 0]]]}},
+            {type: "Feature", geometry: {type: "LineString", coordinates: [[179, 0], [180, 0]]}},
+            {type: "Feature", geometry: {type: "Point", coordinates: [0, 0]}}
+          ]}), [-417.5, 247.5]);
         }
       },
       "Sphere": function(centroid) {
         assert.deepEqual(centroid({type: "Sphere"}), [480, 250]);
+      },
+      "rotate([180, -248])": function() {
+        d3.geo.path()
+            .context(testContext)
+            .projection(d3.geo.equirectangular()
+              .rotate([-180, -248])
+              .scale(900 / Math.PI)
+              .precision(0))({type: "Polygon",  coordinates: [[[-175.03150315031502, 66.57410661866186], [-174.34743474347434, 66.33097912391239], [-174.5994599459946, 67.0603616081608], [-171.86318631863185, 66.90406536153614], [-169.9189918991899, 65.96628788178816], [-170.89108910891088, 65.53213164116411], [-172.54725472547256, 65.42793414341432], [-172.5832583258326, 64.45542416441643], [-172.97929792979298, 64.2470291689169], [-173.91539153915392, 64.28176166816681], [-174.67146714671466, 64.62908666066605], [-176.003600360036, 64.90694665466546], [-176.21962196219621, 65.34110289528951], [-177.22772277227722, 65.51476539153916], [-178.37983798379838, 65.37583539453945], [-178.91989198919893, 65.72316038703869], [-178.7038703870387, 66.10521787878787], [-179.8919891989199, 65.8620903840384], [-179.45994599459945, 65.3932016441644], [-180, 64.97641165316531], [-180, 68.95328281728172], [-177.55175517551754, 68.18916783378336], [-174.95949594959495, 67.19929160516051], [-175.03150315031502, 66.57410661866186]]]});
+        assert.deepEqual(testContext.buffer().filter(function(d) { return d.type === "moveTo"; }), [
+          {type: "moveTo", x: 1370, y: 243}
+        ]);
+      },
+      "supports fallback stream": function() {
+        var path = d3.geo.path(),
+            centroid = path.centroid({type: "LineString", coordinates: [[-122, 37], [-74, 40], [-100, 0]]});
+        assert.inDelta(centroid[0], 434.655, 1e-3);
+        assert.inDelta(centroid[1], 397.940, 1e-3);
       }
     },
 
@@ -246,7 +361,7 @@ suite.addBatch({
           coordinates: [-63, 18]
         });
         assert.deepEqual(testContext.buffer(), [
-          {type: "point", x: 165, y: 160},
+          {type: "moveTo", x: 165, y: 160}, {type: "arc", x: 165, y: 160, r: 4.5}
         ]);
       },
       "MultiPoint": function(path) {
@@ -255,9 +370,9 @@ suite.addBatch({
           coordinates: [[-63, 18], [-62, 18], [-62, 17]]
         });
         assert.deepEqual(testContext.buffer(), [
-          {type: "point", x: 165, y: 160},
-          {type: "point", x: 170, y: 160},
-          {type: "point", x: 170, y: 165}
+          {type: "moveTo", x: 165, y: 160}, {type: "arc", x: 165, y: 160, r: 4.5},
+          {type: "moveTo", x: 170, y: 160}, {type: "arc", x: 170, y: 160, r: 4.5},
+          {type: "moveTo", x: 170, y: 165}, {type: "arc", x: 170, y: 165, r: 4.5}
         ]);
       },
       "Polygon": {
@@ -269,6 +384,21 @@ suite.addBatch({
           path({type: "Polygon", coordinates: [[[100, -80], [-100, -80], [-100, 80], [100, 80], [100, -80]]]});
           assert.equal(testContext.buffer().filter(function(d) { return d.type === "moveTo"; }).length, 1);
         }
+      },
+      "rotate([-17, -451])": function() {
+        var pole = d3.range(-180, 180, 10).map(function(x) { return [x, 70]; });
+        pole.push(pole[0]);
+        d3.geo.path()
+            .context(testContext)
+            .projection(d3.geo.equirectangular()
+              .rotate([-17, -451])
+              .scale(900 / Math.PI)
+              .precision(0)
+              .clipAngle(90))({type: "Polygon", coordinates: [pole]});
+        assert.deepEqual(testContext.buffer().filter(function(d) { return d.type === "moveTo"; }), [
+          {type: "moveTo", x: 510, y: 160},
+          {type: "moveTo", x:  87, y: 700}
+        ]);
       },
       "rotate([71.03, 42.37])": {
         topic: function() {
@@ -305,7 +435,7 @@ suite.addBatch({
         "Point": {
           "visible": function(path) {
             path({type: "Point", coordinates: [0, 0]});
-            assert.deepEqual(testContext.buffer(), [{type: "point", x: 859, y: 187}]);
+            assert.deepEqual(testContext.buffer(), [{type: "moveTo", x: 859, y: 187}, {type: "arc", x: 859, y: 187, r: 4.5}]);
           },
           "invisible": function(path) {
             path({type: "Point", coordinates: [-180, 0]});
@@ -314,7 +444,7 @@ suite.addBatch({
         },
         "MultiPoint": function(path) {
           path({type: "MultiPoint", coordinates: [[0, 0], [-180, 0]]});
-          assert.deepEqual(testContext.buffer(), [{type: "point", x: 859, y: 187}]);
+          assert.deepEqual(testContext.buffer(), [{type: "moveTo", x: 859, y: 187}, {type: "arc", x: 859, y: 187, r: 4.5}]);
         }
       },
       "rotate(-24, -175.5])": {
@@ -460,7 +590,7 @@ suite.addBatch({
       }
     },
 
-    "antemeridian cutting": {
+    "antimeridian cutting": {
       "rotate([98, 0])": {
         topic: function() {
           return d3.geo.path()
@@ -537,7 +667,7 @@ suite.addBatch({
             .projection(d3.geo.stereographic()
               .precision(1));
       },
-      "correctly resamples points on antemeridian": function(path) {
+      "correctly resamples points on antimeridian": function(path) {
         path({type: "LineString", coordinates: [[0, 90], [90, 0]]});
         assert.deepEqual(testContext.buffer(), [
           {type: "moveTo", x: 480, y: 100},
@@ -552,7 +682,7 @@ suite.addBatch({
         ]);
       }
     },
-    "albers.precision(1)": {
+    "resampling near poles": {
       topic: function() {
         return d3.geo.path()
             .context(testContext)
@@ -561,17 +691,26 @@ suite.addBatch({
               .rotate([0, 0])
               .precision(1));
       },
-      "resampling near poles": function(path) {
+      "rotate([0, 0])": function(path) {
         path({type: "LineString", coordinates: [[0, 88], [180, 89]]});
         assert.isTrue(testContext.buffer().filter(function(d) { return d.type === "lineTo"; }).length > 1);
         path({type: "LineString", coordinates: [[180, 90], [1, 89.5]]});
         assert.isTrue(testContext.buffer().filter(function(d) { return d.type === "lineTo"; }).length > 1);
+      },
+      "rotate([11.5, 285])": function(path) {
+        try {
+          path.projection().rotate([11.5, 285]);
+          path({type: "LineString", coordinates: [[170, 20], [170, 0]]});
+          assert.isTrue(testContext.buffer().filter(function(d) { return d.type === "lineTo"; }).length > 1);
+        } finally {
+          path.projection().rotate([0, 0]);
+        }
       }
     },
     "rotate([0, 0, 0])": {
       "longitudes wrap at ±180°": function(path) {
         path({type: "Point", coordinates: [180 + 1e-6, 0]});
-        assert.deepEqual(testContext.buffer(), [{type: "point", x: -420, y: 250}]);
+        assert.deepEqual(testContext.buffer(), [{type: "moveTo", x: -420, y: 250}, {type: "arc", x: -420, y: 250, r: 4.5}]);
       }
     }
   }
@@ -580,7 +719,7 @@ suite.addBatch({
 var testBuffer = [];
 
 var testContext = {
-  point: function(x, y) { testBuffer.push({type: "point", x: Math.round(x), y: Math.round(y)}); },
+  arc: function(x, y, r, a0, a1) { testBuffer.push({type: "arc", x: Math.round(x), y: Math.round(y), r: r}); },
   moveTo: function(x, y) { testBuffer.push({type: "moveTo", x: Math.round(x), y: Math.round(y)}); },
   lineTo: function(x, y) { testBuffer.push({type: "lineTo", x: Math.round(x), y: Math.round(y)}); },
   closePath: function() { testBuffer.push({type: "closePath"}); },

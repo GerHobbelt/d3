@@ -358,6 +358,7 @@ function d3_layout_forceDragend(d) {
 
 function d3_layout_forceMouseover(d) {
   d.fixed |= 4; // set bit 3
+  d.px = d.x, d.py = d.y; // set velocity to zero
 }
 
 function d3_layout_forceMouseout(d) {
