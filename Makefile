@@ -235,7 +235,6 @@ d3.dsv.js: \
 	src/dsv/csv.js \
 	src/dsv/tsv.js
 
-TIME_LOCALE_DEPS = 
 ifneq ($(whereis node),)				# only do these when you have NodeJS installed
 TIME_LOCALE_DEPS = src/time/format-$(LOCALE).js
 else

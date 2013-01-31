@@ -1,5 +1,5 @@
 d3 = {
-    version: "3.0.2" // semver
+    version: "3.0.5" // semver
 };
 
 var π = Math.PI,
