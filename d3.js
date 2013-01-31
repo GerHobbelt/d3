@@ -12,7 +12,7 @@
     };
   }
   d3 = {
-    version: "3.0.2"
+    version: "3.0.5"
   };
   var π = Math.PI, ε = 1e-6, d3_radians = π / 180, d3_degrees = 180 / π;
   function d3_target(d) {
@@ -446,7 +446,9 @@
       if (request.setRequestHeader) {
         for (var name in headers) request.setRequestHeader(name, headers[name]);
       }
-      if (mimeType != null && request.overrideMimeType) request.overrideMimeType(mimeType);
+      if (mimeType != null && request.overrideMimeType) {
+        request.overrideMimeType(mimeType);
+      }
       if (callback != null) {
         xhr.on("error", callback).on("load", function(request) {
           callback(null, request);
@@ -3472,18 +3474,18 @@
           tickEnter.append("line").attr("class", "tick");
           tickEnter.append("text").attr("class", "tick-text");
           var lineEnter = tickEnter.select("line.tick"), lineUpdate = tickUpdate.select("line.tick"), text = tick.select("text.tick-text").text(function(d, i) {
-            if (tickFormatExtended_ == null) return tickFormat(d.value); else return tickFormatExtended_(d, i);
+            if (tickFormatExtended_ == null) {
+              return tickFormat(d.value);
+            } else {
+              return tickFormatExtended_(d, i);
+            }
           }), textEnter = tickEnter.select("text.tick-text"), textUpdate = tickUpdate.select("text.tick-text");
           switch (orient) {
            case "bottom":
             {
               tickTransform = d3_svg_axisX;
-              subtickEnter.attr("x2", 0).attr("y2", function(d, i) {
-                return +tickMinorSize(d, i);
-              });
-              subtickUpdate.attr("x2", 0).attr("y2", function(d, i) {
-                return +tickMinorSize(d, i);
-              });
+              subtickEnter.attr("x2", 0).attr("y2", tickMinorSize);
+              subtickUpdate.attr("x2", 0).attr("y2", tickMinorSize);
               lineEnter.attr("x2", 0).attr("y2", tickMajorSize);
               textEnter.attr("x", 0).attr("y", function(d, i) {
                 return Math.max(+tickMajorSize(d, i), 0) + tickPadding;
@@ -3627,11 +3629,11 @@
       tickFormatExtended_ = extended;
       return axis;
     };
-    axis.tickSize = function(x, y) {
+    axis.tickSize = function(major, minor) {
       var n = arguments.length;
       if (!n) return [ tickMajorSize, tickMinorSize, tickEndSize ];
       tickMajorSize = d3_functor(major);
-      tickMinorSize = n > 2 ? d3_functor(minor) : tickMajorSize;
+      tickMinorSize = n > 1 ? d3_functor(minor) : tickMajorSize;
       tickEndSize = d3_functor(arguments[n - 1]);
       return axis;
     };
