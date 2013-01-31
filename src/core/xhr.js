@@ -7,8 +7,8 @@ d3.xhr = function(url, mimeType, callback) {
 
   "onload" in request
       ? request.onload = request.onerror = respond
-      : request.onreadystatechange = function() { 
-          request.readyState > 3 && respond(); 
+      : request.onreadystatechange = function() {
+          request.readyState > 3 && respond();
         };
 
   function respond() {
@@ -21,20 +21,20 @@ d3.xhr = function(url, mimeType, callback) {
   request.onprogress = function(event) {
     var o = d3.event;
     d3.event = event;
-    try { 
-      dispatch.progress.call(xhr, request); 
-    } finally { 
-      d3.event = o; 
+    try {
+      dispatch.progress.call(xhr, request);
+    } finally {
+      d3.event = o;
     }
   };
 
   xhr.header = function(name, value) {
     name = (name + "").toLowerCase();
-    if (arguments.length < 2) 
+    if (arguments.length < 2)
       return headers[name];
-    if (value == null) 
+    if (value == null)
       delete headers[name];
-    else 
+    else
       headers[name] = value + "";
     return xhr;
   };
@@ -71,14 +71,15 @@ d3.xhr = function(url, mimeType, callback) {
       headers["accept"] = mimeType + ",*/*";
     }
     if (request.setRequestHeader) {
-      for (var name in headers) 
+      for (var name in headers)
         request.setRequestHeader(name, headers[name]);
     }
-    if (mimeType != null && request.overrideMimeType) 
+    if (mimeType != null && request.overrideMimeType) {
       request.overrideMimeType(mimeType);
+	}
     if (callback != null) {
-      xhr.on("error", callback).on("load", function(request) { 
-        callback(null, request); 
+      xhr.on("error", callback).on("load", function(request) {
+        callback(null, request);
       });
     }
     request.send(data == null ? null : data);
