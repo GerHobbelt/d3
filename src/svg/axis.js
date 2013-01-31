@@ -83,11 +83,11 @@ d3.svg.axis = function() {
             subtickUpdate.attr("x2", 0).attr("y2", function(d, i) {
               return +tickMinorSize(d, i);
             });
-            lineEnter.attr("x2", 0).attr("y2", tickMajorSize);
+            lineEnter.attr("x2", 0).attr("y2", +tickMajorSize(d, i));
             textEnter.attr("x", 0).attr("y", function(d, i) {
               return Math.max(+tickMajorSize(d, i), 0) + tickPadding;
             });
-            lineUpdate.attr("x2", 0).attr("y2", tickMajorSize);
+            lineUpdate.attr("x2", 0).attr("y2", +tickMajorSize(d, i));
             textUpdate.attr("x", 0).attr("y", function (d, i) {
               return Math.max(+tickMajorSize(d, i), 0) + tickPadding;
             });
@@ -145,13 +145,13 @@ d3.svg.axis = function() {
           }
           case "right": {
             tickTransform = d3_svg_axisY;
-            subtickEnter.attr("x2", tickMinorSize);
-            subtickUpdate.attr("x2", tickMinorSize).attr("y2", 0);
-            lineEnter.attr("x2", tickMajorSize);
+            subtickEnter.attr("x2", +tickMinorSize(d, i));
+            subtickUpdate.attr("x2", +tickMinorSize(d, i)).attr("y2", 0);
+            lineEnter.attr("x2", +tickMajorSize(d, i));
             textEnter.attr("x", function(d, i) {
               return Math.max(+tickMajorSize(d, i), 0) + tickPadding;
             });
-            lineUpdate.attr("x2", tickMajorSize).attr("y2", 0);
+            lineUpdate.attr("x2", +tickMajorSize(d, i)).attr("y2", 0);
             textUpdate.attr("x", function(d, i) {
               return Math.max(+tickMajorSize(d, i), 0) + tickPadding;
             }).attr("y", 0);
@@ -236,11 +236,11 @@ d3.svg.axis = function() {
     return axis;
   };
 
-  axis.tickSize = function(x, y) {
+  axis.tickSize = function(major, minor) {
     var n = arguments.length;
     if (!n) return [tickMajorSize, tickMinorSize, tickEndSize];
     tickMajorSize = d3_functor(major);
-    tickMinorSize = n > 2 ? d3_functor(minor) : tickMajorSize;
+    tickMinorSize = n > 1 ? d3_functor(minor) : tickMajorSize;
     tickEndSize = d3_functor(arguments[n - 1]);
     return axis;
   };
