@@ -1,3 +1,5 @@
+//Used for SVG namespacing. Mostly an internal method that is used before appending SVG elements to the page.
+//TODO: better explanation of what is going on.
 var d3_nsPrefix = {
   svg: "http://www.w3.org/2000/svg",
   xhtml: "http://www.w3.org/1999/xhtml",
@@ -17,9 +19,11 @@ d3.ns = {
     }
     return d3_nsPrefix.hasOwnProperty(prefix)
         ? {
-            space: d3_nsPrefix[prefix], 
+            space: d3_nsPrefix[prefix],
             local: name
           }
         : name;
   }
 };
+
+//Next: [core/dispatch.js](/d3/src/core/dispatch.html)

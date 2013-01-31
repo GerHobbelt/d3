@@ -6,3 +6,5 @@ d3_selectionPrototype.html = function(value) {
       : function() { this.innerHTML = value; })
       : this.node().innerHTML;
 };
+
+//Next: [core/selection-append.js](/d3/src/core/selection-append.html)

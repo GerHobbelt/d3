@@ -13,3 +13,5 @@ d3_selectionPrototype.append = function(name) {
 
   return this.select(name.local ? appendNS : append);
 };
+
+//Next: [core/selection-insert.js](/d3/src/core/selection-insert.html)

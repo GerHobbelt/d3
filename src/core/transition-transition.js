@@ -21,3 +21,5 @@ d3_transitionPrototype.transition = function() {
 
   return d3_transition(subgroups, id1);
 };
+
+//Next: [core/timer.js](/d3/src/core/timer.html)

@@ -22,3 +22,5 @@ d3_selection_enterPrototype.select = function(selector) {
 
   return d3_selection(subgroups);
 };
+
+//Next: [core/transition.js](/d3/src/core/transition.html)

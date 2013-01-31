@@ -136,3 +136,5 @@ if (d3_format_grouping) {
     return t.reverse().join(d3_format_thousandsSeparator || "") + f;
   };
 }
+
+//Next: [core/formatPrefix.js](/d3/src/core/formatPrefix.html)

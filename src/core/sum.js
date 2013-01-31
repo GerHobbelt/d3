@@ -1,3 +1,4 @@
+//Adds together all of the numbers in array. If a function is supplied, then the function is called on the number before getting added to the sum.
 d3.sum = function(array, f) {
   var s = 0,
       n = array.length,
@@ -12,3 +13,5 @@ d3.sum = function(array, f) {
 
   return s;
 };
+
+//Next: [core/quantile.js](/d3/src/core/quantile.html)

@@ -259,3 +259,5 @@ d3.interpolators = [
   function(a, b) { return (typeof b === "string" ? d3_rgb_names.has(b) || /^(#|rgb\(|hsl\()/.test(b) : b instanceof d3_Color) && d3.interpolateRgb(a, b); },
   function(a, b) { return !isNaN(a = +a) && !isNaN(b = +b) && d3.interpolateNumber(a, b); }
 ];
+
+//Next: [core/uninterpolate.js](/d3/src/core/uninterpolate.html)

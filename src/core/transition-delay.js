@@ -4,3 +4,5 @@ d3_transitionPrototype.delay = function(value) {
       ? function(node, i, j) { node.__transition__[id].delay = value.call(node, node.__data__, i, j) | 0; }
       : (value |= 0, function(node) { node.__transition__[id].delay = value; }));
 };
+
+//Next: [core/transition-duration.js](/d3/src/core/transition-duration.html)

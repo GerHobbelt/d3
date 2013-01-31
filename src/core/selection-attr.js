@@ -57,3 +57,5 @@ function d3_selection_attr(name, value) {
       ? (name.local ? attrFunctionNS : attrFunction)
       : (name.local ? attrConstantNS : attrConstant));
 }
+
+//Next: [core/selection-classed.js](/d3/src/core/selection-classed.html)

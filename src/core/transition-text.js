@@ -6,3 +6,5 @@ function d3_transition_text(b) {
   if (b == null) b = "";
   return function() { this.textContent = b; };
 }
+
+//Next: [core/transition-remove.js](/d3/src/core/transition-remove.html)

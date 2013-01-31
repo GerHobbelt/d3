@@ -1,0 +1,10 @@
+<!DOCTYPE html>  <html> <head>   <title>date.js</title>   <meta http-equiv="content-type" content="text/html; charset=UTF-8">   <link rel="stylesheet" media="all" href="docco.css" /> </head> <body>   <div id="container">     <div id="background"></div>          <table cellpadding="0" cellspacing="0">       <thead>         <tr>           <th class="docs">             <h1>               date.js             </h1>           </th>           <th class="code">           </th>         </tr>       </thead>       <tbody>                               <tr id="section-1">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-1">&#182;</a>               </div>               <p>IE9 doesn't string coerce values. Errors were getting thrown left and right by this, so mbostock put in a shim for Date.now. </p>
+
+<p>Note the useful conversion shorthand: + converts any object to a number. </p>
+
+<p>iaerstn
+See <a href="https://github.com/zmaril/d3/commit/c2e37352ac84eb8b4be89feed90bc2249866f715">this commit</a> for more information. </p>             </td>             <td class="code">               <div class="highlight"><pre><span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nb">Date</span><span class="p">.</span><span class="nx">now</span><span class="p">)</span> <span class="nb">Date</span><span class="p">.</span><span class="nx">now</span> <span class="o">=</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="o">+</span><span class="k">new</span> <span class="nb">Date</span><span class="p">;</span>
+<span class="p">};</span>
+
+</pre></div>             </td>           </tr>                </tbody>     </table>   </div> </body> </html> 

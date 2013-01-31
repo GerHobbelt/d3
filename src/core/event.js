@@ -47,3 +47,5 @@ function d3_eventDispatch(target) {
 
   return dispatch;
 }
+
+//Next: [core/interpolate.js](/d3/src/core/interpolate.html)

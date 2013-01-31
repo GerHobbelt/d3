@@ -3,6 +3,7 @@
 NODE_PATH ?= ./node_modules
 JS_COMPILER = $(NODE_PATH)/uglify-js/bin/uglifyjs
 JS_TESTER = $(NODE_PATH)/vows/bin/vows
+JS_DOCCO = $(NODE_PATH)/docco/bin/docco
 PACKAGE_JSON = package.json
 LOCALE ?= en_US
 
@@ -13,27 +14,6 @@ NODE_PATH =
 PACKAGE_JSON =
 endif
 
-all: \
-	d3.latest.js \
-	d3.js \
-	d3.min.js \
-	component.json \
-	$(PACKAGE_JSON)
-
-# Modify this rule to build your own custom release.
-
-.INTERMEDIATE d3.latest.js d3.js: \
-	src/start.js \
-	d3.core.js \
-	d3.scale.js \
-	d3.svg.js \
-	d3.behavior.js \
-	d3.layout.js \
-	d3.dsv.js \
-	d3.geo.js \
-	d3.geom.js \
-	d3.time.js \
-	src/end.js
 
 CORE_LOCALE_DEPS = 
 ifneq ($(whereis node),)				# only do these when you have NodeJS installed
@@ -42,7 +22,7 @@ else
 CORE_LOCALE_DEPS = src/core/format-locale-en_us.js
 endif
 
-d3.core.js: \
+D3_CORE_SOURCES = 		\
 	$(CORE_LOCALE_DEPS) \
 	src/compat/date.js \
 	src/compat/style.js \
@@ -144,7 +124,8 @@ d3.core.js: \
 	src/core/touches.js \
 	src/core/noop.js
 
-d3.scale.js: \
+
+D3_SCALE_SOURCES = 		\
 	src/scale/scale.js \
 	src/scale/nice.js \
 	src/scale/linear.js \
@@ -160,7 +141,8 @@ d3.scale.js: \
 	src/scale/threshold.js \
 	src/scale/identity.js
 
-d3.svg.js: \
+
+D3_SVG_SOURCES = 		\
 	src/svg/svg.js \
 	src/svg/arc.js \
 	src/svg/line.js \
@@ -174,12 +156,14 @@ d3.svg.js: \
 	src/svg/axis.js \
 	src/svg/brush.js
 
-d3.behavior.js: \
+
+D3_BEHAVIOR_SOURCES = 		\
 	src/behavior/behavior.js \
 	src/behavior/drag.js \
 	src/behavior/zoom.js
 
-d3.layout.js: \
+
+D3_LAYOUT_SOURCES = 		\
 	src/layout/layout.js \
 	src/layout/bundle.js \
 	src/layout/chord.js \
@@ -194,7 +178,8 @@ d3.layout.js: \
 	src/layout/tree.js \
 	src/layout/treemap.js
 
-d3.geo.js: \
+
+D3_GEO_SOURCES = 		\
 	src/geo/geo.js \
 	src/geo/stream.js \
 	src/geo/spherical.js \
@@ -230,7 +215,8 @@ d3.geo.js: \
 	src/geo/stereographic.js \
 	src/geo/azimuthal.js
 
-d3.dsv.js: \
+
+D3_DSV_SOURCES = 		\
 	src/dsv/dsv.js \
 	src/dsv/csv.js \
 	src/dsv/tsv.js
@@ -241,7 +227,8 @@ else
 TIME_LOCALE_DEPS = src/time/format-locale-en_us.js
 endif
 
-d3.time.js: \
+
+D3_TIME_SOURCES = 		\
 	src/time/time.js \
 	$(TIME_LOCALE_DEPS) \
 	src/time/format.js \
@@ -258,7 +245,8 @@ d3.time.js: \
 	src/time/scale.js \
 	src/time/scale-utc.js
 
-d3.geom.js: \
+
+D3_GEOM_SOURCES = 		\
 	src/geom/geom.js \
 	src/geom/hull.js \
 	src/geom/polygon.js \
@@ -266,12 +254,79 @@ d3.geom.js: \
 	src/geom/delaunay.js \
 	src/geom/quadtree.js
 
+
+
+all: \
+	d3.latest.js \
+	d3.js \
+	d3.min.js \
+	component.json \
+	$(PACKAGE_JSON)
+
+# Modify this rule to build your own custom release.
+
+.INTERMEDIATE d3.latest.js d3.js: \
+	src/start.js \
+	$(D3_CORE_SOURCES) \
+	$(D3_SCALE_SOURCES) \
+	$(D3_SVG_SOURCES) \
+	$(D3_BEHAVIOR_SOURCES) \
+	$(D3_LAYOUT_SOURCES) \
+	$(D3_DSV_SOURCES) \
+	$(D3_GEO_SOURCES) \
+	$(D3_GEOM_SOURCES) \
+	$(D3_TIME_SOURCES) \
+	src/end.js
+
+d3.core.js: \
+		$(D3_CORE_SOURCES)
+
+d3.scale.js: \
+		$(D3_SCALE_SOURCES)
+
+d3.svg.js: \
+		$(D3_SVG_SOURCES)
+
+d3.behavior.js: \
+		$(D3_BEHAVIOR_SOURCES)
+
+d3.layout.js: \
+		$(D3_LAYOUT_SOURCES)
+
+d3.geo.js: \
+		$(D3_GEO_SOURCES)
+
+d3.dsv.js: \
+		$(D3_DSV_SOURCES)
+
+d3.time.js: \
+		$(D3_TIME_SOURCES)
+
+d3.geom.js: \
+		$(D3_GEOM_SOURCES)
+
 test: all
 	@$(JS_TESTER)
 
 benchmark: all
 ifneq ($(whereis node),)				# only do these when you have NodeJS installed
 	@node test/geo/benchmark.js
+endif
+
+docco:				\
+		src/start.js \
+		$(D3_CORE_SOURCES) \
+		$(D3_SCALE_SOURCES) \
+		$(D3_SVG_SOURCES) \
+		$(D3_BEHAVIOR_SOURCES) \
+		$(D3_LAYOUT_SOURCES) \
+		$(D3_DSV_SOURCES) \
+		$(D3_GEO_SOURCES) \
+		$(D3_GEOM_SOURCES) \
+		$(D3_TIME_SOURCES) \
+		src/end.js
+ifneq ($(wildcard $(JS_DOCCO)),)		# when node or any of these tools has not been installed, ignore them.
+	$(JS_DOCCO) $(filter %.js,$<)
 endif
 
 %.min.js: %.js Makefile

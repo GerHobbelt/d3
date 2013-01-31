@@ -42,6 +42,7 @@ function d3_selection_on(type, listener, capture) {
     this.addEventListener(type, this[name] = wrapper, wrapper.$ = capture);
     wrapper._ = listener;
 
+    // wrapped event listener that propagates data changes
     function wrapper(e) {
       var o = d3.event; // Events can be reentrant (e.g., focus).
       d3.event = e;
@@ -56,3 +57,5 @@ function d3_selection_on(type, listener, capture) {
 
   return listener ? onAdd : onRemove;
 }
+
+//Next: [core/selection-each.js](/d3/src/core/selection-each.html)

@@ -47,3 +47,5 @@ d3_transitionPrototype.styleTween = function(name, tween, priority) {
     return f && function(t) { this.style.setProperty(name, f(t), priority); };
   });
 };
+
+//Next: [core/transition-text.js](/d3/src/core/transition-text.html)

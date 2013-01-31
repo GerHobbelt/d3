@@ -18,3 +18,5 @@ d3_selectionPrototype.insert = function(name, before) {
 
   return this.select(name.local ? insertNS : insert);
 };
+
+//Next: [core/selection-remove.js](/d3/src/core/selection-remove.html)

@@ -18,3 +18,5 @@ function d3_formatPrefix(d, i) {
     symbol: d
   };
 }
+
+//Next: [core/ease.js](/d3/src/core/ease.html)

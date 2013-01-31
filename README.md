@@ -5,3 +5,15 @@
 Want to learn more? [See the wiki.](https://github.com/mbostock/d3/wiki)
 
 For examples, [see the gallery](https://github.com/mbostock/d3/wiki/Gallery) and [mbostock’s bl.ocks](http://bl.ocks.org/mbostock).
+
+# [Read the source, Luke](http://www.codinghorror.com/blog/2012/04/learn-to-read-the-source-luke.html)
+
+If you have already
+[seen the basics](https://github.com/mbostock/d3/wiki), then it's time
+to dive into the code. Let's talk a stroll through d3 and understand
+what exactly is happening under the hood. Let's go!
+
+# A single step
+
+Start [here](/d3/src/start.html). Savor the code.
+

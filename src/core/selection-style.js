@@ -51,3 +51,5 @@ function d3_selection_style(name, value, priority) {
       ? styleNull : (typeof value === "function"
       ? styleFunction : styleConstant);
 }
+
+//Next: [core/selection-property.js](/d3/src/core/selection-property.html)

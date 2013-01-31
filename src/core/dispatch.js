@@ -68,3 +68,5 @@ function d3_dispatch_event(dispatch) {
 
   return event;
 }
+
+//Next: [core/format.js](/d3/src/core/format.html)

@@ -7,3 +7,5 @@ d3_selectionPrototype.node = function() {
   }
   return null;
 };
+
+//Next: [core/selection-transition.js](/d3/src/core/selection-transition.html)

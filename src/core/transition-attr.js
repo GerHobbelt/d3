@@ -51,3 +51,5 @@ d3_transitionPrototype.attrTween = function(nameNS, tween) {
 
   return this.tween("attr." + nameNS, name.local ? attrTweenNS : attrTween);
 };
+
+//Next: [core/transition-style.js](/d3/src/core/transition-style.html)

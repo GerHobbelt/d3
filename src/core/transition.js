@@ -96,3 +96,5 @@ function d3_transitionNode(node, i, id, inherit) {
     return transition;
   }
 }
+
+//Next: [core/transition-select.js](/d3/src/core/transition-select.html)

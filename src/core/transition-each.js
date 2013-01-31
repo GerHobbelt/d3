@@ -17,3 +17,5 @@ d3_transitionPrototype.each = function(type, listener) {
   }
   return this;
 };
+
+//Next: [core/transition-transition.js](/d3/src/core/transition-transition.html)
