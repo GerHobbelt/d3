@@ -16,7 +16,7 @@ d3.svg.axis = function() {
     // Ticks, or domain values for ordinal scales.
     var ticks = (tickValues == null ? (scale.ticks ? scale.ticks.apply(scale, tickArguments_) : scale.domain()) : tickValues)
                   .map(d3_svg_axisMapTicks),
-        tickFormat = tickFormat_ == null ? (scale.tickFormat ? scale.tickFormat.apply(scale, tickArguments_) : String) : tickFormat_;
+        tickFormat = (tickFormat_ == null ? (scale.tickFormat ? scale.tickFormat.apply(scale, tickArguments_) : d3.format(".f")) : tickFormat_);
 
     // Minor ticks.
     var subticks = d3_svg_axisSubdivide(scale, ticks, tickSubdivide);

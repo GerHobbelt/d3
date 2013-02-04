@@ -54,6 +54,7 @@ function d3_arraySlice(pseudoarray) {
 }
 
 try {
+  // Test whether the DOM nodes have array methods attached; if not, we add the one(s) we need.
   d3_array(document.documentElement.childNodes)[0].nodeType;
 } catch(e) {
   d3_array = d3_arrayCopy;
@@ -1100,7 +1101,10 @@ function d3_transformCombine(a, b, k) {
 var d3_transformIdentity = {a: 1, b: 0, c: 0, d: 1, e: 0, f: 0};
 d3.interpolate = function(a, b) {
   var i = d3.interpolators.length, f;
-  while (--i >= 0 && !(f = d3.interpolators[i](a, b)));
+  // lib/_/d3.latest.js:1103: WARNING - If this if/for/while really shouldn't have a body, use {}
+  while (--i >= 0 && !(f = d3.interpolators[i](a, b))) {
+    ;
+  }
   return f;
 };
 
@@ -4696,7 +4700,7 @@ d3.svg.axis = function() {
     // Ticks, or domain values for ordinal scales.
     var ticks = (tickValues == null ? (scale.ticks ? scale.ticks.apply(scale, tickArguments_) : scale.domain()) : tickValues)
                   .map(d3_svg_axisMapTicks),
-        tickFormat = tickFormat_ == null ? (scale.tickFormat ? scale.tickFormat.apply(scale, tickArguments_) : String) : tickFormat_;
+        tickFormat = (tickFormat_ == null ? (scale.tickFormat ? scale.tickFormat.apply(scale, tickArguments_) : d3.format(".f")) : tickFormat_);
 
     // Minor ticks.
     var subticks = d3_svg_axisSubdivide(scale, ticks, tickSubdivide);
