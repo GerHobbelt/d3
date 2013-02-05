@@ -4908,9 +4908,10 @@ d3.svg.axis = function() {
     return axis;
   };
 
-  axis.tickFormat = function(x) {
+  // f: expects null or a d3.format() compatible function
+  axis.tickFormat = function(f) {
     if (!arguments.length) return tickFormat_;
-    tickFormat_ = x;
+    tickFormat_ = f;
     return axis;
   };
 
