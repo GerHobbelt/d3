@@ -3082,14 +3082,7 @@ d3.scale = {};
 
 function d3_scaleExtent(domain) {
   var start = domain[0], stop = domain[domain.length - 1];
-  // We ensure that the returned span DELTA is always LARGER THAN 0.
-  // This is a requirement as the extent[] is often used to determine ranges in calculations
-  // which apply a Math.log() to the extent[] delta (e.g. d3_scale_linearTickRange())
-  //
-  // We only 'tweak' the extent when the domain range is zero, which itself is an edge case
-  // which generally only stems from a domain with zero or only 1 data point, so tweaking
-  // the extent in this case is harmless for all other uses.
-  return start < stop ? [start, stop] : start > stop ? [stop, start] : [start, start + 1];
+  return start < stop ? [start, stop] : [stop, start];
 }
 
 function d3_scaleRange(scale) {
@@ -3206,8 +3199,15 @@ function d3_scale_linearNice(dx) {
 function d3_scale_linearTickRange(domain, m) {
   var extent = d3_scaleExtent(domain),
       span = extent[1] - extent[0],
-      step = Math.pow(10, Math.floor(Math.log(span / m) / Math.LN10)),
-      err = m / span * step;
+      step, err;
+
+  // Prevent errors and otherwise odd behaviour by providing a sane extent, even when the domain carries zero or one(1) data point only:
+  if (span == 0 || !extent.every(isFinite)) {
+    extent[2] = 1;
+    return extent;
+  }
+  step = Math.pow(10, Math.floor(Math.log(span / m) / Math.LN10));
+  err = m / span * step;
 
   // Filter ticks to get closer to the desired count.
   if (err <= .15) step *= 10;

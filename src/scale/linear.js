@@ -86,8 +86,15 @@ function d3_scale_linearNice(dx) {
 function d3_scale_linearTickRange(domain, m) {
   var extent = d3_scaleExtent(domain),
       span = extent[1] - extent[0],
-      step = Math.pow(10, Math.floor(Math.log(span / m) / Math.LN10)),
-      err = m / span * step;
+      step, err;
+
+  // Prevent errors and otherwise odd behaviour by providing a sane extent, even when the domain carries zero or one(1) data point only:
+  if (span == 0 || !extent.every(isFinite)) {
+    extent[2] = 1;
+    return extent;
+  }
+  step = Math.pow(10, Math.floor(Math.log(span / m) / Math.LN10));
+  err = m / span * step;
 
   // Filter ticks to get closer to the desired count.
   if (err <= .15) step *= 10;
