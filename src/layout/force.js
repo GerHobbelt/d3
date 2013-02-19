@@ -4,21 +4,40 @@ d3.layout.force = function() {
       event = d3.dispatch("start", "tick", "end"),
       size = [1, 1],
       drag,
-      alpha,
-      friction = d3_functor(.9),
-      linkDistance = d3_layout_forceLinkDistance,
-      linkStrength = d3_layout_forceLinkStrength,
-      charge = d3_functor(-30),
-      gravity = .1,
-      theta = d3_functor(.8),
+      alpha,                                     
       interval,
       nodes = [],
       links = [],
       distances,
       strengths,
       epsilon = 0.1, // minimal distance-squared for which the approximation holds; any smaller distance is assumed to be this large to prevent instable approximations
-      charges;
+      charges,
+	  charge_abssum = -1, // negative value signals the need to recalculate this one
+	  friction_f,
+	  charge_f,
+	  gravity_f,
+	  theta_f,    
+	  linkDistance_f,
+	  linkStrength_f,
+	  // These model parameters can be either a function or a direct numeric value:
+      friction = .9,
+      linkDistance = d3_layout_forceLinkDistance,
+      linkStrength = d3_layout_forceLinkStrength,
+      charge = -30,
+      gravity = .1,
+      theta = .8;
 
+  setup_model_parameter_functors();
+
+  function setup_model_parameter_functors() {
+    friction_f = d3_functor(friction);
+    charge_f = d3_functor(charge);
+    gravity_f = d3_functor(gravity);
+    theta_f = d3_functor(theta);
+    linkDistance_f = d3_functor(LinkDistance);
+    linkStrength_f = d3_functor(LinkStrength);
+  }
+  
   function repulse(node, i) {
     return function(quad, x1, y1, x2, y2) {
       if (quad.point !== node) {
@@ -27,7 +46,7 @@ d3.layout.force = function() {
             l = dx * dx + dy * dy,
             dn = 1 / Math.max(epsilon, l),
             k = quad.charge * dn,
-            th = theta(node, i, quad, l, x1, x2, k);
+            th = theta_f.call(this, node, i, quad, l, x1, x2, k);
 
         /*
         Based on the Barnes-Hut criterion.
@@ -39,7 +58,7 @@ d3.layout.force = function() {
         collect the center of mass per quad but also the maximum distance of any
         node from that derived center of mass by collecting the bounding box;
         by comparing this measure with the distance of the quad's center of mass to our
-        node and apply a decision threshold  based on a (possibly) mass-dependent theta,
+        node and apply a decision threshold based on a (possibly) mass-dependent theta,
         we can tweak the accuracy of our approximation more accurately for fields with
         a very uneven charge distribution.
 
@@ -111,7 +130,7 @@ d3.layout.force = function() {
     }
 
     // apply gravity forces
-    if (k = alpha * gravity) {
+    if (k = alpha * gravity_f.call(this)) {
       x = size[0] / 2;
       y = size[1] / 2;
       i = -1;
@@ -126,12 +145,15 @@ d3.layout.force = function() {
     f = 0;
     q = d3.geom.quadtree(nodes);
     // recalculate charges on every tick if need be:
-    charges = [];
-    for (i = 0; i < n; ++i) {
-      charges[i] = k = +charge.call(this, nodes[i], i, q);
-      f += Math.abs(k);
-    }
-    if (f != 0) {
+	if (charge_abssum < 0 || typeof charge === "function") {
+      charges = [];
+      for (i = 0; i < n; ++i) {
+        charges[i] = k = +charge_f.call(this, nodes[i], i, q);
+        f += Math.abs(k);
+      }
+	  charge_abssum = f;
+	}
+    if (charge_abssum != 0) {
       d3_layout_forceAccumulate(q, alpha, charges);
       i = -1; while (++i < n) {
         if (!(o = nodes[i]).fixed) {
@@ -147,7 +169,7 @@ d3.layout.force = function() {
         o.x = o.px;
         o.y = o.py;
       } else {
-        f = friction.call(this, o, i);
+        f = friction_f.call(this, o, i);
         o.x -= (o.px - (o.px = o.x)) * f;
         o.y -= (o.py - (o.py = o.y)) * f;
       }
@@ -176,7 +198,8 @@ d3.layout.force = function() {
 
   force.linkDistance = function(x) {
     if (!arguments.length) return linkDistance;
-    linkDistance = d3_functor(x);
+    linkDistance = typeof x === "function" ? x : +x;
+    setup_model_parameter_functors();
     return force;
   };
 
@@ -185,37 +208,44 @@ d3.layout.force = function() {
 
   force.linkStrength = function(x) {
     if (!arguments.length) return linkStrength;
-    linkStrength = d3_functor(x);
+    linkStrength = typeof x === "function" ? x : +x;
+    setup_model_parameter_functors();
     return force;
   };
 
   force.friction = function(x) {
     if (!arguments.length) return friction;
-    friction = d3_functor(x);
+    friction = typeof x === "function" ? x : +x;
+    setup_model_parameter_functors();
     return force;
   };
 
   force.charge = function(x) {
     if (!arguments.length) return charge;
-    charge = d3_functor(x);
+    charge = typeof x === "function" ? x : +x;
+    setup_model_parameter_functors();
+    charge_abssum = -1;
     return force;
   };
 
   force.gravity = function(x) {
     if (!arguments.length) return gravity;
-    gravity = +x;
+    gravity = typeof x === "function" ? x : +x;
+    setup_model_parameter_functors();
     return force;
   };
 
   force.theta = function(x) {
     if (!arguments.length) return theta;
-    theta = +x;
+    theta = typeof x === "function" ? x : +x;
+    setup_model_parameter_functors();
     return force;
   };
 
   force.alpha = function(x) {
     if (!arguments.length) return alpha;
 
+    x = +x;
     if (alpha) { // if we're already running
       if (x > 0) alpha = x; // we might keep it hot
       else alpha = 0; // or, next tick will dispatch "end"
@@ -242,14 +272,10 @@ d3.layout.force = function() {
       o.weight = 0;
     }
 
-    distances = [];
-    strengths = [];
     for (i = 0; i < m; ++i) {
       o = links[i];
       if (typeof o.source == "number") o.source = nodes[o.source];
       if (typeof o.target == "number") o.target = nodes[o.target];
-      distances[i] = linkDistance.call(this, o, i);
-      strengths[i] = linkStrength.call(this, o, i);
       ++o.source.weight;
       ++o.target.weight;
     }
@@ -262,10 +288,23 @@ d3.layout.force = function() {
       if (isNaN(o.py)) o.py = o.y;
     }
 
+    distances = [];
+    for (i = 0; i < m; ++i) {
+      distances[i] = +linkDistance_f.call(this, links[i], i);
+	}
+
+    strengths = [];
+    for (i = 0; i < m; ++i) {
+      strengths[i] = +linkStrength_f.call(this, links[i], i);
+	}
+
     charges = [];
+    j = 0;
     for (i = 0; i < n; ++i) {
-      charges[i] = +charge.call(this, nodes[i], i);
+      charges[i] = o = +charge_f.call(this, nodes[i], i);
+      j += Math.abs(o);
     }
+    charge_abssum = j;
 
     // initialize node position based on first neighbor
     function position(dimension, size, i) {
@@ -307,13 +346,13 @@ d3.layout.force = function() {
 
   // use `node.call(force.drag)` to make nodes draggable
   force.drag = function() {
-    if (!arguments.length) return drag;
-
     if (!drag) drag = d3.behavior.drag()
         .origin(d3_identity)
         .on("dragstart.force", d3_layout_forceDragstart)
         .on("drag.force", dragmove)
         .on("dragend.force", d3_layout_forceDragend);
+
+    if (!arguments.length) return drag;
 
     this.on("mouseover.force", d3_layout_forceMouseover)
         .on("mouseout.force", d3_layout_forceMouseout)
@@ -385,10 +424,5 @@ function d3_layout_forceAccumulate(quad, alpha, charges) {
   quad.cy = cy / quad.charge;
 }
 
-function d3_layout_forceLinkDistance(/*link*/) {
-  return 20;
-}
-
-function d3_layout_forceLinkStrength(/*link*/) {
-  return 1;
-}
+var d3_layout_forceLinkDistance = 20,
+    d3_layout_forceLinkStrength = 1;
