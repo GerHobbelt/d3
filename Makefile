@@ -196,6 +196,7 @@ d3.layout.js: \
 
 d3.geo.js: \
 	src/geo/geo.js \
+	src/geo/ambiguous.js \
 	src/geo/stream.js \
 	src/geo/spherical.js \
 	src/geo/cartesian.js \
@@ -210,6 +211,8 @@ d3.geo.js: \
 	src/geo/clip.js \
 	src/geo/clip-antimeridian.js \
 	src/geo/clip-circle.js \
+	src/geo/clip-geometry.js \
+	src/geo/clip-line.js \
 	src/geo/compose.js \
 	src/geo/equirectangular.js \
 	src/geo/gnomonic.js \
