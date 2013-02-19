@@ -8,8 +8,8 @@ LOCALE ?= en_US
 
 # when node or any of these tools has not been installed, ignore them.
 ifeq ($(wildcard $(JS_TESTER)),)
-JS_TESTER = echo "no test rig installed"
-NODE_PATH = 
+JS_TESTER = echo "no test rig (VOWS) installed"
+NODE_PATH =
 PACKAGE_JSON =
 endif
 
@@ -35,7 +35,7 @@ all: \
 	d3.time.js \
 	src/end.js
 
-CORE_LOCALE_DEPS = 
+CORE_LOCALE_DEPS =
 ifneq ($(whereis node),)				# only do these when you have NodeJS installed
 CORE_LOCALE_DEPS = src/core/format-$(LOCALE).js
 else
@@ -43,10 +43,10 @@ CORE_LOCALE_DEPS = src/core/format-locale-en_us.js
 endif
 
 d3.core.js: \
+	src/core/core.js \
 	$(CORE_LOCALE_DEPS) \
 	src/compat/date.js \
 	src/compat/style.js \
-	src/core/core.js \
 	src/core/class.js \
 	src/core/array.js \
 	src/core/map.js \
@@ -214,6 +214,7 @@ d3.geo.js: \
 	src/geo/equirectangular.js \
 	src/geo/gnomonic.js \
 	src/geo/graticule.js \
+	src/geo/haversin.js \
 	src/geo/interpolate.js \
 	src/geo/greatArc.js \
 	src/geo/mercator.js \
@@ -225,6 +226,7 @@ d3.geo.js: \
 	src/geo/path-centroid.js \
 	src/geo/area.js \
 	src/geo/centroid.js \
+	src/geo/length.js \
 	src/geo/projection.js \
 	src/geo/rotation.js \
 	src/geo/stereographic.js \
@@ -285,13 +287,7 @@ endif
 
 d3%js: Makefile
 	@rm -f $@
-ifeq ($(wildcard $(JS_COMPILER)),)		# when node or any of these tools has not been installed, ignore them.
 	@cat $(filter %.js,$^) > $@
-else
-	@cat $(filter %.js,$^) > $@.tmp
-	$(JS_COMPILER) $@.tmp -b indent-level=2 -o $@
-	@rm $@.tmp
-endif
 	@chmod a-w $@
 
 component.json: src/component.js
@@ -323,7 +319,7 @@ endif
 #	src/time/format-$(LOCALE).js
 
 clean:
-	@rm -f d3*.js 
+	@rm -f d3*.js
 ifneq ($(whereis node),)				# only do these when you have NodeJS installed
 	@rm -f $(PACKAGE_JSON) component.json
 endif
