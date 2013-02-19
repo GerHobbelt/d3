@@ -7768,6 +7768,7 @@ function d3_dsv(delimiter, mimeType) {
 d3.csv = d3_dsv(",", "text/csv");
 d3.tsv = d3_dsv("\t", "text/tab-separated-values");
 d3.geo = {};
+d3.geo.ambiguous = [0, 0];
 d3.geo.stream = function(object, listener) {
   if (d3_geo_streamObjectType.hasOwnProperty(object.type)) {
     d3_geo_streamObjectType[object.type](object, listener);
@@ -8133,13 +8134,9 @@ d3.geo.centroid = function(object) {
   d3_geo_centroidDimension = d3_geo_centroidW = d3_geo_centroidX = d3_geo_centroidY = d3_geo_centroidZ = 0;
   d3.geo.stream(object, d3_geo_centroid);
   var m;
-  if (d3_geo_centroidW &&
-      Math.abs(m = Math.sqrt(d3_geo_centroidX * d3_geo_centroidX + d3_geo_centroidY * d3_geo_centroidY + d3_geo_centroidZ * d3_geo_centroidZ)) > ε) {
-    return [
-      Math.atan2(d3_geo_centroidY, d3_geo_centroidX) * d3_degrees,
-      Math.asin(Math.max(-1, Math.min(1, d3_geo_centroidZ / m))) * d3_degrees
-    ];
-  }
+  return (d3_geo_centroidW && Math.abs(m = Math.sqrt(d3_geo_centroidX * d3_geo_centroidX + d3_geo_centroidY * d3_geo_centroidY + d3_geo_centroidZ * d3_geo_centroidZ)) > ε)
+      ? [Math.atan2(d3_geo_centroidY, d3_geo_centroidX) * d3_degrees, Math.asin(Math.max(-1, Math.min(1, d3_geo_centroidZ / m))) * d3_degrees]
+      : d3.geo.ambiguous;
 };
 
 var d3_geo_centroidDimension,
