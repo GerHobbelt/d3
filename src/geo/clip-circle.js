@@ -2,9 +2,13 @@
 function d3_geo_clipCircle(degrees) {
   var radians = degrees * d3_radians,
       cr = Math.cos(radians),
-      interpolate = d3_geo_circleInterpolate(radians, 6 * d3_radians);
+      interpolate = d3_geo_circleInterpolate(radians, 6 * d3_radians),
+      circle = d3.geo.circle().angle(degrees),
+      clip = d3_geo_clip(visible, clipLine, interpolate);
 
-  return d3_geo_clip(visible, clipLine, interpolate);
+  clip.feature = function() { return circle(); };
+
+  return clip;
 
   function visible(λ, φ) {
     return Math.cos(λ) * Math.cos(φ) > cr;

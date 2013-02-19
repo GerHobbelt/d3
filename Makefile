@@ -210,6 +210,8 @@ d3.geo.js: \
 	src/geo/clip.js \
 	src/geo/clip-antimeridian.js \
 	src/geo/clip-circle.js \
+	src/geo/clip-geometry.js \
+	src/geo/clip-line.js \
 	src/geo/compose.js \
 	src/geo/equirectangular.js \
 	src/geo/gnomonic.js \
