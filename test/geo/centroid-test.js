@@ -43,14 +43,48 @@ suite.addBatch({
     "MultiLineString": function(centroid) {
       assert.inDelta(centroid({type: "MultiLineString", coordinates: [[[0, 0], [0, 2]]]}), [0, 1], 1e-6);
     },
-    "Polygon": function(centroid) {
-      assert.inDelta(centroid({type: "Polygon", coordinates: [[[0, -90], [0, 0], [0, 90], [1, 0], [0, -90]]]}), [.5, 0], 1e-6);
-      //assert.inDelta(centroid(d3.geo.circle().angle(5).origin([0, 45])()), [0, 45], 1e-6);
-      assert.equal(centroid({type: "Polygon", coordinates: [d3.range(-180, 180 + 1 / 2, 1).map(function(x) { return [x, -60]; })]})[1], -90);
-      assert.inDelta(centroid({type: "Polygon", coordinates: [[[0, -10], [0, 10], [10, 10], [10, -10], [0, -10]]]}), [5, 0], 1e-6);
+    "Polygon": {
+      "lune": function(centroid) {
+        assert.inDelta(centroid({type: "Polygon", coordinates: [[[0, -90], [0, 0], [0, 90], [1, 0], [0, -90]]]}), [.5, 0], 1e-6);
+      },
+      "circle": {
+        "5°": function(centroid) {
+          assert.inDelta(centroid(d3.geo.circle().angle(5).origin([30, 45])()), [30, 45], 1e-6);
+        },
+        "135°": function(centroid) {
+          assert.inDelta(centroid(d3.geo.circle().angle(135).origin([30, 45])()), [30, 45], 1e-6);
+        }
+      },
+      "pole": function(centroid) {
+        assert.equal(centroid({type: "Polygon", coordinates: [d3.range(-180, 180 + 1 / 2, 1).map(function(x) { return [x, -60]; })]})[1], -90);
+      },
+      "equator": function(centroid) {
+        assert.inDelta(centroid({type: "Polygon", coordinates: [[[0, -10], [0, 10], [10, 10], [10, -10], [0, -10]]]}), [5, 0], 1e-6);
+      },
+      "other": function(centroid) {
+        assert.inDelta(centroid({type: "Polygon", coordinates: [[[-180, 0], [-180, 10], [-179, 10], [-179, 0], [-180, 0]]]}), [-179.5, 4.987448], 1e-6);
+      },
+      "concentric rings": function(centroid) {
+        var circle = d3.geo.circle().origin([0, 45]),
+            coordinates = circle.angle(60)().coordinates;
+        coordinates.push(circle.angle(45)().coordinates[0].reverse());
+        assert.inDelta(centroid({type: "Polygon", coordinates: coordinates}), [0, 45], 1e-6);
+      }
     },
-    "MultiPolygon": function(centroid) {
-      assert.inDelta(centroid({type: "MultiPolygon", coordinates: [[[[0, -90], [0, 0], [0, 90], [1, 0], [0, -90]]]]}), [.5, 0], 1e-6);
+    "MultiPolygon": {
+      "single polygon": function(centroid) {
+        assert.inDelta(centroid({type: "MultiPolygon", coordinates: [[[[0, -90], [0, 0], [0, 90], [1, 0], [0, -90]]]]}), [.5, 0], 1e-6);
+      },
+      "two polygons": function(centroid) {
+        var circle = d3.geo.circle();
+        assert.inDelta(centroid({
+          type: "MultiPolygon",
+          coordinates: [
+            circle.angle(45).origin([0, 0])().coordinates,
+            circle.angle(60).origin([180, 0])().coordinates
+          ]
+        }), [180, 0], 1e-6);
+      }
     },
     "Sphere": function(centroid) {
       assert.isUndefined(centroid({type: "Sphere"}));
@@ -73,17 +107,17 @@ suite.addBatch({
       },
       "Polygon, LineString, Point": function(centroid) {
         assert.inDelta(centroid({type: "GeometryCollection", geometries: [
-          {type: "Polygon", coordinates: [[[-180, 0], [-180, 1], [-179, 1], [-179, 0], [-180, 0]]]},
-          {type: "LineString", coordinates: [[179, 0], [180, 0]]},
+          {type: "Polygon", coordinates: [[[-180, -10], [-180, 10], [-100, 10], [-100, -10], [-180, 0]]]},
+          {type: "LineString", coordinates: [[170, 0], [180, 0]]},
           {type: "Point", coordinates: [0, 0]}
-        ]}), [-179.5, 0.5], 1e-6);
+        ]}), [-140, 0], 1e-6);
       },
       "Point, LineString, Polygon": function(centroid) {
         assert.inDelta(centroid({type: "GeometryCollection", geometries: [
           {type: "Point", coordinates: [0, 0]},
           {type: "LineString", coordinates: [[179, 0], [180, 0]]},
-          {type: "Polygon", coordinates: [[[-180, 0], [-180, 1], [-179, 1], [-179, 0], [-180, 0]]]}
-        ]}), [-179.5, 0.5], 1e-6);
+          {type: "Polygon", coordinates: [[[-180, -10], [-180, 10], [-179, 10], [-179, -10], [-180, 0]]]}
+        ]}), [-179.5, 0], 1e-6);
       },
       "Sphere, Point": function(centroid) {
         assert.isUndefined(centroid({type: "GeometryCollection", geometries: [
