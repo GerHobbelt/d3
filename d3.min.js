@@ -1,6 +1,6 @@
 d3 = (function(){var π = Math.PI,
     ε = 1e-6,
-    d3 = {version: "3.0.6"}, // semver
+    d3 = {version: "3.0.8"}, // semver
     d3_radians = π / 180,
     d3_degrees = 180 / π,
     d3_document = document,
@@ -149,7 +149,7 @@ d3.rebind = function(target, source) {
 function d3_rebind(target, source, method) {
   return function() {
     var value = method.apply(source, arguments);
-    return arguments.length ? target : value;
+    return value === source ? target : value;
   };
 }
 d3.ascending = function(a, b) {
@@ -1997,8 +1997,7 @@ d3_selectionPrototype.classed = function(name, value) {
       if (value = node.classList) {
         while (++i < n) if (!value.contains(name[i])) return false;
       } else {
-        value = node.className;
-        if (value.baseVal != null) value = value.baseVal;
+        value = node.getAttribute("class");
         while (++i < n) if (!d3_selection_classedRe(name[i]).test(value)) return false;
       }
       return true;
@@ -2044,20 +2043,12 @@ function d3_selection_classedName(name) {
   var re = d3_selection_classedRe(name);
   return function(node, value) {
     if (c = node.classList) return value ? c.add(name) : c.remove(name);
-    var c = node.className,
-        cb = c.baseVal != null,
-        cv = cb ? c.baseVal : c;
+    var c = node.getAttribute("class") || "";
     if (value) {
       re.lastIndex = 0;
-      if (!re.test(cv)) {
-        cv = d3_collapse(cv + " " + name);
-        if (cb) c.baseVal = cv;
-        else node.className = cv;
-      }
-    } else if (cv) {
-      cv = d3_collapse(cv.replace(re, " "));
-      if (cb) c.baseVal = cv;
-      else node.className = cv;
+      if (!re.test(c)) node.setAttribute("class", d3_collapse(c + " " + name));
+    } else {
+      node.setAttribute("class", d3_collapse(c.replace(re, " ")));
     }
   };
 }
@@ -2186,22 +2177,21 @@ d3_selectionPrototype.append = function(name) {
 
   return this.select(name.local ? appendNS : append);
 };
-// TODO insert(node, function)?
-// TODO insert(function, string)?
-// TODO insert(function, function)?
 d3_selectionPrototype.insert = function(name, before) {
   name = d3.ns.qualify(name);
 
-  function insert() {
+  if (typeof before !== "function") before = d3_selection_selector(before);
+
+  function insert(d, i) {
     return this.insertBefore(
         d3_document.createElementNS(this.namespaceURI, name),
-        d3_select(before, this));
+        before.call(this, d, i));
   }
 
-  function insertNS() {
+  function insertNS(d, i) {
     return this.insertBefore(
         d3_document.createElementNS(name.space, name.local),
-        d3_select(before, this));
+        before.call(this, d, i));
   }
 
   return this.select(name.local ? insertNS : insert);
@@ -2409,38 +2399,62 @@ d3_selectionPrototype.on = function(type, listener, capture) {
 };
 
 function d3_selection_on(type, listener, capture) {
-  var name = "__on" + type, i = type.indexOf(".");
+  var name = "__on" + type,
+      i = type.indexOf("."),
+      wrap = d3_selection_onListener;
+
   if (i > 0) type = type.substring(0, i);
+  var filter = d3_selection_onFilters.get(type);
+  if (filter) type = filter, wrap = d3_selection_onFilter;
 
   function onRemove() {
-    var wrapper = this[name];
-    if (wrapper) {
-      this.removeEventListener(type, wrapper, wrapper.$);
+    var l = this[name];
+    if (l) {
+      this.removeEventListener(type, l, l.$);
       delete this[name];
     }
   }
 
   function onAdd() {
-    var node = this,
-        args = d3_array(arguments);
-
+    var l = wrap(listener, d3_array(arguments));
     onRemove.call(this);
-    this.addEventListener(type, this[name] = wrapper, wrapper.$ = capture);
-    wrapper._ = listener;
-
-    function wrapper(e) {
-      var o = d3.event; // Events can be reentrant (e.g., focus).
-      d3.event = e;
-      args[0] = node.__data__;
-      try {
-        listener.apply(node, args);
-      } finally {
-        d3.event = o;
-      }
-    }
+    this.addEventListener(type, this[name] = l, l.$ = capture);
+    l._ = listener;
   }
 
   return listener ? onAdd : onRemove;
+}
+
+var d3_selection_onFilters = d3.map({
+  mouseenter: "mouseover",
+  mouseleave: "mouseout"
+});
+
+d3_selection_onFilters.forEach(function(k) {
+  if ("on" + k in document) d3_selection_onFilters.remove(k);
+});
+
+function d3_selection_onListener(listener, argumentz) {
+  return function(e) {
+    var o = d3.event; // Events can be reentrant (e.g., focus).
+    d3.event = e;
+    argumentz[0] = this.__data__;
+    try {
+      listener.apply(this, argumentz);
+    } finally {
+      d3.event = o;
+    }
+  };
+}
+
+function d3_selection_onFilter(listener, argumentz) {
+  var l = d3_selection_onListener(listener, argumentz);
+  return function(e) {
+    var target = this, related = e.relatedTarget;
+    if (!related || (related !== target && !(related.compareDocumentPosition(target) & 8))) {
+      l.call(target, e);
+    }
+  };
 }
 d3_selectionPrototype.each = function(callback) {
   return d3_selection_each(this, function(node, i, j) {
@@ -7661,32 +7675,90 @@ function d3_layout_treemapPad(node, padding) {
   if (dy < 0) { y += dy / 2; dy = 0; }
   return {x: x, y: y, dx: dx, dy: dy};
 }
+d3.layout.voronoi = function() {
+  var size = null,
+      x = d3_svg_lineX,
+      y = d3_svg_lineY,
+      clip;
+
+  function voronoi(data) {
+    var points = [],
+        cells,
+        fx = d3_functor(x),
+        fy = d3_functor(y),
+        d,
+        i,
+        n = data.length;
+    for (i = 0; i < n; ++i) points.push([+fx.call(this, d = data[i], i), +fy.call(this, d, i)]);
+    cells = d3.geom.voronoi(points);
+    for (i = 0; i < n; ++i) cells[i].data = data[i];
+    if (clip) for (i = 0; i < n; ++i) clip(cells[i]);
+    return cells;
+  }
+
+  voronoi.x = function(_) {
+    return arguments.length ? (x = _, voronoi) : x;
+  };
+
+  voronoi.y = function(_) {
+    return arguments.length ? (y = _, voronoi) : y;
+  };
+
+  voronoi.size = function(_) {
+    if (!arguments.length) return size;
+    if (_ == null) {
+      clip = null;
+    } else {
+      var w = +_[0], h = +_[1];
+      clip = d3.geom.polygon([[0, 0], [0, h], [w, h], [w, 0]]).clip;
+    }
+    return voronoi;
+  };
+
+  return voronoi;
+};
 function d3_dsv(delimiter, mimeType) {
   var reFormat = new RegExp("[\"" + delimiter + "\n]"),
       delimiterCode = delimiter.charCodeAt(0);
 
-  function dsv(url, callback) {
-    return d3.xhr(url, mimeType, callback).response(response);
+  function dsv(url, row, callback) {
+    if (arguments.length < 3) callback = row, row = null;
+    var xhr = d3.xhr(url, mimeType, callback);
+
+    xhr.row = function(_) {
+      return arguments.length
+          ? xhr.response((row = _) == null ? response : typedResponse(_))
+          : row;
+    };
+
+    return xhr.row(row);
   }
 
   function response(request) {
     return dsv.parse(request.responseText);
   }
 
-  dsv.parse = function(text) {
+  function typedResponse(f) {
+    return function(request) {
+      return dsv.parse(request.responseText, f);
+    };
+  }
+
+  dsv.parse = function(text, f) {
     var o;
 
     function process(text) {
-      return dsv.parseRows(text, function(row) {
-        if (o) return o(row);
-        o = new Function("d", "return {" + row.map(function(name, i) {
+      return dsv.parseRows(text, function(row, i) {
+        if (o) return o(row, i - 1);
+        var a = new Function("d", "return {" + row.map(function(name, i) {
           return JSON.stringify(name) + ": d[" + i + "]";
         }).join(",") + "}");
+        o = f ? function(row, i) { return f(a(row), i); } : a;
       });
     }
 
     return (arguments.length) ? process(text) : process;
-  }
+  };
 
   dsv.parseRows = function(text, f) {
     var EOL = {}, // sentinel value for end-of-line
@@ -8445,11 +8517,21 @@ function d3_geo_clipPolygon(segments, interpolate, listener) {
       clip = [];
 
   segments.forEach(function(segment) {
-    var n = segment.length;
-    if (n <= 1) return;
-    var p0 = segment[0],
-        p1 = segment[n - 1],
-        a = {point: p0, points: segment, other: null, visited: false, entry: true, subject: true},
+    if ((n = segment.length) <= 1) return;
+    var n, p0 = segment[0], p1 = segment[n - 1];
+
+    // If the first and last points of a segment are coincident, then treat as
+    // a closed ring.
+    // TODO if all rings are closed, then the winding order of the exterior
+    // ring should be checked.
+    if (d3_geo_sphericalEqual(p0, p1)) {
+      listener.lineStart();
+      for (var i = 0; i < n; ++i) listener.point((p0 = segment[i])[0], p0[1]);
+      listener.lineEnd();
+      return;
+    }
+
+    var a = {point: p0, points: segment, other: null, visited: false, entry: true, subject: true},
         b = {point: p0, points: [p0], other: a, visited: false, entry: false, subject: false};
     a.other = b;
     subject.push(a);
@@ -9503,14 +9585,9 @@ var d3_geo_length = {
   point: d3_noop,
   lineStart: d3_geo_lengthLineStart,
   lineEnd: d3_noop,
-  polygonStart: function() {
-    d3_geo_length.lineStart = d3_noop;
-  },
-  polygonEnd: function() {
-    d3_geo_length.lineStart = d3_geo_lengthLineStart;
-  }
+  polygonStart: d3_noop,
+  polygonEnd: d3_noop
 };
-
 
 function d3_geo_lengthLineStart() {
   var λ0, sinφ0, cosφ0;
@@ -9519,6 +9596,7 @@ function d3_geo_lengthLineStart() {
     λ0 = λ * d3_radians, sinφ0 = Math.sin(φ *= d3_radians), cosφ0 = Math.cos(φ);
     d3_geo_length.point = nextPoint;
   };
+
   d3_geo_length.lineEnd = function() {
     d3_geo_length.point = d3_geo_length.lineEnd = d3_noop;
   };
@@ -9636,7 +9714,15 @@ function d3_geo_projectionRadiansRotate(rotate, stream) {
     polygonEnd: function() { stream.polygonEnd(); }
   };
 }
-// Note: |δλ| and |δφ| must be < 2π
+d3.geo.rotation = function(rotate) {
+  rotate = d3_geo_rotation(rotate[0] % 360 * d3_radians, rotate[1] * d3_radians, rotate.length > 2 ? rotate[2] * d3_radians : 0);
+  return function(coordinates) {
+    coordinates = rotate(coordinates[0] * d3_radians, coordinates[1] * d3_radians);
+    return coordinates[0] *= d3_degrees, coordinates[1] *= d3_degrees, coordinates;
+  };
+};
+
+// Note: |δλ| must be < 2π
 function d3_geo_rotation(δλ, δφ, δγ) {
   return δλ ? (δφ || δγ ? d3_geo_compose(d3_geo_rotationλ(δλ), d3_geo_rotationφγ(δφ, δγ))
     : d3_geo_rotationλ(δλ))
@@ -10839,7 +10925,9 @@ d3.time.format.utc = function(template) {
 };
 var d3_time_formatIso = d3.time.format.utc("%Y-%m-%dT%H:%M:%S.%LZ");
 
-d3.time.format.iso = Date.prototype.toISOString ? d3_time_formatIsoNative : d3_time_formatIso;
+d3.time.format.iso = Date.prototype.toISOString && +new Date("2000-01-01T00:00:00.000Z")
+    ? d3_time_formatIsoNative
+    : d3_time_formatIso;
 
 function d3_time_formatIsoNative(date) {
   return date.toISOString();
