@@ -34,7 +34,7 @@ function d3_scale_quantile(domain, range) {
     return thresholds;
   };
 
-  scale.ticks = function(m) {
+  scale.ticks = function(m, subdiv_count) {
     return thresholds;
   };
 

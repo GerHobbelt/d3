@@ -17,7 +17,8 @@ function d3_arraySlice(pseudoarray) {
 //If `d3_arraySlice` cannot work with a [NodeList](https://developer.mozilla.org/En/DOM/NodeList), then change `d3_array` to `d3_arrayCopy`.
 //Side note: when you call `document.getElementsByTagName("selector")`, the array is live, i.e. when you change the document, the list will update automatically.
 try {
-  d3_array(document.documentElement.childNodes)[0].nodeType;
+  // Test whether the DOM nodes have array methods attached; if not, we add the one(s) we need.
+  d3_array(d3_document.documentElement.childNodes)[0].nodeType;
 } catch(e) {
   d3_array = d3_arrayCopy;
 }

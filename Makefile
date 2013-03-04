@@ -9,13 +9,13 @@ LOCALE ?= en_US
 
 # when node or any of these tools has not been installed, ignore them.
 ifeq ($(wildcard $(JS_TESTER)),)
-JS_TESTER = echo "no test rig installed"
-NODE_PATH = 
+JS_TESTER = echo "no test rig (VOWS) installed"
+NODE_PATH =
 PACKAGE_JSON =
 endif
 
 
-CORE_LOCALE_DEPS = 
+CORE_LOCALE_DEPS =
 ifneq ($(whereis node),)				# only do these when you have NodeJS installed
 CORE_LOCALE_DEPS = src/core/format-$(LOCALE).js
 else
@@ -176,11 +176,13 @@ D3_LAYOUT_SOURCES = 		\
 	src/layout/pack.js \
 	src/layout/cluster.js \
 	src/layout/tree.js \
-	src/layout/treemap.js
+	src/layout/treemap.js \
+	src/layout/voronoi.js
 
 
 D3_GEO_SOURCES = 		\
 	src/geo/geo.js \
+	src/geo/ambiguous.js \
 	src/geo/stream.js \
 	src/geo/spherical.js \
 	src/geo/cartesian.js \
@@ -195,10 +197,13 @@ D3_GEO_SOURCES = 		\
 	src/geo/clip.js \
 	src/geo/clip-antimeridian.js \
 	src/geo/clip-circle.js \
+	src/geo/clip-geometry.js \
+	src/geo/clip-line.js \
 	src/geo/compose.js \
 	src/geo/equirectangular.js \
 	src/geo/gnomonic.js \
 	src/geo/graticule.js \
+	src/geo/haversin.js \
 	src/geo/interpolate.js \
 	src/geo/greatArc.js \
 	src/geo/mercator.js \
@@ -210,6 +215,7 @@ D3_GEO_SOURCES = 		\
 	src/geo/path-centroid.js \
 	src/geo/area.js \
 	src/geo/centroid.js \
+	src/geo/length.js \
 	src/geo/projection.js \
 	src/geo/rotation.js \
 	src/geo/stereographic.js \
@@ -378,7 +384,7 @@ endif
 #	src/time/format-$(LOCALE).js
 
 clean:
-	@rm -f d3*.js 
+	@rm -f d3*.js
 ifneq ($(whereis node),)				# only do these when you have NodeJS installed
 	@rm -f $(PACKAGE_JSON) component.json
 endif

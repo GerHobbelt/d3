@@ -1,5 +1,12 @@
 var d3_geo_clipAntimeridian = d3_geo_clip(d3_true, d3_geo_clipAntimeridianLine, d3_geo_clipAntimeridianInterpolate);
 
+d3_geo_clipAntimeridian.feature = function() {
+  return {
+    type: "LineString",
+    coordinates: [[180, 90], [180, 0], [180, -90]]
+  };
+};
+
 // Takes a line and cuts into visible segments. Return values:
 //   0: there were intersections or the line was empty.
 //   1: no intersections.

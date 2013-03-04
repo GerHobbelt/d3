@@ -3,17 +3,17 @@ d3.mouse = function(container) {
 };
 
 var d3_mouse_getScreenCTM;
-if (typeof navigator !== "undefined" && /WebKit/.test(navigator.userAgent)) {
+if (typeof d3_window.navigator !== "undefined" && /WebKit/.test(d3_window.navigator.userAgent)) {
   var d3_mouse_bug44083 = -1; // https://bugs.webkit.org/show_bug.cgi?id=44083
   var d3_mouse_zoom_bug = -1; // ToDo: file bug report?
   d3_mouse_getScreenCTM = function(container, e) {
     var ctm,
-        test_bug44083 = (d3_mouse_bug44083 < 0) && (window.pageXOffset || window.pageYOffset),
+        test_bug44083 = (d3_mouse_bug44083 < 0) && (d3_window.pageXOffset || d3_window.pageYOffset),
         // Assuming zoom does the same in X and Y so only testing X
-        test_zoom_bug = (d3_mouse_zoom_bug < 0) && e.clientX && (e.screenX - window.screenLeft !== e.clientX);
+        test_zoom_bug = (d3_mouse_zoom_bug < 0) && e.clientX && (e.screenX - d3_window.screenLeft !== e.clientX);
 
     if (test_bug44083 || test_zoom_bug) {
-      var body = document.body,
+      var body = d3_document.body,
           bodyPos = body.style.getPropertyValue('position'),
           html = body.parentNode,
           htmlPos = html.style.getPropertyValue('position'),
@@ -39,12 +39,12 @@ if (typeof navigator !== "undefined" && /WebKit/.test(navigator.userAgent)) {
 
     ctm = container.getScreenCTM();
     if (d3_mouse_bug44083) {
-      ctm = ctm.translate(window.pageXOffset, window.pageYOffset);
+      ctm = ctm.translate(d3_window.pageXOffset, d3_window.pageYOffset);
     }
     if (d3_mouse_zoom_bug) {
       // zoom factor [z = (e.screenX - window.screenLeft) / e.clientX], ctm should be 1/z of it's position
       // the assumption is that zoomX == zoomY if someone can find a browser where this is not true then...
-      var s = e.clientX / (e.screenX - window.screenLeft) - 1;
+      var s = e.clientX / (e.screenX - d3_window.screenLeft) - 1;
       ctm = ctm.translate(ctm.e * s, ctm.f * s);
     }
     return ctm;

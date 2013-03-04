@@ -35,7 +35,7 @@ d3.nest = function() {
 //array of key and object pairs. Selects the key for the current
 //depth, grabs all of the needed objects from the given array, and
 //then puts them in the right places.
-  function map(array, depth) {
+  function map(mapType, array, depth) {
     if (depth >= keys.length) return rollup
         ? rollup.call(nest, array) : (sortValues
         ? array.sort(sortValues)
@@ -46,9 +46,9 @@ d3.nest = function() {
         key = keys[depth++],
         keyValue,
         object,
+        setter,
         valuesByKey = new d3_Map,
-        values,
-        o = {};
+        values;
 
     while (++i < n) {
       if (values = valuesByKey.get(keyValue = key(object = array[i]))) {
@@ -58,11 +58,20 @@ d3.nest = function() {
       }
     }
 
-    valuesByKey.forEach(function(keyValue, values) {
-      o[keyValue] = map(values, depth);
-    });
+    if (mapType) {
+      object = mapType();
+      setter = function(keyValue, values) {
+        object.set(keyValue, map(mapType, values, depth));
+      };
+    } else {
+      object = {};
+      setter = function(keyValue, values) {
+        object[keyValue] = map(mapType, values, depth);
+      };
+    }
 
-    return o;
+    valuesByKey.forEach(setter);
+    return object;
   }
 
 //Takes in a d3.map, and gets all of the entries out of it for the current depth. This means
@@ -71,32 +80,31 @@ d3.nest = function() {
   function entries(map, depth) {
     if (depth >= keys.length) return map;
 
-    var a = [],
-        sortKey = sortKeys[depth++],
-        key;
+    var array = [],
+        sortKey = sortKeys[depth++];
 
-    for (key in map) {
-      a.push({
-        key: key,
-        values: entries(map[key], depth)
-      });
-    }
-
-    if (sortKey) a.sort(function(a, b) {
-      return sortKey(a.key, b.key);
+    map.forEach(function(key, keyMap) {
+      array.push({
+	    key: key, 
+		values: entries(keyMap, depth)
+	  });
     });
 
-    return a;
+    return sortKey
+        ? array.sort(function(a, b) { 
+		    return sortKey(a.key, b.key); 
+		  })
+        : array;
   }
 
   //Uses the previously defined map function to create an object that nests according to the given keys.
-  nest.map = function(array) {
-    return map(array, 0);
+  nest.map = function(array, mapType) {
+    return map(mapType, array, 0);
   };
 
   //Uses the `map` and `entries` functions to create an array of key value pairs.
   nest.entries = function(array) {
-    return entries(map(array, 0), 0);
+    return entries(map(d3.map, array, 0), 0);
   };
 
   //Pushes a key onto the keys stack.
