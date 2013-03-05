@@ -121,8 +121,10 @@ function d3_scale_linearTickRange(domain, m, subdiv_count) {
 
 function d3_scale_linearTicks(domain, m, subdiv_count) {
   var extent = d3_scale_linearTickRange(domain, m, subdiv_count);
-  if (!subdiv_count || subdiv_count == 1)
-    return d3.range.apply(d3, extent);
+  if (!subdiv_count || subdiv_count == 1) {
+    subdiv_count = 1;
+    // return d3.range.apply(d3, extent);
+  }
     
   // d3.range but now producing a series of tick objects
   var start = extent[0] - extent[2], stop = extent[6], step = extent[7], left_edge = extent[3];
