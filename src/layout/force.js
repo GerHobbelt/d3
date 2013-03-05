@@ -21,13 +21,13 @@ d3.layout.force = function() {
 	  linkDistance_f,
 	  linkStrength_f,
 	  // These model parameters can be either a function or a direct numeric value:
-      friction = .9,
-      linkDistance = d3_layout_forceLinkDistance,
-      linkStrength = d3_layout_forceLinkStrength,
-      charge = -30,
-      gravity = .1,
-      theta = .8,
-      repulsor = false;
+    friction = .9,
+    linkDistance = d3_layout_forceLinkDistance,
+    linkStrength = d3_layout_forceLinkStrength,
+    charge = -30,
+    gravity = .1,
+    theta = .8,
+    repulsor = false;
 
   setup_model_parameter_functors();
 
@@ -36,8 +36,8 @@ d3.layout.force = function() {
     charge_f = d3_functor(charge);
     gravity_f = d3_functor(gravity);
     theta_f = d3_functor(theta);
-    linkDistance_f = d3_functor(LinkDistance);
-    linkStrength_f = d3_functor(LinkStrength);
+    linkDistance_f = d3_functor(linkDistance);
+    linkStrength_f = d3_functor(linkStrength);
   }
   
   function repulse(node, i) {
