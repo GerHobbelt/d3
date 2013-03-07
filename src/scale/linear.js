@@ -86,7 +86,7 @@ function d3_scale_linearNice(dx) {
 function d3_scale_linearTickRange(domain, m, subdiv_count) {
   var extent = d3_scaleExtent(domain),
       span = extent[1] - extent[0],
-      step, 
+      step,
 	  err,
 	  substep;
 
@@ -111,7 +111,7 @@ function d3_scale_linearTickRange(domain, m, subdiv_count) {
   extent[5] = Math.ceil(extent[0] / substep) * substep;
   extent[6] = Math.floor(extent[1] / substep) * substep + substep * .5; // inclusive
   extent[7] = substep;
-  
+
   // Round start and stop values to step interval.
   extent[0] = Math.ceil(extent[0] / step) * step;
   extent[1] = Math.floor(extent[1] / step) * step + step * .5; // inclusive
@@ -121,37 +121,39 @@ function d3_scale_linearTickRange(domain, m, subdiv_count) {
 
 function d3_scale_linearTicks(domain, m, subdiv_count) {
   var extent = d3_scale_linearTickRange(domain, m, subdiv_count);
-  if (!subdiv_count || subdiv_count == 1) {
-    subdiv_count = 1;
-    // return d3.range.apply(d3, extent);
+
+  // backwards compatible behaviour: when subdiv_count is undefined (or zero/falsey), a simple array of tick values is produced:
+  if (!subdiv_count) {
+    //subdiv_count = 1;
+    return d3.range.apply(d3, extent);
   }
-    
+
   // d3.range but now producing a series of tick objects
   var start = extent[0] - extent[2], stop = extent[6], step = extent[7], left_edge = extent[3];
-  if ((stop - start) / step === Infinity) throw new Error("infinite range");
+  if (!isFinite((stop - start) / step)) throw new Error("infinite range");
   var range = [],
       k = d3_range_integerScale(Math.abs(step)),
       i = -1,
       j;
   start *= k, stop *= k, step *= k, left_edge *= k;
   if (step < 0) {
-    while ((j = start + step * ++i) > left_edge) 
+    while ((j = start + step * ++i) > left_edge)
       ;
     for ( ; j > stop; j = start + step * ++i) {
       range.push({
         value: j / k,
-        sub: i % subdiv_count,
-        major: (i / subdiv_count)
+        subindex: i % subdiv_count,
+        majorindex: (i / subdiv_count) | 0       // fastest way to parseInt() across browsers: http://jsperf.com/math-floor-vs-math-round-vs-parseint/18
       });
     }
   } else {
-    while ((j = start + step * ++i) < left_edge) 
+    while ((j = start + step * ++i) < left_edge)
       ;
     for ( ; j < stop; j = start + step * ++i) {
       range.push({
         value: j / k,
         subindex: i % subdiv_count,
-        majorindex: (i / subdiv_count)
+        majorindex: (i / subdiv_count) | 0       // fastest way to parseInt() across browsers: http://jsperf.com/math-floor-vs-math-round-vs-parseint/18
       });
     }
   }

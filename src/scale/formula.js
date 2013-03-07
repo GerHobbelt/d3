@@ -84,16 +84,34 @@ function d3_scale_formulaNice(dx) {
   };
 }
 
-function d3_scale_formulaTickRange(domain, m) {
+function d3_scale_formulaTickRange(domain, m, subdiv_count) {
   var extent = d3_scaleExtent(domain),
       span = extent[1] - extent[0],
-      step = Math.pow(10, Math.floor(Math.log(span / m) / Math.LN10)),
-      err = m / span * step;
+      step,
+	  err,
+	  substep;
+
+  // Prevent errors and otherwise odd behaviour by providing a sane extent, even when the domain carries zero or one(1) data point only:
+  if (span == 0 || !extent.every(isFinite)) {
+    step = 1;
+	err = 1;
+  } else {
+    step = Math.pow(10, Math.floor(Math.log(span / m) / Math.LN10));
+    err = m / span * step;
+  }
 
   // Filter ticks to get closer to the desired count.
   if (err <= .15) step *= 10;
   else if (err <= .35) step *= 5;
   else if (err <= .75) step *= 2;
+  substep = step * (subdiv_count || 1);
+
+  // Set extent for the subticks + store the true extent for further use by the caller:
+  extent[3] = extent[0];
+  extent[4] = extent[1];
+  extent[5] = Math.ceil(extent[0] / substep) * substep;
+  extent[6] = Math.floor(extent[1] / substep) * substep + substep * .5; // inclusive
+  extent[7] = substep;
 
   // Round start and stop values to step interval.
   extent[0] = Math.ceil(extent[0] / step) * step;
@@ -102,10 +120,50 @@ function d3_scale_formulaTickRange(domain, m) {
   return extent;
 }
 
-function d3_scale_formulaTicks(domain, m) {
-  return d3.range.apply(d3, d3_scale_formulaTickRange(domain, m));
+function d3_scale_formulaTicks(domain, m, subdiv_count) {
+  var extent = d3_scale_formulaTickRange(domain, m, subdiv_count);
+
+  // backwards compatible behaviour: when subdiv_count is undefined (or zero/falsey), a simple array of tick values is produced:
+  if (!subdiv_count) {
+    //subdiv_count = 1;
+    return d3.range.apply(d3, extent);
+  }
+
+  // d3.range but now producing a series of tick objects
+  var start = extent[0] - extent[2], stop = extent[6], step = extent[7], left_edge = extent[3];
+  if (!isFinite((stop - start) / step)) throw new Error("infinite range");
+  var range = [],
+      k = d3_range_integerScale(Math.abs(step)),
+      i = -1,
+      j;
+  start *= k, stop *= k, step *= k, left_edge *= k;
+  if (step < 0) {
+    while ((j = start + step * ++i) > left_edge)
+      ;
+    for ( ; j > stop; j = start + step * ++i) {
+      range.push({
+        value: j / k,
+        subindex: i % subdiv_count,
+        majorindex: (i / subdiv_count) | 0       // fastest way to parseInt() across browsers: http://jsperf.com/math-floor-vs-math-round-vs-parseint/18
+      });
+    }
+  } else {
+    while ((j = start + step * ++i) < left_edge)
+      ;
+    for ( ; j < stop; j = start + step * ++i) {
+      range.push({
+        value: j / k,
+        subindex: i % subdiv_count,
+        majorindex: (i / subdiv_count) | 0       // fastest way to parseInt() across browsers: http://jsperf.com/math-floor-vs-math-round-vs-parseint/18
+      });
+    }
+  }
+  return {
+    range: range,
+    submodulus: subdiv_count
+  };
 }
 
 function d3_scale_formulaTickFormat(domain, m) {
-  return d3.format(",." + Math.max(0, -Math.floor(Math.log(d3_scale_formulaTickRange(domain, m)[2]) / Math.LN10 + .01)) + "f");
+  return d3.format(",." + Math.max(0, -Math.floor(Math.log(d3_scale_formulaTickRange(domain, m, 1)[2]) / Math.LN10 + .01)) + "f");
 }
