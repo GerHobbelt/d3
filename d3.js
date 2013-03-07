@@ -13,6 +13,10 @@ function d3_target(d) {
 function d3_source(d) {
   return d.source;
 }
+
+function d3_acos(x) {
+  return Math.acos(Math.max(-1, Math.min(1, x)));
+}
 var d3_format_decimalPoint = ".", 
     d3_format_thousandsSeparator = ",", 
     d3_format_grouping = [ 3, 3 ];
@@ -123,6 +127,41 @@ d3_class(d3_Map, {
 
 var d3_map_prefix = "\0", // prevent collision with built-ins
     d3_map_prefixCode = d3_map_prefix.charCodeAt(0);
+d3.set = function(array) {
+  var set = new d3_Set();
+  if (array) for (var i = 0; i < array.length; i++) set.add(array[i]);
+  return set;
+};
+
+function d3_Set() {}
+
+d3_class(d3_Set, {
+  has: function(value) {
+    return d3_map_prefix + value in this;
+  },
+  add: function(value) {
+    this[d3_map_prefix + value] = true;
+    return value;
+  },
+  remove: function(value) {
+    value = d3_map_prefix + value;
+    return value in this && delete this[value];
+  },
+  values: function() {
+    var values = [];
+    this.forEach(function(value) {
+      values.push(value);
+    });
+    return values;
+  },
+  forEach: function(f) {
+    for (var value in this) {
+      if (value.charCodeAt(0) === d3_map_prefixCode) {
+        f.call(this, value.substring(1));
+      }
+    }
+  }
+});
 function d3_identity(d) {
   return d;
 }
@@ -3125,10 +3164,6 @@ function d3_scale_nice(domain, nice) {
 
   return domain;
 }
-
-function d3_scale_niceDefault() {
-  return Math;
-}
 d3.scale.linear = function() {
   return d3_scale_linear([0, 1], [0, 1], d3.interpolate, false);
 };
@@ -3217,7 +3252,7 @@ function d3_scale_linearNice(dx) {
 function d3_scale_linearTickRange(domain, m, subdiv_count) {
   var extent = d3_scaleExtent(domain),
       span = extent[1] - extent[0],
-      step, 
+      step,
 	  err,
 	  substep;
 
@@ -3242,7 +3277,7 @@ function d3_scale_linearTickRange(domain, m, subdiv_count) {
   extent[5] = Math.ceil(extent[0] / substep) * substep;
   extent[6] = Math.floor(extent[1] / substep) * substep + substep * .5; // inclusive
   extent[7] = substep;
-  
+
   // Round start and stop values to step interval.
   extent[0] = Math.ceil(extent[0] / step) * step;
   extent[1] = Math.floor(extent[1] / step) * step + step * .5; // inclusive
@@ -3252,35 +3287,39 @@ function d3_scale_linearTickRange(domain, m, subdiv_count) {
 
 function d3_scale_linearTicks(domain, m, subdiv_count) {
   var extent = d3_scale_linearTickRange(domain, m, subdiv_count);
-  if (!subdiv_count || subdiv_count == 1)
+
+  // backwards compatible behaviour: when subdiv_count is undefined (or zero/falsey), a simple array of tick values is produced:
+  if (!subdiv_count) {
+    //subdiv_count = 1;
     return d3.range.apply(d3, extent);
-    
+  }
+
   // d3.range but now producing a series of tick objects
   var start = extent[0] - extent[2], stop = extent[6], step = extent[7], left_edge = extent[3];
-  if ((stop - start) / step === Infinity) throw new Error("infinite range");
+  if (!isFinite((stop - start) / step)) throw new Error("infinite range");
   var range = [],
       k = d3_range_integerScale(Math.abs(step)),
       i = -1,
       j;
   start *= k, stop *= k, step *= k, left_edge *= k;
   if (step < 0) {
-    while ((j = start + step * ++i) > left_edge) 
+    while ((j = start + step * ++i) > left_edge)
       ;
     for ( ; j > stop; j = start + step * ++i) {
       range.push({
         value: j / k,
-        sub: i % subdiv_count,
-        major: (i / subdiv_count)
+        subindex: i % subdiv_count,
+        majorindex: (i / subdiv_count) | 0       // fastest way to parseInt() across browsers: http://jsperf.com/math-floor-vs-math-round-vs-parseint/18
       });
     }
   } else {
-    while ((j = start + step * ++i) < left_edge) 
+    while ((j = start + step * ++i) < left_edge)
       ;
     for ( ; j < stop; j = start + step * ++i) {
       range.push({
         value: j / k,
         subindex: i % subdiv_count,
-        majorindex: (i / subdiv_count)
+        majorindex: (i / subdiv_count) | 0       // fastest way to parseInt() across browsers: http://jsperf.com/math-floor-vs-math-round-vs-parseint/18
       });
     }
   }
@@ -3323,11 +3362,10 @@ function d3_scale_polylinear(domain, range, uninterpolate, interpolate) {
   };
 }
 d3.scale.log = function() {
-  return d3_scale_log(d3.scale.linear(), d3_scale_logp);
+  return d3_scale_log(d3.scale.linear().domain([0, Math.LN10]), 10, d3_scale_logp, d3_scale_powp);
 };
 
-function d3_scale_log(linear, log) {
-  var pow = log.pow;
+function d3_scale_log(linear, base, log, pow) {
 
   function scale(x) {
     return linear(log(x));
@@ -3339,14 +3377,20 @@ function d3_scale_log(linear, log) {
 
   scale.domain = function(x) {
     if (!arguments.length) return linear.domain().map(pow);
-    log = x[0] < 0 ? d3_scale_logn : d3_scale_logp;
-    pow = log.pow;
+    if (x[0] < 0) log = d3_scale_logn, pow = d3_scale_pown;
+    else log = d3_scale_logp, pow = d3_scale_powp;
     linear.domain(x.map(log));
     return scale;
   };
 
+  scale.base = function(_) {
+    if (!arguments.length) return base;
+    base = +_;
+    return scale;
+  };
+
   scale.nice = function() {
-    linear.domain(d3_scale_nice(linear.domain(), d3_scale_niceDefault));
+    linear.domain(d3_scale_nice(linear.domain(), d3_scale_logNice(base)));
     return scale;
   };
 
@@ -3354,16 +3398,18 @@ function d3_scale_log(linear, log) {
     var extent = d3_scaleExtent(linear.domain()),
         ticks = [];
     if (extent.every(isFinite)) {
-      var i = Math.floor(extent[0]),
-          j = Math.ceil(extent[1]),
+      var b = Math.log(base),
+          i = Math.floor(extent[0] / b),
+          j = Math.ceil(extent[1] / b),
           u = pow(extent[0]),
-          v = pow(extent[1]);
+          v = pow(extent[1]),
+          n = base % 1 ? 2 : base;
       if (log === d3_scale_logn) {
-        ticks.push(pow(i));
-        for (; i++ < j;) for (var k = 9; k > 0; k--) ticks.push(pow(i) * k);
+        ticks.push(-Math.pow(base, -i));
+        for (; i++ < j;) for (var k = n - 1; k > 0; k--) ticks.push(-Math.pow(base, -i) * k);
       } else {
-        for (; i < j; i++) for (var k = 1; k < 10; k++) ticks.push(pow(i) * k);
-        ticks.push(pow(i));
+        for (; i < j; i++) for (var k = 1; k < n; k++) ticks.push(Math.pow(base, i) * k);
+        ticks.push(Math.pow(base, i));
       }
       for (i = 0; ticks[i] < u; i++) {} // strip small values
       for (j = ticks.length; ticks[j - 1] > v; j--) {} // strip big values
@@ -3375,7 +3421,8 @@ function d3_scale_log(linear, log) {
   scale.tickFormat = function(n, format) {
     if (arguments.length < 2) format = d3_scale_logFormat;
     if (!arguments.length) return format;
-    var k = Math.max(.1, n / scale.ticks().length),
+    var b = Math.log(base),
+        k = Math.max(.1, n / scale.ticks().length),
         f = log === d3_scale_logn ? (e = -1e-12, Math.floor) : (e = 1e-12, Math.ceil),
         e,
         h = (k >= 0.5);
@@ -3392,7 +3439,7 @@ function d3_scale_log(linear, log) {
       }
     }
     return function(d) {
-      var r = d / pow(f(log(d) + e));
+      var r = d / pow(b * f(log(d) / b + e)) <= k ? format(d) : "";
       // round to two decimal places to uniquely pull out the half-way (.5) tick
       // (floating point 'equals' comparisons are dangerous, so we make sure Math.round produces an integer result)
       if (r <= k || (h && Math.round(200 * r) == 100))
@@ -3402,7 +3449,7 @@ function d3_scale_log(linear, log) {
   };
 
   scale.copy = function() {
-    return d3_scale_log(linear.copy(), log);
+    return d3_scale_log(linear.copy(), base, log, pow);
   };
 
   return d3_scale_linearRebind(scale, linear);
@@ -3411,20 +3458,30 @@ function d3_scale_log(linear, log) {
 var d3_scale_logFormat = d3.format(".0E");
 
 function d3_scale_logp(x) {
-  return Math.log(x < 0 ? 0 : x) / Math.LN10;
+  return Math.log(x < 0 ? 0 : x);
+}
+
+function d3_scale_powp(x) {
+  return Math.exp(x);
 }
 
 function d3_scale_logn(x) {
-  return -Math.log(x > 0 ? 0 : -x) / Math.LN10;
+  return -Math.log(x > 0 ? 0 : -x);
 }
 
-d3_scale_logp.pow = function(x) {
-  return Math.pow(10, x);
-};
+function d3_scale_pown(x) {
+  return -Math.exp(-x);
+}
 
-d3_scale_logn.pow = function(x) {
-  return -Math.pow(10, -x);
-};
+function d3_scale_logNice(base) {
+  base = Math.log(base);
+  var nice = {
+    floor: function(x) { return Math.floor(x / base) * base; },
+    ceil: function(x) { return Math.ceil(x / base) * base; }
+  };
+  return function() { return nice; };
+}
+
 d3.scale.pow = function() {
   return d3_scale_pow(d3.scale.linear(), 1);
 };
@@ -3448,7 +3505,7 @@ function d3_scale_pow(linear, exponent) {
   };
 
   scale.ticks = function(m, subdiv_count) {
-    return d3_scale_linearTicks(scale.domain(), m);
+    return d3_scale_linearTicks(scale.domain(), m, subdiv_count);
   };
 
   scale.tickFormat = function(m) {
@@ -5903,13 +5960,13 @@ d3.layout.force = function() {
 	  linkDistance_f,
 	  linkStrength_f,
 	  // These model parameters can be either a function or a direct numeric value:
-      friction = .9,
-      linkDistance = d3_layout_forceLinkDistance,
-      linkStrength = d3_layout_forceLinkStrength,
-      charge = -30,
-      gravity = .1,
-      theta = .8,
-      repulsor = false;
+    friction = .9,
+    linkDistance = d3_layout_forceLinkDistance,
+    linkStrength = d3_layout_forceLinkStrength,
+    charge = -30,
+    gravity = .1,
+    theta = .8,
+    repulsor = false;
 
   setup_model_parameter_functors();
 
@@ -5918,8 +5975,8 @@ d3.layout.force = function() {
     charge_f = d3_functor(charge);
     gravity_f = d3_functor(gravity);
     theta_f = d3_functor(theta);
-    linkDistance_f = d3_functor(LinkDistance);
-    linkStrength_f = d3_functor(LinkStrength);
+    linkDistance_f = d3_functor(linkDistance);
+    linkStrength_f = d3_functor(linkStrength);
   }
   
   function repulse(node, i) {
@@ -7965,6 +8022,16 @@ function d3_geo_cartesianNormalize(d) {
   d[1] /= l;
   d[2] /= l;
 }
+// Length returned in radians; multiply by radius for distance.
+d3.geo.distance = function(a, b) {
+  var Δλ = (b[0] - a[0]) * d3_radians,
+      φ0 = a[1] * d3_radians, φ1 = b[1] * d3_radians,
+      sinΔλ = Math.sin(Δλ), cosΔλ = Math.cos(Δλ),
+      sinφ0 = Math.sin(φ0), cosφ0 = Math.cos(φ0),
+      sinφ1 = Math.sin(φ1), cosφ1 = Math.cos(φ1),
+      t;
+  return Math.atan2(Math.sqrt((t = cosφ1 * sinΔλ) * t + (t = cosφ0 * sinφ1 - sinφ0 * cosφ1 * cosΔλ) * t), sinφ0 * sinφ1 + cosφ0 * cosφ1 * cosΔλ);
+};
 function d3_geo_resample(project) {
   var δ2 = .5, // precision, px²
       maxDepth = 16;
@@ -8055,9 +8122,7 @@ function d3_geo_resample(project) {
 
   return resample;
 }
-// TODO composite invert
-
-// A composite projection for the United States, 960x500. The set of standard
+// A composite projection for the United States, 960×500. The set of standard
 // parallels for each region comes from USGS, which is published here:
 // http://egsc.usgs.gov/isb/pubs/MapProjections/projections.html#albers
 d3.geo.albersUsa = function() {
@@ -8078,6 +8143,10 @@ d3.geo.albersUsa = function() {
       .center([0, 10])
       .parallels([8, 18]);
 
+  var alaskaInvert,
+      hawaiiInvert,
+      puertoRicoInvert;
+
   function albersUsa(coordinates) {
     return projection(coordinates)(coordinates);
   }
@@ -8090,6 +8159,10 @@ d3.geo.albersUsa = function() {
         : lat < 21 ? puertoRico
         : lower48;
   }
+
+  albersUsa.invert = function(coordinates) {
+    return alaskaInvert(coordinates) || hawaiiInvert(coordinates) || puertoRicoInvert(coordinates) || lower48.invert(coordinates);
+  };
 
   albersUsa.scale = function(x) {
     if (!arguments.length) return lower48.scale();
@@ -8109,11 +8182,55 @@ d3.geo.albersUsa = function() {
     alaska.translate([dx - .40 * dz, dy + .17 * dz]);
     hawaii.translate([dx - .19 * dz, dy + .20 * dz]);
     puertoRico.translate([dx + .58 * dz, dy + .43 * dz]);
+
+    alaskaInvert = d3_geo_albersUsaInvert(alaska, [[-180, 50], [-130, 72]]);
+    hawaiiInvert = d3_geo_albersUsaInvert(hawaii, [[-164, 18], [-154, 24]]);
+    puertoRicoInvert = d3_geo_albersUsaInvert(puertoRico, [[-67.5, 17.5], [-65, 19]]);
+
     return albersUsa;
   };
 
   return albersUsa.scale(lower48.scale());
 };
+
+function d3_geo_albersUsaInvert(projection, extent) {
+  var a = projection(extent[0]),
+      b = projection([.5 * (extent[0][0] + extent[1][0]), extent[0][1]]),
+      c = projection([extent[1][0], extent[0][1]]),
+      d = projection(extent[1]);
+
+  var dya = b[1]- a[1],
+      dxa = b[0]- a[0],
+      dyb = c[1]- b[1],
+      dxb = c[0]- b[0];
+
+  var ma = dya / dxa,
+      mb = dyb / dxb;
+
+  // Find center of circle going through points [a, b, c].
+  var cx = .5 * (ma * mb * (a[1] - c[1]) + mb * (a[0] + b[0]) - ma * (b[0] + c[0])) / (mb - ma),
+      cy = (.5 * (a[0] + b[0]) - cx) / ma + .5 * (a[1] + b[1]);
+
+  // Radial distance² from center.
+  var dx0 = d[0] - cx,
+      dy0 = d[1] - cy,
+      dx1 = a[0] - cx,
+      dy1 = a[1] - cy,
+      r0 = dx0 * dx0 + dy0 * dy0,
+      r1 = dx1 * dx1 + dy1 * dy1;
+
+  // Angular extent.
+  var a0 = Math.atan2(dy0, dx0),
+      a1 = Math.atan2(dy1, dx1);
+
+  return function(coordinates) {
+    var dx = coordinates[0] - cx,
+        dy = coordinates[1] - cy,
+        r = dx * dx + dy * dy,
+        a = Math.atan2(dy, dx);
+    if (r0 < r && r < r1 && a0 < a && a < a1) return projection.invert(coordinates);
+  };
+}
 function d3_geo_albers(φ0, φ1) {
   var sinφ0 = Math.sin(φ0),
       n = (sinφ0 + Math.sin(φ1)) / 2,
@@ -8397,7 +8514,7 @@ function d3_geo_circleAngle(cr, point) {
   var a = d3_geo_cartesian(point);
   a[0] -= cr;
   d3_geo_cartesianNormalize(a);
-  var angle = Math.acos(Math.max(-1, Math.min(1, -a[1])));
+  var angle = d3_acos(-a[1]);
   return ((-a[2] < 0 ? -angle : angle) + 2 * Math.PI - ε) % (2 * Math.PI);
 }
 function d3_geo_clip(pointVisible, clipLine, interpolate) {
@@ -8845,8 +8962,8 @@ function d3_geo_clipCircle(degrees) {
 
   // Intersects the great circle between a and b with the clip circle.
   function intersect(a, b) {
-    var pa = d3_geo_cartesian(a, 0),
-        pb = d3_geo_cartesian(b, 0);
+    var pa = d3_geo_cartesian(a),
+        pb = d3_geo_cartesian(b);
     // We have two planes, n1.p = d1 and n2.p = d2.
     // Find intersection line p(t) = c1 n1 + c2 n2 + t (n1 x n2).
     var n1 = [1, 0, 0], // normal
@@ -9007,6 +9124,148 @@ function d3_geo_clipLineSegment(a, b) {
     }
   }
 }
+function d3_geo_clipView(x0, y0, x1, y1) {
+
+  // TODO optimise polygon clipping.
+  var clipPolygon = d3.geom.polygon([[x0, y0], [x0, y1], [x1, y1], [x1, y0]]).clip,
+      clipLine = d3_geo_clipViewLine(x0, x1, y0, y1);
+
+  return function(listener) {
+    var clip = {
+      point: point,
+      lineStart: lineStart,
+      lineEnd: lineEnd,
+      polygonStart: function() {
+        listener.polygonStart();
+        clip.lineStart = ringStart;
+        clip.lineEnd = ringEnd;
+        clip.point = ringPoint;
+      },
+      polygonEnd: function() {
+        clip.point = point;
+        clip.lineEnd = lineEnd;
+        clip.lineStart = lineStart;
+        listener.polygonEnd();
+      }
+    };
+
+    function visible(x, y) {
+      return x0 <= x && x <= x1 && y0 <= y && y <= y1;
+    }
+
+    function point(x, y) {
+      if (visible(x, y)) listener.point(x, y);
+    }
+
+    var x0, y0, v0, first;
+
+    function lineStart() {
+      clip.point = linePoint;
+      first = true;
+      v0 = false;
+    }
+
+    function lineEnd() {
+      clip.point = point;
+      if (v0) listener.lineEnd();
+    }
+
+    function linePoint(x, y) {
+      var v = visible(x, y);
+      if (first) {
+        if (v) {
+          listener.lineStart();
+          listener.point(x, y);
+        }
+      } else {
+        if (v && v0) listener.point(x, y);
+        else {
+          var a = [x0, y0],
+              b = [x, y];
+          if (clipLine(a, b)) {
+            if (!v0) {
+              listener.lineStart();
+              listener.point(a[0], a[1]);
+            }
+            listener.point(b[0], b[1]);
+            if (!v) listener.lineEnd();
+          }
+        }
+      }
+      first = false;
+      x0 = x, y0 = y, v0 = v;
+    }
+
+    var ring;
+
+    function ringStart() {
+      ring = [];
+    }
+
+    function ringEnd() {
+      ring = clipPolygon(ring);
+      var n = ring.length;
+      if (n) {
+        listener.lineStart();
+        for (var i = 0, n = ring.length, p; i < n; ++i) {
+          listener.point((p = ring[i])[0], p[1]);
+        }
+        listener.point(ring[0][0], ring[0][1]);
+        listener.lineEnd();
+      }
+    }
+
+    function ringPoint(x, y) {
+      ring.push([x, y]);
+    }
+
+    return clip;
+  };
+}
+
+// Liang–Barsky line clipping.
+function d3_geo_clipViewLine(xMin, xMax, yMin, yMax) {
+  return function(a, b) {
+    var dx = b[0] - a[0],
+        dy = b[1] - a[1],
+        t = [0, 1];
+
+    if (Math.abs(dx) < ε && Math.abs(dy) < ε &&
+        xMin <= a[0] && a[0] <= xMax && yMin <= a[1] && a[1] <= yMax) return;
+
+    if (clipT(xMin - a[0],  dx, t) &&
+        clipT(a[0] - xMax, -dx, t) &&
+        clipT(yMin - a[1],  dy, t) &&
+        clipT(a[1] - yMax, -dy, t)) {
+      if (t[1] < 1) {
+        b[0] = a[0] + t[1] * dx;
+        b[1] = a[1] + t[1] * dy;
+      }
+      if (t[0] > 0) {
+        a[0] += t[0] * dx;
+        a[1] += t[0] * dy;
+      }
+      return true;
+    }
+
+    return false;
+  };
+
+  function clipT(num, denominator, t) {
+    if (Math.abs(denominator) < ε) return num <= 0;
+
+    var u = num / denominator;
+
+    if (denominator > 0) {
+      if (u > t[1]) return false;
+      if (u > t[0]) t[0] = u;
+    } else {
+      if (u < t[0]) return false;
+      if (u < t[1]) t[1] = u;
+    }
+    return true;
+  }
+}
 function d3_geo_compose(a, b) {
 
   function compose(x, y) {
@@ -9035,10 +9294,10 @@ var d3_geo_gnomonic = d3_geo_azimuthal(
   return d3_geo_projection(d3_geo_gnomonic);
 }).raw = d3_geo_gnomonic;
 d3.geo.graticule = function() {
-  var x1, x0,
-      y1, y0,
-      dx = 22.5, dy = dx,
-      x, y,
+  var x1, x0, X1, X0,
+      y1, y0, Y1, Y0,
+      dx = 10, dy = dx, DX = 90, DY = 360,
+      x, y, X, Y,
       precision = 2.5;
 
   function graticule() {
@@ -9046,8 +9305,10 @@ d3.geo.graticule = function() {
   }
 
   function lines() {
-    return d3.range(Math.ceil(x0 / dx) * dx, x1, dx).map(x)
-        .concat(d3.range(Math.ceil(y0 / dy) * dy, y1, dy).map(y));
+    return d3.range(Math.ceil(X0 / DX) * DX, X1, DX).map(X)
+        .concat(d3.range(Math.ceil(Y0 / DY) * DY, Y1, DY).map(Y))
+        .concat(d3.range(Math.ceil(x0 / dx) * dx, x1, dx).filter(function(x) { return Math.abs(x % DX) > ε; }).map(x))
+        .concat(d3.range(Math.ceil(y0 / dy) * dy, y1, dy).filter(function(y) { return Math.abs(y % DY) > ε; }).map(y));
   }
 
   graticule.lines = function() {
@@ -9058,15 +9319,29 @@ d3.geo.graticule = function() {
     return {
       type: "Polygon",
       coordinates: [
-        x(x0).concat(
-        y(y1).slice(1),
-        x(x1).reverse().slice(1),
-        y(y0).reverse().slice(1))
+        X(X0).concat(
+        Y(Y1).slice(1),
+        X(X1).reverse().slice(1),
+        Y(Y0).reverse().slice(1))
       ]
     };
   };
 
   graticule.extent = function(_) {
+    if (!arguments.length) return graticule.minorExtent();
+    return graticule.majorExtent(_).minorExtent(_);
+  };
+
+  graticule.majorExtent = function(_) {
+    if (!arguments.length) return [[X0, Y0], [X1, Y1]];
+    X0 = +_[0][0], X1 = +_[1][0];
+    Y0 = +_[0][1], Y1 = +_[1][1];
+    if (X0 > X1) _ = X0, X0 = X1, X1 = _;
+    if (Y0 > Y1) _ = Y0, Y0 = Y1, Y1 = _;
+    return graticule.precision(precision);
+  };
+
+  graticule.minorExtent = function(_) {
     if (!arguments.length) return [[x0, y0], [x1, y1]];
     x0 = +_[0][0], x1 = +_[1][0];
     y0 = +_[0][1], y1 = +_[1][1];
@@ -9076,6 +9351,17 @@ d3.geo.graticule = function() {
   };
 
   graticule.step = function(_) {
+    if (!arguments.length) return graticule.minorStep();
+    return graticule.majorStep(_).minorStep(_);
+  };
+
+  graticule.majorStep = function(_) {
+    if (!arguments.length) return [DX, DY];
+    DX = +_[0], DY = +_[1];
+    return graticule;
+  };
+
+  graticule.minorStep = function(_) {
     if (!arguments.length) return [dx, dy];
     dx = +_[0], dy = +_[1];
     return graticule;
@@ -9084,12 +9370,16 @@ d3.geo.graticule = function() {
   graticule.precision = function(_) {
     if (!arguments.length) return precision;
     precision = +_;
-    x = d3_geo_graticuleX(y0, y1, precision);
+    x = d3_geo_graticuleX(y0, y1, 90);
     y = d3_geo_graticuleY(x0, x1, precision);
+    X = d3_geo_graticuleX(Y0, Y1, 90);
+    Y = d3_geo_graticuleY(X0, X1, precision);
     return graticule;
   };
 
-  return graticule.extent([[-180 + ε, -90 + ε], [180 - ε, 90 - ε]]);
+  return graticule
+      .majorExtent([[-180, -90 + ε], [180, 90 - ε]])
+      .minorExtent([[-180, -80 - ε], [180, 80 + ε]]);
 };
 
 function d3_geo_graticuleX(y0, y1, dy) {
@@ -9139,48 +9429,39 @@ function d3_geo_interpolate(x0, y0, x1, y1) {
 
   return interpolate;
 };
+// @deprecated use {type: "LineString"} or d3.geo.distance instead.
 d3.geo.greatArc = function() {
   var source = d3_source, source_,
-      target = d3_target, target_,
-      precision = 6 * d3_radians,
-      interpolate;
+      target = d3_target, target_;
 
   function greatArc() {
-    var p0 = source_ || source.apply(this, arguments),
-        p1 = target_ || target.apply(this, arguments),
-        i = interpolate || d3.geo.interpolate(p0, p1),
-        t = 0,
-        dt = precision / i.distance,
-        coordinates = [p0];
-    while ((t += dt) < 1) coordinates.push(i(t));
-    coordinates.push(p1);
-    return {type: "LineString", coordinates: coordinates};
+    return {type: "LineString", coordinates: [
+      source_ || source.apply(this, arguments),
+      target_ || target.apply(this, arguments)
+    ]};
   }
 
-  // Length returned in radians; multiply by radius for distance.
   greatArc.distance = function() {
-    return (interpolate || d3.geo.interpolate(source_ || source.apply(this, arguments), target_ || target.apply(this, arguments))).distance;
+    return d3.geo.distance(
+      source_ || source.apply(this, arguments),
+      target_ || target.apply(this, arguments)
+    );
   };
 
   greatArc.source = function(_) {
     if (!arguments.length) return source;
     source = _, source_ = typeof _ === "function" ? null : _;
-    interpolate = source_ && target_ ? d3.geo.interpolate(source_, target_) : null;
     return greatArc;
   };
 
   greatArc.target = function(_) {
     if (!arguments.length) return target;
     target = _, target_ = typeof _ === "function" ? null : _;
-    interpolate = source_ && target_ ? d3.geo.interpolate(source_, target_) : null;
     return greatArc;
   };
 
-  // Precision is specified in degrees.
-  greatArc.precision = function(_) {
-    if (!arguments.length) return precision / d3_radians;
-    precision = _ * d3_radians;
-    return greatArc;
+  greatArc.precision = function() {
+    return arguments.length ? greatArc : 0;
   };
 
   return greatArc;
@@ -9627,8 +9908,10 @@ function d3_geo_projectionMutator(projectAt) {
       λ = 0, φ = 0, // center
       δλ = 0, δφ = 0, δγ = 0, // rotate
       δx, δy, // center
-      clip = d3_geo_clipAntimeridian,
-      clipAngle = null;
+      preclip = d3_geo_clipAntimeridian,
+      postclip = d3_identity,
+      clipAngle = null,
+      clipExtent = null;
 
   function projection(point) {
     point = projectRotate(point[0] * d3_radians, point[1] * d3_radians);
@@ -9641,12 +9924,19 @@ function d3_geo_projectionMutator(projectAt) {
   }
 
   projection.stream = function(stream) {
-    return d3_geo_projectionRadiansRotate(rotate, clip(projectResample(stream)));
+    return d3_geo_projectionRadiansRotate(rotate, preclip(projectResample(postclip(stream))));
   };
 
   projection.clipAngle = function(_) {
     if (!arguments.length) return clipAngle;
-    clip = _ == null ? (clipAngle = _, d3_geo_clipAntimeridian) : d3_geo_clipCircle(clipAngle = +_);
+    preclip = _ == null ? (clipAngle = _, d3_geo_clipAntimeridian) : d3_geo_clipCircle(clipAngle = +_);
+    return projection;
+  };
+
+  projection.clipExtent = function(_) {
+    if (!arguments.length) return clipExtent;
+    clipExtent = _;
+    postclip = _ == null ? d3_identity : d3_geo_clipView(_[0][0], _[0][1], _[1][0], _[1][1]);
     return projection;
   };
 

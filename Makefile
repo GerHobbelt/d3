@@ -50,6 +50,7 @@ d3.core.js: \
 	src/core/class.js \
 	src/core/array.js \
 	src/core/map.js \
+	src/core/set.js \
 	src/core/identity.js \
 	src/core/true.js \
 	src/core/functor.js \
@@ -201,6 +202,7 @@ d3.geo.js: \
 	src/geo/stream.js \
 	src/geo/spherical.js \
 	src/geo/cartesian.js \
+	src/geo/distance.js \
 	src/geo/resample.js \
 	src/geo/albers-usa.js \
 	src/geo/albers.js \
@@ -214,6 +216,7 @@ d3.geo.js: \
 	src/geo/clip-circle.js \
 	src/geo/clip-geometry.js \
 	src/geo/clip-line.js \
+	src/geo/clip-view.js \
 	src/geo/compose.js \
 	src/geo/equirectangular.js \
 	src/geo/gnomonic.js \
