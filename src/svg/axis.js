@@ -9,7 +9,7 @@ d3.svg.axis = function() {
       tickValues = null,
       tickFormat_ = null,
       tickFormatExtended_,
-      tickFilter = d3_functor(true),
+      tickFilter = true,
       tickSubdivide = 0;
 
   function axis(g) {
@@ -24,9 +24,16 @@ d3.svg.axis = function() {
         tickFormat = (tickFormat_ == null ? (scale.tickFormat ? scale.tickFormat.apply(scale, tickArguments_) : d3.format(".f")) : tickFormat_);
 
     // Minor ticks?
-    var subticks = ticks.range.filter(function(d, i, a) {
-      return tickFilter(d, d.index, ticks, i, a);
-    });
+    var subticks;
+    if (typeof tickFilter ==== "function") {
+      subticks = ticks.range.filter(function(d, i, a) {
+        return tickFilter(d, d.index, ticks, i, a);
+      });
+    } else if (tickFilter) {
+      subticks = ticks.range; // TODO: should we clone the array? 
+    } else {
+      subticks = [];
+    }
 
     var range = d3_scaleRange(scale);
 
@@ -52,7 +59,7 @@ d3.svg.axis = function() {
 
         // Domain.
         var path = g.selectAll(".domain").data([0]);
-		path.enter().append("path").attr("class", "domain");
+        path.enter().append("path").attr("class", "domain");
         var pathUpdate = d3.transition(path);
 
         // Stash a snapshot of the new scale, and retrieve the old snapshot.
@@ -169,7 +176,6 @@ d3.svg.axis = function() {
           subtickUpdate.call(tickTransform, scale1);
           subtickExit.call(tickTransform, scale1);
         }
-
         // For ordinal scales:
         // - any entering ticks are undefined in the old scale
         // - any exiting ticks are undefined in the new scale
@@ -257,7 +263,7 @@ d3.svg.axis = function() {
 
   axis.tickFilter = function(x) {
     if (!arguments.length) return tickFilter;
-    tickFilter = (x != null ? d3_functor(x) : d3_functor(true));
+    tickFilter = (x != null ? x : true);
     return axis;
   };
 
