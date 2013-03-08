@@ -216,6 +216,7 @@ d3.geo.js: \
 	src/geo/clip-circle.js \
 	src/geo/clip-geometry.js \
 	src/geo/clip-line.js \
+	src/geo/clip-polygon.js \
 	src/geo/clip-view.js \
 	src/geo/compose.js \
 	src/geo/equirectangular.js \
