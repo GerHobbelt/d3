@@ -17,7 +17,7 @@ d3.ns = {
     }
     return d3_nsPrefix.hasOwnProperty(prefix)
         ? {
-            space: d3_nsPrefix[prefix], 
+            space: d3_nsPrefix[prefix],
             local: name
           }
         : name;

@@ -76,7 +76,7 @@ d3.xhr = function(url, mimeType, callback) {
     }
     if (mimeType != null && request.overrideMimeType) {
       request.overrideMimeType(mimeType);
-	}
+    }
     if (callback != null) {
       xhr.on("error", callback).on("load", function(request) {
         callback(null, request);
@@ -95,7 +95,7 @@ d3.xhr = function(url, mimeType, callback) {
 
   if (arguments.length === 2 && typeof mimeType === "function") {
     callback = mimeType;
-	mimeType = null;
+    mimeType = null;
   }
   return callback == null ? xhr : xhr.get(d3_xhr_fixCallback(callback));
 };

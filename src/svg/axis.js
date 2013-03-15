@@ -14,12 +14,12 @@ d3.svg.axis = function() {
 
   function axis(g) {
     // Ticks (+ optional subticks), or domain values for ordinal scales.
-    var ticks = (tickValues == null ? 
-                 (scale.ticks ? 
-                  scale.ticks.apply(scale, tickArguments_, tickSubdivide) : 
-                  { range: scale.domain().map(d3_svg_axisMapTicks), submodulus: 0 }) : 
-                 tickValues.range ? 
-                  tickValues : 
+    var ticks = (tickValues == null ?
+                 (scale.ticks ?
+                  scale.ticks.apply(scale, tickArguments_, tickSubdivide) :
+                  { range: scale.domain().map(d3_svg_axisMapTicks), submodulus: 0 }) :
+                 tickValues.range ?
+                  tickValues :
                   { range: tickValues.map(d3_svg_axisMapTicks), submodulus: 0 }),
         tickFormat = (tickFormat_ == null ? (scale.tickFormat ? scale.tickFormat.apply(scale, tickArguments_) : d3.format(".f")) : tickFormat_);
 
@@ -30,7 +30,7 @@ d3.svg.axis = function() {
         return tickFilter(d, d.index, ticks, i, a);
       });
     } else if (tickFilter) {
-      subticks = ticks.range; // TODO: should we clone the array? 
+      subticks = ticks.range; // TODO: should we clone the array?
     } else {
       subticks = [];
     }

@@ -88,13 +88,13 @@ function d3_scale_formulaTickRange(domain, m, subdiv_count) {
   var extent = d3_scaleExtent(domain),
       span = extent[1] - extent[0],
       step,
-	  err,
-	  substep;
+      err,
+      substep;
 
   // Prevent errors and otherwise odd behaviour by providing a sane extent, even when the domain carries zero or one(1) data point only:
   if (span == 0 || !extent.every(isFinite)) {
     step = 1;
-	err = 1;
+    err = 1;
   } else {
     step = Math.pow(10, Math.floor(Math.log(span / m) / Math.LN10));
     err = m / span * step;

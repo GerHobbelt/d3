@@ -22,25 +22,25 @@ d3_class(d3_Map, {
   },
   keys: function() {
     var keys = [];
-    this.forEach(function(key) { 
-      keys.push(key); 
+    this.forEach(function(key) {
+      keys.push(key);
     });
     return keys;
   },
   values: function() {
     var values = [];
-    this.forEach(function(key, value) { 
-      values.push(value); 
+    this.forEach(function(key, value) {
+      values.push(value);
     });
     return values;
   },
   entries: function() {
     var entries = [];
-    this.forEach(function(key, value) { 
+    this.forEach(function(key, value) {
       entries.push({
-        key: key, 
+        key: key,
         value: value
-      }); 
+      });
     });
     return entries;
   },

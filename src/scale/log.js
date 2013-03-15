@@ -14,8 +14,13 @@ function d3_scale_log(linear, base, log, pow) {
 
   scale.domain = function(x) {
     if (!arguments.length) return linear.domain().map(pow);
-    if (x[0] < 0) log = d3_scale_logn, pow = d3_scale_pown;
-    else log = d3_scale_logp, pow = d3_scale_powp;
+    if (x[0] < 0) {
+      log = d3_scale_logn;
+      pow = d3_scale_pown;
+    } else {
+      log = d3_scale_logp;
+      pow = d3_scale_powp;
+    }
     linear.domain(x.map(log));
     return scale;
   };
