@@ -1,15 +1,12 @@
-require("../env");
-
 var vows = require("vows"),
-    assert = require("../env-assert");
+    load = require("../load"),
+    assert = require("../assert");
 
 var suite = vows.describe("d3.geo.bounds");
 
 suite.addBatch({
   "bounds": {
-    topic: function() {
-      return d3.geo.bounds;
-    },
+    topic: load("geo/bounds").expression("d3.geo.bounds"),
     "Feature": function(bounds) {
       assert.deepEqual(bounds({
         type: "Feature",
@@ -91,7 +88,7 @@ suite.addBatch({
         coordinates: [[[-123, 39], [-122, 39], [-122, 38], [-123, 39]], [[10, 20], [20, 20], [20, 10], [10, 10], [10, 20]]]
       }), [[-123, 38], [-122, 39]])
     },
-    "NestedCollection": function (bounds) {
+    "NestedCollection": function(bounds) {
         assert.deepEqual(bounds({
         type: "FeatureCollection",
         features: [

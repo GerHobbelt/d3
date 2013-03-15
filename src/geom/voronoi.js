@@ -1,3 +1,7 @@
+import "../arrays/range";
+import "../math/trigonometry";
+import "geom";
+
 // Adapted from Nicolas Garcia Belmonte's JIT implementation:
 // http://blog.thejit.org/2010/02/12/voronoi-tessellation/
 // http://blog.thejit.org/assets/voronoijs/voronoi.js

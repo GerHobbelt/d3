@@ -22,7 +22,7 @@ console.log(JSON.stringify({
     "url": "https://github.com/mbostock/d3.git"
   },
   "main": "index.js",
-  "browserify" : "index-browserify.js",
+  "browserify": "index-browserify.js",
   "jam": {
     "main": "d3.js",
     "shim": {
@@ -30,13 +30,14 @@ console.log(JSON.stringify({
     }
   },
   "dependencies": {
-    "jsdom": "0.3.x"
+    "jsdom": "~0.5.2"
   },
   "devDependencies": {
+    "smash": "~0.0.8",
     "uglify-js": "2.2.x",
     "vows": "0.7.x"
   },
   "scripts": {
-    "test": "node_modules/.bin/vows"
+    "test": "node_modules/.bin/vows; echo"
   }
 }, null, 2));

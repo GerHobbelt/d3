@@ -1,3 +1,15 @@
+import "../core/identity";
+import "../core/rebind";
+import "../math/trigonometry";
+import "clip-antimeridian";
+import "clip-circle";
+import "clip-view";
+import "compose";
+import "geo";
+import "resample";
+import "rotation";
+import "stream";
+
 d3.geo.projection = d3_geo_projection;
 d3.geo.projectionMutator = d3_geo_projectionMutator;
 
@@ -36,7 +48,7 @@ function d3_geo_projectionMutator(projectAt) {
 
   projection.clipAngle = function(_) {
     if (!arguments.length) return clipAngle;
-    preclip = _ == null ? (clipAngle = _, d3_geo_clipAntimeridian) : d3_geo_clipCircle(clipAngle = +_);
+    preclip = _ == null ? (clipAngle = _, d3_geo_clipAntimeridian) : d3_geo_clipCircle((clipAngle = +_) * d3_radians);
     return projection;
   };
 

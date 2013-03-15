@@ -1,3 +1,8 @@
+import "../core/source";
+import "../core/target";
+import "geo";
+import "distance";
+
 // @deprecated use {type: "LineString"} or d3.geo.distance instead.
 d3.geo.greatArc = function() {
   var source = d3_source, source_,

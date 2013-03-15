@@ -1,3 +1,8 @@
+import "../arrays/merge";
+import "../core/noop";
+import "../math/trigonometry";
+import "clip-polygon";
+
 function d3_geo_clip(pointVisible, clipLine, interpolate) {
   return function(listener) {
     var line = clipLine(listener);

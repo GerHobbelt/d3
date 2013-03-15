@@ -1,3 +1,9 @@
+import "../core/functor";
+import "../geom/polygon";
+import "../geom/voronoi";
+import "../svg/line";
+import "layout";
+
 d3.layout.voronoi = function() {
   var size = null,
       x = d3_svg_lineX,
