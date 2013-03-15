@@ -36,12 +36,6 @@
     "vows": "0.7.x"
   },
   "scripts": {
-    "test": "node_modules/vows/bin/vows; echo"
-  },
-  "readmeFilename": "README.md",
-  "directories": {
-    "example": "examples",
-    "test": "test"
-  },
-  "license": "BSD"
+    "test": "node_modules/.bin/vows; echo"
+  }
 }

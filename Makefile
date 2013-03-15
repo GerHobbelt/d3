@@ -1,3 +1,8 @@
+NODE_PATH ?= ./node_modules
+SMASH = $(NODE_PATH)/smash/smash
+JS_COMPILER = $(NODE_PATH)/uglify-js/bin/uglifyjs
+JS_TESTER = $(NODE_PATH)/vows/bin/vows
+PACKAGE_JSON = package.json
 LOCALE ?= en_US
 
 all: \
@@ -18,16 +23,20 @@ src/format/format-localized.js: src/locale.js src/format/format-locale.js
 src/time/format-localized.js: src/locale.js src/time/format-locale.js
 	LC_TIME=$(LOCALE) locale -ck LC_TIME | node src/locale.js src/time/format-locale.js > $@
 
-d3.js: $(shell node_modules/.bin/smash --list src/d3.js)
+d3.latest.js: $(shell $(SMASH) --list src/d3.js)
 	@rm -f $@
-	node_modules/.bin/smash src/d3.js > $@.tmp
-	node_modules/.bin/uglifyjs $@.tmp -b indent-level=2 -o $@
-	@rm $@.tmp
+	$(SMASH) src/d3.js > $@
+	@chmod a-w $@
+
+d3.js: d3.latest.js
+	@rm -f $@
+	$(JS_COMPILER) $< -b indent-level=2 -o $@
 	@chmod a-w $@
 
 d3.min.js: d3.js
 	@rm -f $@
-	node_modules/.bin/uglifyjs $< -c -m -o $@
+	$(JS_COMPILER) $< -c -m -o $@
+	@chmod a-w $@
 
 component.json: src/component.js d3.js
 	@rm -f $@
@@ -40,7 +49,7 @@ package.json: src/package.js d3.js
 	@chmod a-w $@
 
 clean:
-	rm -f d3*.js package.json component.json
+	rm -f d3*.js
 
 
 

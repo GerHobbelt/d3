@@ -31,7 +31,7 @@ d3.svg.axis = function() {
 
     // Minor ticks?
     var subticks;
-    if (typeof tickFilter ==== "function") {
+    if (typeof tickFilter === "function") {
       subticks = ticks.range.filter(function(d, i, a) {
         return tickFilter(d, d.index, ticks, i, a);
       });
