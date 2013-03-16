@@ -15,41 +15,159 @@ d3.svg.axis = function() {
       tickValues = null,
       tickFormat_ = null,
       tickFormatExtended_ = null,
+      tickLabelPosition_ = null,
       tickFilter = 2,
       tickSubdivide = 0,
-      tickMajorSize_f = d3_functor(tickMajorSize),
-      tickMinorSize_f = d3_functor(tickMinorSize),
-      tickEndSize_f = d3_functor(tickEndSize);
+      tickSize_f,
+      tickEndSize_f;
+
+  reinit_ticksizes();
+
+  function reinit_ticksizes() {
+    var mult = +1;
+    var major, minor, end;
+    switch (orient) {
+    case "top":
+    case "left":
+      mult = -1;
+      break;
+    }
+    if (typeof tickMajorSize === "function" && typeof tickMinorSize === "function") {
+      tickSize_f = function(d, i) {
+        if (d.subindex) {
+          return mult * tickMinorSize(d, i);
+        } else {
+          return mult * tickMajorSize(d, i);
+        }
+      };
+    } else if (typeof tickMajorSize === "function" && typeof tickMinorSize !== "function") {
+      minor = mult * tickMinorSize;
+      tickSize_f = function(d, i) {
+        if (d.subindex) {
+          return minor;
+        } else {
+          return mult * tickMajorSize(d, i);
+        }
+      };
+    } else if (typeof tickMajorSize !== "function" && typeof tickMinorSize === "function") {
+      major = mult * tickMajorSize;
+      tickSize_f = function(d, i) {
+        if (d.subindex) {
+          return mult * tickMinorSize(d, i);
+        } else {
+          return major;
+        }
+      };
+    } else // if (typeof tickMajorSize !== "function" && typeof tickMinorSize !== "function") {
+      major = mult * tickMajorSize;
+      minor = mult * tickMinorSize;
+      tickSize_f = function(d, i) {
+        if (d.subindex) {
+          return minor;
+        } else {
+          return major;
+        }
+      };
+    }
+
+    if (typeof tickEndSize === "function") {
+      tickEndSize_f = function(d, i) {
+        return mult * tickEndSize(d, i);
+      };
+    } else {
+      end = mult * tickEndSize;
+      tickEndSize_f = function(d, i) {
+        return end;
+      };
+    }
+  }
 
   function axis(g) {
     // Ticks (+ optional subticks), or domain values for ordinal scales.
     var ticks = (tickValues == null ?
                  scale.ticks ?
                   ((ticks = scale.ticks.apply(scale, tickArguments_, tickSubdivide)) && ticks.range) ?
-				   ticks :
-				   ticks.map(d3_svg_axisMapTicks) :
+                   ticks :
+                   ticks.map(d3_svg_axisMapTicks) :
                   { range: scale.domain().map(d3_svg_axisMapTicks), submodulus: 0 } :
                  tickValues.range ?
                   tickValues :
                   { range: tickValues.map(d3_svg_axisMapTicks), submodulus: 0 }),
         tickFormat = (tickFormat_ == null ? (scale.tickFormat ? scale.tickFormat.apply(scale, tickArguments_) : d3.format(".f")) : tickFormat_);
 
-    // Minor ticks?
-    var subticks = [],
-        majorticks = [],
+    // Filter which ticks will make it into the display. Ticks which are too closely bunched together
+    // should be removed/reduced for a more aesthetic display.
+    // The difference between 'major' and 'minor' ticks, in the end, is which ones will be printed with
+    // a label (value) next to them: only 'major' ticks will have a value text attached.
+    //
+    // Another difference, though a minor one, is that 'minor' ticks have an implied 'importance',
+    // which is implicit in the .subindex value: for example, a tick at the half-way position
+    // (i.e. at a 0.5 'position', hence with .subindex == submodulo/2) MAY be displayed more prominently
+    // than, say, the first subtick in a set of ten (hence at 'position' 0.1, i.e. .subindex == submodulo/10).
+    // The .subindex value in conjuction with the submodulo value is used to help the axis component plot
+    // aesthetic looking axes with, for example, classical inch or centimeter/millimeter ticks.)
+    // More advanced uses of this 'tick' info is also possible: the end result is determined by the combined
+    // effort of the tickFilter and the axis renderer section. Very sophisticated or alternative renderings
+    // are possible by using the preprocessed (filtered) tick data in your own custom axis rendering code:
+    // this option is at your disposal when the axis function is invoked without a NULL instead of an SVG group
+    // in 'g'.
+    //
+    // Note that the filter can 'reduce' a 'major' tick (tick.subindex == 0) to a 'minor' one by
+    // setting its .subindex value to a non-zero value. To ensure that other logic, which inspects the
+    // 'importance' of a subtick, will continue to work a 'reduced' major-tick should receive a
+    // .subindex = submodulo value: this value cannot be assigned by other means (scale.ticks()) and
+    // at the same time signifies the high 'importance' of the new 'sub'tick.
+    //
+    // Furthermore, to ensure that tick/axis animation is smooth and provides a correct progression
+    // from major-to-minor and vice versa, we render all ticks from a single selection batch, where
+    // we identify 'minor' ticks by simply looking at their non-zero .subindex value.
+    var majorticks = [],
         arr = ticks.range,
         d,
         i;
+
+    var range = d3_scaleRange(scale);
+
+    // The tickFilter can be either a function or a value: when the user specified a function, then the
+    // tick filtering will be performed in bulk in the user-specified function. This is useful for advanced
+    // axis renderings.
     if (typeof tickFilter === "function") {
-      for (i = 0; i < arr.length; i++) {
-        d = arr[i];
-        if (tickFilter(d, i, ticks)) {
-          subticks.push(d);
-        } else {
-          majorticks.push(d);
+      // We pass all available context info to the tickFilter as it may use / modify this info on the fly.
+      //
+      // For example, we pass the tickFormat function as this MASY be used to calculate the size of the
+      // 'major' tick labels, which in turn would assist in determining which 'major' ticks would actually
+      // receive a label...
+      var context = tickFilter({
+        ticks: ticks,                            // Object { ticks: Array of Tick Objects, submodulo: Number }
+        majorticks: majorticks,                  // Array of Tick Object { value: domainvalue, subindex: Number, majorindex: Number }
+        range: range                             // array[2]
+      }, {
+        // the read-only context components:
+        scale: scale,                            // d3.scale
+        orient: orient,                          // String
+        tickSize: tickSize_f,                    // functor(d, i)
+        tickEndSize: tickEndSize_f,              // functor(d, i)
+        tickPadding: tickPadding,                // Number
+        tickLabelPosition: tickLabelPosition_,   // functor(d, i)
+        tickFormat: tickFormat,                  // functor(d)
+        tickFormatExtended: tickFormatExtended_  // functor(d, i)
+      }) || {};
+      ticks = (context.ticks || ticks);
+      majorticks = (context.majorticks || majorticks);
+      range = (context.range || range);
+    } else {
+      // When the tickFilter is a number or an array, than this is the minimum required spacing between individual
+      // major and minor ticks. This information is used by the default tick filter to produce a aesthetic
+      // set of major and minor ticks.
+      var min_spacing;
+      if (!Array.isArray(tickFilter) || !tickFilter.length) {
+        min_spacing = [ Number(tickFilter) || 2, Number(tickFilter) || 2 ];
+      } else {
+        min_spacing = tickFilter;
+        if (!min_spacing[1]) {
+          min_spacing[1] = min_spacing[0] || 2;
         }
       }
-    } else if (tickFilter) {
       for (i = 0; i < arr.length; i++) {
         d = arr[i];
         if (d.subindex) {
@@ -58,30 +176,24 @@ d3.svg.axis = function() {
           majorticks.push(d);
         }
       }
-    } else {
-      majorticks = arr;
     }
-
-    var range = d3_scaleRange(scale);
 
     if (g) {
       g.each(function() {
         var g = d3.select(this);
-        // Draw the (minor) ticks.
-        var subtick = g.selectAll(".tick.minor").data(subticks, function(d, i) {
-          return String(d.value);
-        });
-        var subtickEnter = subtick.enter().insert("line", ".tick").attr("class", "tick minor").style("opacity", 1e-6);
-        var subtickExit = d3.transition(subtick.exit()).style("opacity", 1e-6).remove();
-        var subtickUpdate = d3.transition(subtick).style("opacity", 1);
-
-        // Draw the (major) ticks.
-        var tick = g.selectAll(".tick.major").data(majorticks, function(d, i) {
+        // Draw the ticks.
+        //
+        // Note that `tickEnter` is a D3 selection while `tickExit` and `tickUpdate` are D3 transitions.
+        var tick = g.selectAll(".tick").data(ticks, function(d, i) {
               return String(d.value);
             }),
-            tickEnter = tick.enter().insert("g", "path").attr("class", "tick major").style("opacity", 1e-6),
+            tickEnter = tick.enter().insert("g", "path").attr("class", function(d, i) {
+              return d.subindex ? "tick minor" : "tick major";
+            }).style("opacity", 1e-6),
             tickExit = d3.transition(tick.exit()).style("opacity", 1e-6).remove(),
-            tickUpdate = d3.transition(tick).style("opacity", 1),
+            tickUpdate = d3.transition(tick).attr("class", function(d, i) {
+              return d.subindex ? "tick minor" : "tick major";
+            }).style("opacity", 1),
             tickTransform;
 
         // Domain.
@@ -94,102 +206,119 @@ d3.svg.axis = function() {
             scale0 = this.__chart__ || scale1;
         this.__chart__ = scale1;
 
+        // Draw the new major and minor ticks
         tickEnter.append("line").attr("class", "tick-line");
-        tickEnter.append("text").attr("class", "tick-text");
+        tickEnter.filter(function(d, i) {
+          return !d.subindex;
+        }).append("text").attr("class", "tick-text");
 
+        // Update the existing major and minor ticks ...
         var lineEnter = tickEnter.select("line.tick-line"),
             lineUpdate = tickUpdate.select("line.tick-line"),
-            text = tick.select("text.tick-text").text(function(d, i) {
+            textEnter = tickEnter.select("text.tick-text");
+
+        // ... and since we MAY reduce / promote ticks for major to minor and vice versa, we need to account for those changes as well:
+        //
+        // First we make sure that RIGHT NOW the 'promoted' elements have an (empty) <text> element, while
+        // ensuring these promoted elements are very easily recognizable through .filter().
+        ticks.filter(function(d, i) {
+          return !d.subindex;
+        }).each(function(d, i) {
+          var node = d3.select(this);
+          if (node.select("text.tick-text").empty()) {
+            d.is_promoted = true;
+            node.append("text").attr("class", "tick-text").style("opacity", 1e-6);
+          } else {
+            d.is_promoted = false;
+          }
+        });
+
+        // Then we extract the promote / demote (Enter/Exit) subsets from the current 'updated' ticks selection
+        // and set the new label text for all the major nodes, no matter whether new or promoted.
+        //
+        // As we've made sure above that the 'promoted' ticks already have an (empty) <text> DOM node RIGHT NOW, we
+        // can be certain that the `text` selection constructed below will indeed contain ALL major ticks.
+        var textUpdate = tickUpdate.select("text.tick-text"),
+            textUpdateEnter = textUpdate.filter(function(d, i) {
+              return !d.subindex && d.is_promoted;
+            }),
+            textUpdateExit = textUpdate.filter(function(d, i) {
+              return d.subindex;
+            }),
+            text = tick.selectAll("text.tick-text").text(function(d, i) {
               if (tickFormatExtended_ == null) {
                 return tickFormat(d.value);
               } else {
                 return tickFormatExtended_(d, i);
               }
-            }),
-            textEnter = tickEnter.select("text.tick-text"),
-            textUpdate = tickUpdate.select("text.tick-text");
+            });
+
+        textUpdate = textUpdate.filter(function(d, i) {
+          return !d.subindex;
+        });
+
+        // Apply the promote / demote major-minor tick transitions now:
+        //d3.transition(textUpdateExit).style("opacity", 1e-6).remove();
+        textUpdateExit.style("opacity", 1e-6).remove();
+        textUpdateEnter.style("opacity", 1);
+
+        // And render the axis with ticks and all:
+        var labelPos_f = (tickLabelPosition_ == null ?
+          (orient == "bottom" ?
+            function (d, i) {
+              d3.select(this).attr("dy", ".71em").style("text-anchor", "middle");
+            } : orient == "top" ?
+            function (d, i) {
+              d3.select(this).attr("dy", "0em").style("text-anchor", "middle");
+            } :
+            function (d, i) {
+              d3.select(this).attr("dy", ".32em").style("text-anchor", function(d, i) {
+                var l = tickSize_f(d, i);
+                return l < 0 ? "end" : "start";
+              });
+            }
+          ) : tickLabelPosition_);
 
         switch (orient) {
-          case "bottom": {
-            tickTransform = d3_svg_axisX;
-            subtickEnter.attr("x2", 0).attr("y2", tickMinorSize_f);
-            subtickUpdate.attr("x2", 0).attr("y2", tickMinorSize_f);
-            lineEnter.attr("x2", 0).attr("y2", tickMajorSize_f);
-            textEnter.attr("x", 0).attr("y", function(d, i) {
-              return Math.max(+tickMajorSize_f(d, i), 0) + tickPadding;
-            });
-            lineUpdate.attr("x2", 0).attr("y2", tickMajorSize_f);
-            textUpdate.attr("x", 0).attr("y", function (d, i) {
-              return Math.max(+tickMajorSize_f(d, i), 0) + tickPadding;
-            });
-            text.attr("dy", ".71em").style("text-anchor", "middle");
-            pathUpdate.attr("d", "M" + range[0] + "," + tickEndSize_f(range, 0) + "V0H" + range[1] + "V" + tickEndSize_f(range, 1));
-            break;
-          }
-          case "top": {
-            tickTransform = d3_svg_axisX;
-            subtickEnter.attr("y2", function(d, i) {
-              return -tickMinorSize_f(d, i);
-            });
-            subtickUpdate.attr("x2", 0).attr("y2", function(d, i) {
-              return -tickMinorSize_f(d, i);
-            });
-            lineEnter.attr("y2", function(d, i) {
-              return -tickMajorSize_f(d, i);
-            });
-            textEnter.attr("y", function(d, i) {
-              return -(Math.max(+tickMajorSize_f(d, i), 0) + tickPadding);
-            });
-            lineUpdate.attr("x2", 0).attr("y2", function(d, i) {
-              return -tickMajorSize_f(d, i);
-            });
-            textUpdate.attr("x", 0).attr("y", function(d, i) {
-              return -(Math.max(+tickMajorSize_f(d, i), 0) + tickPadding);
-            });
-            text.attr("dy", "0em").style("text-anchor", "middle");
-            pathUpdate.attr("d", "M" + range[0] + "," + -tickEndSize_f(range, 0) + "V0H" + range[1] + "V" + -tickEndSize_f(range, 1));
-            break;
-          }
-          case "left": {
-            tickTransform = d3_svg_axisY;
-            subtickEnter.attr("x2", function(d, i) {
-              return -tickMinorSize_f(d, i);
-            });
-            subtickUpdate.attr("x2", function(d, i) {
-              return -tickMinorSize_f(d, i);
-            }).attr("y2", 0);
-            lineEnter.attr("x2", function(d, i) {
-              return -tickMajorSize_f(d, i);
-            });
-            textEnter.attr("x", function(d, i) {
-              return -(Math.max(+tickMajorSize_f(d, i), 0) + tickPadding);
-            });
-            lineUpdate.attr("x2", function(d, i) {
-              return -tickMajorSize_f(d, i);
-            }).attr("y2", 0);
-            textUpdate.attr("x", function(d, i) {
-              return -(Math.max(+tickMajorSize_f(d, i), 0) + tickPadding);
-            }).attr("y", 0);
-            text.attr("dy", ".32em").style("text-anchor", "end");
-            pathUpdate.attr("d", "M" + -tickEndSize_f(range, 0) + "," + range[0] + "H0V" + range[1] + "H" + -tickEndSize_f(range, 1));
-            break;
-          }
-          case "right": {
-            tickTransform = d3_svg_axisY;
-            subtickEnter.attr("x2", tickMinorSize_f);
-            subtickUpdate.attr("x2", tickMinorSize_f).attr("y2", 0);
-            lineEnter.attr("x2", tickMajorSize_f);
-            textEnter.attr("x", function(d, i) {
-              return Math.max(+tickMajorSize_f(d, i), 0) + tickPadding;
-            });
-            lineUpdate.attr("x2", tickMajorSize_f).attr("y2", 0);
-            textUpdate.attr("x", function(d, i) {
-              return Math.max(+tickMajorSize_f(d, i), 0) + tickPadding;
-            }).attr("y", 0);
-            text.attr("dy", ".32em").style("text-anchor", "start");
-            pathUpdate.attr("d", "M" + tickEndSize_f(range, 0) + "," + range[0] + "H0V" + range[1] + "H" + tickEndSize_f(range, 1));
-            break;
-          }
+        case "bottom":
+        case "top":
+          tickTransform = d3_svg_axisX;
+          lineEnter.attr("x2", 0).attr("y2", tickSize_f);
+          textEnter.attr("x", 0).attr("y", function(d, i) {
+            var l = tickSize_f(d, i);
+            return l < 0 ? l - tickPadding : l + tickPadding;
+          }).each(labelPos_f);
+          textUpdateEnter.attr("x", 0).attr("y", function(d, i) {
+            var l = tickSize_f(d, i);
+            return l < 0 ? l - tickPadding : l + tickPadding;
+          }).each(labelPos_f);
+          lineUpdate.attr("x2", 0).attr("y2", tickSize_f);
+          textUpdate.attr("x", 0).attr("y", function (d, i) {
+            var l = tickSize_f(d, i);
+            return l < 0 ? l - tickPadding : l + tickPadding;
+          }).each(labelPos_f);
+          pathUpdate.attr("d", "M" + range[0] + "," + tickEndSize_f(range, 0) + "V0H" + range[1] + "V" + tickEndSize_f(range, 1));
+          break;
+
+        case "left":
+        case "right":
+          tickTransform = d3_svg_axisY;
+          lineEnter.attr("y2", 0).attr("x2", tickSize_f);
+          textEnter.attr("y", 0).attr("x", function(d, i) {
+            var l = tickSize_f(d, i);
+            return l < 0 ? l - tickPadding : l + tickPadding;
+          }).each(labelPos_f);
+          textUpdateEnter.attr("y", 0).attr("x", function(d, i) {
+            var l = tickSize_f(d, i);
+            return l < 0 ? l - tickPadding : l + tickPadding;
+          }).each(labelPos_f);
+          lineUpdate.attr("y2", 0).attr("x2", tickSize_f);
+          textUpdate.attr("y", 0).attr("x", function(d, i) {
+            var l = tickSize_f(d, i);
+            return l < 0 ? l - tickPadding : l + tickPadding;
+          }).each(labelPos_f);
+          pathUpdate.attr("d", "M" + -tickEndSize_f(range, 0) + "," + range[0] + "H0V" + range[1] + "H" + -tickEndSize_f(range, 1));
+          break;
         }
 
         // For quantitative scales:
@@ -199,9 +328,6 @@ d3.svg.axis = function() {
           tickEnter.call(tickTransform, scale0);
           tickUpdate.call(tickTransform, scale1);
           tickExit.call(tickTransform, scale1);
-          subtickEnter.call(tickTransform, scale0);
-          subtickUpdate.call(tickTransform, scale1);
-          subtickExit.call(tickTransform, scale1);
         }
         // For ordinal scales:
         // - any entering ticks are undefined in the old scale
@@ -220,15 +346,14 @@ d3.svg.axis = function() {
     } else {
       // when using d3.axis other than in a d3.selection.call(...); produce the ticks, etc. for custom work:
       return {
-        ticks: ticks,                            // Object { ticks: Array of Tick Objects, submodulo: Number }
-        majorticks: majorticks,                  // Array of Tick Object { value: domainvalue, subindex: Number, majorindex: Number }
-        subticks: subticks,                      // Array of Tick Object { value: domainvalue, subindex: Number, majorindex: Number }
+        ticks: ticks,                            // Object { ticks: Array of Tick Objects, submodulo: Number } where each Tick Object: { value: domainvalue, subindex: Number, majorindex: Number }
         range: range,                            // array[2]
+        scale: scale,                            // d3.scale
 		    orient: orient,                          // String
-        tickMajorSize: tickMajorSize_f,          // functor(d, i)
-        tickMinorSize: tickMinorSize_f,          // functor(d, i)
+        tickSize: tickSize_f,                    // functor(d, i)
         tickEndSize: tickEndSize_f,              // functor(d, i)
         tickPadding: tickPadding,                // Number
+        tickLabelPosition: tickLabelPosition_,   // functor(d, i)
         tickFormat: tickFormat,                  // functor(d)
         tickFormatExtended: tickFormatExtended_  // functor(d, i)
       };
@@ -266,9 +391,15 @@ d3.svg.axis = function() {
     return axis;
   };
 
-  axis.tickFormatEx = function(x) {
+  axis.tickFormatEx = function(f) {
     if (!arguments.length) return tickFormatExtended_;
-    tickFormatExtended_ = extended;
+    tickFormatExtended_ = (typeof f === "function" ? f : null);
+    return axis;
+  };
+
+  axis.tickLabelPosition = function(f) {
+    if (!arguments.length) return tickLabelPosition_;
+    tickLabelPosition_ = (typeof f === "function" ? f : null);
     return axis;
   };
 
@@ -276,11 +407,9 @@ d3.svg.axis = function() {
     var n = arguments.length;
     if (!n) return [tickMajorSize, tickMinorSize, tickEndSize];
     tickMajorSize = major;
-    tickMajorSize_f = d3_functor(tickMajorSize);
     tickMinorSize = (n > 1 ? minor : tickMajorSize);
-    tickMinorSize_f = d3_functor(tickMinorSize);
     tickEndSize = arguments[n - 1];
-    tickEndSize_f = d3_functor(tickEndSize);
+    reinit_ticksizes();
     return axis;
   };
 
@@ -298,7 +427,7 @@ d3.svg.axis = function() {
 
   axis.tickFilter = function(x) {
     if (!arguments.length) return tickFilter;
-    tickFilter = (x != null ? x : 2);
+    tickFilter = (x || 2);
     return axis;
   };
 
