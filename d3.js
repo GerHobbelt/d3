@@ -436,75 +436,6 @@ d3 = function() {
     };
     return dispatch;
   }
-  d3.behavior.drag = function() {
-    var event = d3_eventDispatch(drag, "drag", "dragstart", "dragend"), origin = null;
-    function drag() {
-      this.on("mousedown.drag", mousedown).on("touchstart.drag", mousedown);
-    }
-    function mousedown() {
-      var target = this, event_ = event.of(target, arguments), eventTarget = d3.event.target, touchId = d3.event.touches ? d3.event.changedTouches[0].identifier : null, offset, origin_ = point(), moved = 0;
-      var w = d3.select(d3_window).on(touchId != null ? "touchmove.drag-" + touchId : "mousemove.drag", dragmove).on(touchId != null ? "touchend.drag-" + touchId : "mouseup.drag", dragend, true);
-      if (origin) {
-        offset = origin.apply(target, arguments);
-        offset = [ offset.x - origin_[0], offset.y - origin_[1] ];
-      } else {
-        offset = [ 0, 0 ];
-      }
-      if (touchId == null) d3_eventCancel();
-      event_({
-        type: "dragstart",
-        x: origin_[0] + offset[0],
-        y: origin_[1] + offset[1],
-        dx: 0,
-        dy: 0
-      });
-      function point() {
-        var p = target.parentNode;
-        return touchId != null ? d3.touches(p).filter(function(p) {
-          return p.identifier === touchId;
-        })[0] : d3.mouse(p);
-      }
-      function dragmove() {
-        if (!target.parentNode) return dragend();
-        var p = point(), dx = p[0] - origin_[0], dy = p[1] - origin_[1];
-        moved |= dx | dy;
-        origin_ = p;
-        d3_eventCancel();
-        event_({
-          type: "drag",
-          x: p[0] + offset[0],
-          y: p[1] + offset[1],
-          dx: dx,
-          dy: dy
-        });
-      }
-      function dragend() {
-        var p = point(), dx = p[0] - origin_[0], dy = p[1] - origin_[1];
-        event_({
-          type: "dragend",
-          x: p[0] + offset[0],
-          y: p[1] + offset[1],
-          dx: dx,
-          dy: dy
-        });
-        if (moved) {
-          d3_eventCancel();
-          if (d3.event.target === eventTarget) w.on("click.drag", click, true);
-        }
-        w.on(touchId != null ? "touchmove.drag-" + touchId : "mousemove.drag", null).on(touchId != null ? "touchend.drag-" + touchId : "mouseup.drag", null);
-      }
-      function click() {
-        d3_eventCancel();
-        w.on("click.drag", null);
-      }
-    }
-    drag.origin = function(x) {
-      if (!arguments.length) return origin;
-      origin = x;
-      return drag;
-    };
-    return d3.rebind(drag, event, "on");
-  };
   d3.mouse = function(container) {
     return d3_mousePoint(container, d3_eventSource());
   };
@@ -585,6 +516,75 @@ d3 = function() {
       point.identifier = touch.identifier;
       return point;
     }) : [];
+  };
+  d3.behavior.drag = function() {
+    var event = d3_eventDispatch(drag, "drag", "dragstart", "dragend"), origin = null;
+    function drag() {
+      this.on("mousedown.drag", mousedown).on("touchstart.drag", mousedown);
+    }
+    function mousedown() {
+      var target = this, event_ = event.of(target, arguments), eventTarget = d3.event.target, touchId = d3.event.touches ? d3.event.changedTouches[0].identifier : null, offset, origin_ = point(), moved = 0;
+      var w = d3.select(d3_window).on(touchId != null ? "touchmove.drag-" + touchId : "mousemove.drag", dragmove).on(touchId != null ? "touchend.drag-" + touchId : "mouseup.drag", dragend, true);
+      if (origin) {
+        offset = origin.apply(target, arguments);
+        offset = [ offset.x - origin_[0], offset.y - origin_[1] ];
+      } else {
+        offset = [ 0, 0 ];
+      }
+      if (touchId == null) d3_eventCancel();
+      event_({
+        type: "dragstart",
+        x: origin_[0] + offset[0],
+        y: origin_[1] + offset[1],
+        dx: 0,
+        dy: 0
+      });
+      function point() {
+        var p = target.parentNode;
+        return touchId != null ? d3.touches(p).filter(function(p) {
+          return p.identifier === touchId;
+        })[0] : d3.mouse(p);
+      }
+      function dragmove() {
+        if (!target.parentNode) return dragend();
+        var p = point(), dx = p[0] - origin_[0], dy = p[1] - origin_[1];
+        moved |= dx | dy;
+        origin_ = p;
+        d3_eventCancel();
+        event_({
+          type: "drag",
+          x: p[0] + offset[0],
+          y: p[1] + offset[1],
+          dx: dx,
+          dy: dy
+        });
+      }
+      function dragend() {
+        var p = point(), dx = p[0] - origin_[0], dy = p[1] - origin_[1];
+        event_({
+          type: "dragend",
+          x: p[0] + offset[0],
+          y: p[1] + offset[1],
+          dx: dx,
+          dy: dy
+        });
+        if (moved) {
+          d3_eventCancel();
+          if (d3.event.target === eventTarget) w.on("click.drag", click, true);
+        }
+        w.on(touchId != null ? "touchmove.drag-" + touchId : "mousemove.drag", null).on(touchId != null ? "touchend.drag-" + touchId : "mouseup.drag", null);
+      }
+      function click() {
+        d3_eventCancel();
+        w.on("click.drag", null);
+      }
+    }
+    drag.origin = function(x) {
+      if (!arguments.length) return origin;
+      origin = x;
+      return drag;
+    };
+    return d3.rebind(drag, event, "on");
   };
   function d3_selection(groups) {
     d3_arraySubclass(groups, d3_selectionPrototype);
@@ -3880,7 +3880,7 @@ d3 = function() {
     var polygons = vertices.map(function() {
       return [];
     }), Z = 1e6;
-    d3_voronoi_tessellate(vertices, function(e) {
+    d3_geom_voronoiTessellate(vertices, function(e) {
       var s1, s2, x1, x2, y1, y2;
       if (e.a === 1 && e.b >= 0) {
         s1 = e.ep.r;
@@ -3939,11 +3939,11 @@ d3 = function() {
     });
     return polygons;
   };
-  var d3_voronoi_opposite = {
+  var d3_geom_voronoiOpposite = {
     l: "r",
     r: "l"
   };
-  function d3_voronoi_tessellate(vertices, callback) {
+  function d3_geom_voronoiTessellate(vertices, callback) {
     var Sites = {
       list: vertices.map(function(v, i) {
         return {
@@ -4005,7 +4005,7 @@ d3 = function() {
         return he.edge == null ? Sites.bottomSite : he.edge.region[he.side];
       },
       rightRegion: function(he) {
-        return he.edge == null ? Sites.bottomSite : he.edge.region[d3_voronoi_opposite[he.side]];
+        return he.edge == null ? Sites.bottomSite : he.edge.region[d3_geom_voronoiOpposite[he.side]];
       }
     };
     var Geom = {
@@ -4095,7 +4095,7 @@ d3 = function() {
       },
       endPoint: function(edge, side, site) {
         edge.ep[side] = site;
-        if (!edge.ep[d3_voronoi_opposite[side]]) return;
+        if (!edge.ep[d3_geom_voronoiOpposite[side]]) return;
         callback(edge);
       },
       distance: function(s, t) {
@@ -4195,7 +4195,7 @@ d3 = function() {
         e = Geom.bisect(bot, top);
         bisector = EdgeList.createHalfEdge(e, pm);
         EdgeList.insert(llbnd, bisector);
-        Geom.endPoint(e, d3_voronoi_opposite[pm], v);
+        Geom.endPoint(e, d3_geom_voronoiOpposite[pm], v);
         p = Geom.intersect(llbnd, bisector);
         if (p) {
           EventQueue.del(llbnd);
@@ -4217,7 +4217,7 @@ d3 = function() {
     var edges = vertices.map(function() {
       return [];
     }), triangles = [];
-    d3_voronoi_tessellate(vertices, function(e) {
+    d3_geom_voronoiTessellate(vertices, function(e) {
       edges[e.region.l.index].push(vertices[e.region.r.index]);
     });
     edges.forEach(function(edge, i) {
@@ -4374,7 +4374,7 @@ d3 = function() {
   }
   d3.interpolateTransform = d3_interpolateTransform;
   function d3_interpolateTransform(a, b) {
-    var s = [], q = [], n, A = d3_transform(a), B = d3_transform(b), ta = A.translate, tb = B.translate, ra = A.rotate, rb = B.rotate, wa = A.skew, wb = B.skew, ka = A.scale, kb = B.scale;
+    var s = [], q = [], n, A = d3.transform(a), B = d3.transform(b), ta = A.translate, tb = B.translate, ra = A.rotate, rb = B.rotate, wa = A.skew, wb = B.skew, ka = A.scale, kb = B.scale;
     if (ta[0] != tb[0] || ta[1] != tb[1]) {
       s.push("translate(", null, ",", null, ")");
       q.push({
@@ -6376,6 +6376,36 @@ d3 = function() {
         clip = d3.geom.polygon([ [ 0, 0 ], [ 0, h ], [ w, h ], [ w, 0 ] ]).clip;
       }
       return voronoi;
+    };
+    voronoi.links = function(data) {
+      var points = [], graph = [], links = [], fx = d3_functor(x), fy = d3_functor(y), d, i, n = data.length;
+      for (i = 0; i < n; ++i) {
+        points.push([ +fx.call(this, d = data[i], i), +fy.call(this, d, i) ]);
+        graph.push([]);
+      }
+      d3_geom_voronoiTessellate(points, function(e) {
+        var l = e.region.l.index, r = e.region.r.index;
+        if (graph[l][r]) return;
+        graph[l][r] = graph[r][l] = true;
+        links.push({
+          source: data[l],
+          target: data[r]
+        });
+      });
+      return links;
+    };
+    voronoi.triangles = function(data) {
+      var points = [], point, fx = d3_functor(x), fy = d3_functor(y), d, i, n = data.length;
+      for (i = 0; i < n; ++i) {
+        point = [ +fx.call(this, d = data[i], i), +fy.call(this, d, i) ];
+        point.data = d;
+        points.push(point);
+      }
+      return d3.geom.delaunay(points).map(function(triangle) {
+        return triangle.map(function(vertex) {
+          return vertex.data;
+        });
+      });
     };
     return voronoi;
   };
