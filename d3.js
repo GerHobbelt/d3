@@ -6883,7 +6883,7 @@ d3 = function() {
     };
     scale.ticks = function(m, subdiv_count) {
       if (i <= 0) return [];
-      return d3.range(x0, x1 - .5 / kx, 1 / kx).map(function(x, i) {
+      return d3.range(x0, x1, kx * (x1 - x0)).map(function(x, i) {
         var p = d3_format_precision(x, 4);
         var v = d3.round(x, p);
         return v;
@@ -6904,6 +6904,27 @@ d3 = function() {
     function scale(x) {
       return range[d3.bisect(domain, x)];
     }
+    scale.invert = function(y) {
+      if (Number(range[0]) === NaN) {
+        for (var i = 0; i < range.length; ++i) {
+          if (range[i] === y) {
+            return domain[i];
+          }
+        }
+        return NaN;
+      } else {
+        var i0 = d3.bisect(range, y);
+        var i1 = i0 + 1;
+        if (i1 < domain.length) {
+          var delta = (y - range[i0]) / (range[i1] - range[i0]);
+          return domain[i0] + delta * (domain[i1] - domain[i0]);
+        } else if (i0 > 0) {
+          return domain[i0] + delta * (domain[i0 - 1] - domain[i0]);
+        } else {
+          return domain[i0] + delta;
+        }
+      }
+    };
     scale.domain = function(_) {
       if (!arguments.length) return domain;
       domain = _;
@@ -7543,149 +7564,208 @@ d3 = function() {
     }
   }
   d3.svg.axis = function() {
-    var scale = d3.scale.linear(), orient = d3_svg_axisDefaultOrient, tickMajorSize = d3_functor(6), tickMinorSize = d3_functor(6), tickEndSize = d3_functor(6), tickPadding = 3, tickArguments_ = [ 10 ], tickValues = null, tickFormat_ = null, tickFormatExtended_, tickFilter = true, tickSubdivide = 0;
+    var scale = d3.scale.linear(), orient = d3_svg_axisDefaultOrient, tickMajorSize = 6, tickMinorSize = 6, tickEndSize = 6, tickPadding = 3, tickArguments_ = [ 10 ], tickValues = null, tickFormat_ = null, tickFormatExtended_ = null, tickLabelPosition_ = null, tickFilter = 2, tickSubdivide = 0, tickSize_f, tickEndSize_f;
+    reinit_ticksizes();
+    function reinit_ticksizes() {
+      var mult = +1;
+      var major, minor, end;
+      switch (orient) {
+       case "top":
+       case "left":
+        mult = -1;
+        break;
+      }
+      if (typeof tickMajorSize === "function" && typeof tickMinorSize === "function") {
+        tickSize_f = function(d, i) {
+          if (d.subindex) {
+            return mult * tickMinorSize(d, i);
+          } else {
+            return mult * tickMajorSize(d, i);
+          }
+        };
+      } else if (typeof tickMajorSize === "function" && typeof tickMinorSize !== "function") {
+        minor = mult * tickMinorSize;
+        tickSize_f = function(d, i) {
+          if (d.subindex) {
+            return minor;
+          } else {
+            return mult * tickMajorSize(d, i);
+          }
+        };
+      } else if (typeof tickMajorSize !== "function" && typeof tickMinorSize === "function") {
+        major = mult * tickMajorSize;
+        tickSize_f = function(d, i) {
+          if (d.subindex) {
+            return mult * tickMinorSize(d, i);
+          } else {
+            return major;
+          }
+        };
+      } else {
+        major = mult * tickMajorSize;
+        minor = mult * tickMinorSize;
+        tickSize_f = function(d, i) {
+          if (d.subindex) {
+            return minor;
+          } else {
+            return major;
+          }
+        };
+      }
+      if (typeof tickEndSize === "function") {
+        tickEndSize_f = function(d, i) {
+          return mult * tickEndSize(d, i);
+        };
+      } else {
+        end = mult * tickEndSize;
+        tickEndSize_f = function(d, i) {
+          return end;
+        };
+      }
+    }
     function axis(g) {
-      var ticks = tickValues == null ? scale.ticks ? scale.ticks.apply(scale, tickArguments_, tickSubdivide) : {
+      var ticks = tickValues == null ? scale.ticks ? (ticks = scale.ticks.apply(scale, tickArguments_, tickSubdivide)) && ticks.range ? ticks : ticks.map(d3_svg_axisMapTicks) : {
         range: scale.domain().map(d3_svg_axisMapTicks),
         submodulus: 0
       } : tickValues.range ? tickValues : {
         range: tickValues.map(d3_svg_axisMapTicks),
         submodulus: 0
       }, tickFormat = tickFormat_ == null ? scale.tickFormat ? scale.tickFormat.apply(scale, tickArguments_) : d3.format(".f") : tickFormat_;
-      var subticks;
-      if (typeof tickFilter === "function") {
-        subticks = ticks.range.filter(function(d, i, a) {
-          return tickFilter(d, d.index, ticks, i, a);
-        });
-      } else if (tickFilter) {
-        subticks = ticks.range;
-      } else {
-        subticks = [];
-      }
+      var arr = ticks.range, d, i;
       var range = d3_scaleRange(scale);
+      if (typeof tickFilter === "function") {
+        var context = tickFilter({
+          ticks: ticks,
+          range: range
+        }, {
+          scale: scale,
+          orient: orient,
+          tickSize: tickSize_f,
+          tickEndSize: tickEndSize_f,
+          tickPadding: tickPadding,
+          tickLabelPosition: tickLabelPosition_,
+          tickFormat: tickFormat,
+          tickFormatExtended: tickFormatExtended_
+        }) || {};
+        ticks = context.ticks || ticks;
+        range = context.range || range;
+      } else {
+        var min_spacing;
+        if (!Array.isArray(tickFilter) || !tickFilter.length) {
+          min_spacing = [ Number(tickFilter) || 2, Number(tickFilter) || 2 ];
+        } else {
+          min_spacing = tickFilter;
+          if (!min_spacing[1]) {
+            min_spacing[1] = min_spacing[0] || 2;
+          }
+        }
+        for (i = 0; i < arr.length; i++) {
+          d = arr[i];
+          if (!d.subindex) {}
+        }
+      }
       if (g) {
         g.each(function() {
           var g = d3.select(this);
-          var subtick = g.selectAll(".tick.minor");
-          subtick = subtick.data(subticks, function(d, i) {
+          var tick = g.selectAll(".tick").data(ticks, function(d, i) {
             return String(d.value);
-          });
-          var subtickEnter = subtick.enter().insert("line", ".tick").attr("class", "tick minor").style("opacity", 1e-6);
-          var subtickExit = d3.transition(subtick.exit()).style("opacity", 1e-6).remove();
-          var subtickUpdate = d3.transition(subtick).style("opacity", 1);
-          var tick = g.selectAll(".tick.major").data(ticks, function(d, i) {
-            return String(d.value);
-          }), tickEnter = tick.enter().insert("g", "path").attr("class", "tick major").style("opacity", 1e-6), tickExit = d3.transition(tick.exit()).style("opacity", 1e-6).remove(), tickUpdate = d3.transition(tick).style("opacity", 1), tickTransform;
+          }), tickEnter = tick.enter().insert("g", "path").attr("class", function(d, i) {
+            return d.subindex ? "tick minor" : "tick major";
+          }).style("opacity", 1e-6), tickExit = d3.transition(tick.exit()).style("opacity", 1e-6).remove(), tickUpdate = d3.transition(tick).attr("class", function(d, i) {
+            return d.subindex ? "tick minor" : "tick major";
+          }).style("opacity", 1), tickTransform;
           var path = g.selectAll(".domain").data([ 0 ]);
           path.enter().append("path").attr("class", "domain");
           var pathUpdate = d3.transition(path);
           var scale1 = scale.copy(), scale0 = this.__chart__ || scale1;
           this.__chart__ = scale1;
           tickEnter.append("line").attr("class", "tick-line");
-          tickEnter.append("text").attr("class", "tick-text");
-          var lineEnter = tickEnter.select("line.tick-line"), lineUpdate = tickUpdate.select("line.tick-line"), text = tick.select("text.tick-text").text(function(d, i) {
+          tickEnter.filter(function(d, i) {
+            return !d.subindex;
+          }).append("text").attr("class", "tick-text");
+          var lineEnter = tickEnter.select("line.tick-line"), lineUpdate = tickUpdate.select("line.tick-line"), textEnter = tickEnter.select("text.tick-text");
+          ticks.filter(function(d, i) {
+            return !d.subindex;
+          }).each(function(d, i) {
+            var node = d3.select(this);
+            if (node.select("text.tick-text").empty()) {
+              d.is_promoted = true;
+              node.append("text").attr("class", "tick-text").style("opacity", 1e-6);
+            } else {
+              d.is_promoted = false;
+            }
+          });
+          var textUpdate = tickUpdate.select("text.tick-text"), textUpdateEnter = textUpdate.filter(function(d, i) {
+            return !d.subindex && d.is_promoted;
+          }), textUpdateExit = textUpdate.filter(function(d, i) {
+            return d.subindex;
+          }), text = tick.selectAll("text.tick-text").text(function(d, i) {
             if (tickFormatExtended_ == null) {
               return tickFormat(d.value);
             } else {
               return tickFormatExtended_(d, i);
             }
-          }), textEnter = tickEnter.select("text.tick-text"), textUpdate = tickUpdate.select("text.tick-text");
+          });
+          textUpdate = textUpdate.filter(function(d, i) {
+            return !d.subindex;
+          });
+          textUpdateExit.style("opacity", 1e-6).remove();
+          textUpdateEnter.style("opacity", 1);
+          var labelPos_f = tickLabelPosition_ == null ? orient == "bottom" ? function(d, i) {
+            d3.select(this).attr("dy", ".71em").style("text-anchor", "middle");
+          } : orient == "top" ? function(d, i) {
+            d3.select(this).attr("dy", "0em").style("text-anchor", "middle");
+          } : function(d, i) {
+            d3.select(this).attr("dy", ".32em").style("text-anchor", function(d, i) {
+              var l = tickSize_f(d, i);
+              return l < 0 ? "end" : "start";
+            });
+          } : tickLabelPosition_;
           switch (orient) {
            case "bottom":
-            {
-              tickTransform = d3_svg_axisX;
-              subtickEnter.attr("x2", 0).attr("y2", tickMinorSize);
-              subtickUpdate.attr("x2", 0).attr("y2", tickMinorSize);
-              lineEnter.attr("x2", 0).attr("y2", tickMajorSize);
-              textEnter.attr("x", 0).attr("y", function(d, i) {
-                return Math.max(+tickMajorSize(d, i), 0) + tickPadding;
-              });
-              lineUpdate.attr("x2", 0).attr("y2", tickMajorSize);
-              textUpdate.attr("x", 0).attr("y", function(d, i) {
-                return Math.max(+tickMajorSize(d, i), 0) + tickPadding;
-              });
-              text.attr("dy", ".71em").style("text-anchor", "middle");
-              pathUpdate.attr("d", "M" + range[0] + "," + tickEndSize(range, 0) + "V0H" + range[1] + "V" + tickEndSize(range, 1));
-              break;
-            }
-
            case "top":
-            {
-              tickTransform = d3_svg_axisX;
-              subtickEnter.attr("y2", function(d, i) {
-                return -tickMinorSize(d, i);
-              });
-              subtickUpdate.attr("x2", 0).attr("y2", function(d, i) {
-                return -tickMinorSize(d, i);
-              });
-              lineEnter.attr("y2", function(d, i) {
-                return -tickMajorSize(d, i);
-              });
-              textEnter.attr("y", function(d, i) {
-                return -(Math.max(+tickMajorSize(d, i), 0) + tickPadding);
-              });
-              lineUpdate.attr("x2", 0).attr("y2", function(d, i) {
-                return -tickMajorSize(d, i);
-              });
-              textUpdate.attr("x", 0).attr("y", function(d, i) {
-                return -(Math.max(+tickMajorSize(d, i), 0) + tickPadding);
-              });
-              text.attr("dy", "0em").style("text-anchor", "middle");
-              pathUpdate.attr("d", "M" + range[0] + "," + -tickEndSize(range, 0) + "V0H" + range[1] + "V" + -tickEndSize(range, 1));
-              break;
-            }
+            tickTransform = d3_svg_axisX;
+            lineEnter.attr("x2", 0).attr("y2", tickSize_f);
+            textEnter.attr("x", 0).attr("y", function(d, i) {
+              var l = tickSize_f(d, i);
+              return l < 0 ? l - tickPadding : l + tickPadding;
+            }).each(labelPos_f);
+            textUpdateEnter.attr("x", 0).attr("y", function(d, i) {
+              var l = tickSize_f(d, i);
+              return l < 0 ? l - tickPadding : l + tickPadding;
+            }).each(labelPos_f);
+            lineUpdate.attr("x2", 0).attr("y2", tickSize_f);
+            textUpdate.attr("x", 0).attr("y", function(d, i) {
+              var l = tickSize_f(d, i);
+              return l < 0 ? l - tickPadding : l + tickPadding;
+            }).each(labelPos_f);
+            pathUpdate.attr("d", "M" + range[0] + "," + tickEndSize_f(range, 0) + "V0H" + range[1] + "V" + tickEndSize_f(range, 1));
+            break;
 
            case "left":
-            {
-              tickTransform = d3_svg_axisY;
-              subtickEnter.attr("x2", function(d, i) {
-                return -tickMinorSize(d, i);
-              });
-              subtickUpdate.attr("x2", function(d, i) {
-                return -tickMinorSize(d, i);
-              }).attr("y2", 0);
-              lineEnter.attr("x2", function(d, i) {
-                return -tickMajorSize(d, i);
-              });
-              textEnter.attr("x", function(d, i) {
-                return -(Math.max(+tickMajorSize(d, i), 0) + tickPadding);
-              });
-              lineUpdate.attr("x2", function(d, i) {
-                return -tickMajorSize(d, i);
-              }).attr("y2", 0);
-              textUpdate.attr("x", function(d, i) {
-                return -(Math.max(+tickMajorSize(d, i), 0) + tickPadding);
-              }).attr("y", 0);
-              text.attr("dy", ".32em").style("text-anchor", "end");
-              pathUpdate.attr("d", "M" + -tickEndSize(range, 0) + "," + range[0] + "H0V" + range[1] + "H" + -tickEndSize(range, 1));
-              break;
-            }
-
            case "right":
-            {
-              tickTransform = d3_svg_axisY;
-              subtickEnter.attr("x2", tickMinorSize);
-              subtickUpdate.attr("x2", tickMinorSize).attr("y2", 0);
-              lineEnter.attr("x2", tickMajorSize);
-              textEnter.attr("x", function(d, i) {
-                return Math.max(+tickMajorSize(d, i), 0) + tickPadding;
-              });
-              lineUpdate.attr("x2", tickMajorSize).attr("y2", 0);
-              textUpdate.attr("x", function(d, i) {
-                return Math.max(+tickMajorSize(d, i), 0) + tickPadding;
-              }).attr("y", 0);
-              text.attr("dy", ".32em").style("text-anchor", "start");
-              pathUpdate.attr("d", "M" + tickEndSize(range, 0) + "," + range[0] + "H0V" + range[1] + "H" + tickEndSize(range, 1));
-              break;
-            }
+            tickTransform = d3_svg_axisY;
+            lineEnter.attr("y2", 0).attr("x2", tickSize_f);
+            textEnter.attr("y", 0).attr("x", function(d, i) {
+              var l = tickSize_f(d, i);
+              return l < 0 ? l - tickPadding : l + tickPadding;
+            }).each(labelPos_f);
+            textUpdateEnter.attr("y", 0).attr("x", function(d, i) {
+              var l = tickSize_f(d, i);
+              return l < 0 ? l - tickPadding : l + tickPadding;
+            }).each(labelPos_f);
+            lineUpdate.attr("y2", 0).attr("x2", tickSize_f);
+            textUpdate.attr("y", 0).attr("x", function(d, i) {
+              var l = tickSize_f(d, i);
+              return l < 0 ? l - tickPadding : l + tickPadding;
+            }).each(labelPos_f);
+            pathUpdate.attr("d", "M" + -tickEndSize_f(range, 0) + "," + range[0] + "H0V" + range[1] + "H" + -tickEndSize_f(range, 1));
+            break;
           }
           if (scale.ticks) {
             tickEnter.call(tickTransform, scale0);
             tickUpdate.call(tickTransform, scale1);
             tickExit.call(tickTransform, scale1);
-            subtickEnter.call(tickTransform, scale0);
-            subtickUpdate.call(tickTransform, scale1);
-            subtickExit.call(tickTransform, scale1);
           } else {
             var dx = scale1.rangeBand() / 2, x = function(d) {
               return scale1(d) + dx;
@@ -7698,12 +7778,13 @@ d3 = function() {
       } else {
         return {
           ticks: ticks,
-          subticks: subticks,
           range: range,
-          tickMajorSize: tickMajorSize,
-          tickMinorSize: tickMinorSize,
-          tickEndSize: tickEndSize,
+          scale: scale,
+          orient: orient,
+          tickSize: tickSize_f,
+          tickEndSize: tickEndSize_f,
           tickPadding: tickPadding,
+          tickLabelPosition: tickLabelPosition_,
           tickFormat: tickFormat,
           tickFormatExtended: tickFormatExtended_
         };
@@ -7734,17 +7815,23 @@ d3 = function() {
       tickFormat_ = typeof f === "function" ? f : null;
       return axis;
     };
-    axis.tickFormatEx = function(x) {
+    axis.tickFormatEx = function(f) {
       if (!arguments.length) return tickFormatExtended_;
-      tickFormatExtended_ = extended;
+      tickFormatExtended_ = typeof f === "function" ? f : null;
+      return axis;
+    };
+    axis.tickLabelPosition = function(f) {
+      if (!arguments.length) return tickLabelPosition_;
+      tickLabelPosition_ = typeof f === "function" ? f : null;
       return axis;
     };
     axis.tickSize = function(major, minor) {
       var n = arguments.length;
       if (!n) return [ tickMajorSize, tickMinorSize, tickEndSize ];
-      tickMajorSize = d3_functor(major);
-      tickMinorSize = n > 1 ? d3_functor(minor) : tickMajorSize;
-      tickEndSize = d3_functor(arguments[n - 1]);
+      tickMajorSize = major;
+      tickMinorSize = n > 1 ? minor : tickMajorSize;
+      tickEndSize = arguments[n - 1];
+      reinit_ticksizes();
       return axis;
     };
     axis.tickPadding = function(x) {
@@ -7759,7 +7846,7 @@ d3 = function() {
     };
     axis.tickFilter = function(x) {
       if (!arguments.length) return tickFilter;
-      tickFilter = x != null ? x : true;
+      tickFilter = x || 2;
       return axis;
     };
     return axis;
@@ -7783,7 +7870,8 @@ d3 = function() {
   function d3_svg_axisMapTicks(v, i, ticks) {
     return {
       value: v,
-      index: i
+      subindex: 0,
+      majorindex: i
     };
   }
   d3.svg.brush = function() {

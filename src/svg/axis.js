@@ -58,7 +58,7 @@ d3.svg.axis = function() {
           return major;
         }
       };
-    } else // if (typeof tickMajorSize !== "function" && typeof tickMinorSize !== "function") {
+    } else { // if (typeof tickMajorSize !== "function" && typeof tickMinorSize !== "function")
       major = mult * tickMajorSize;
       minor = mult * tickMinorSize;
       tickSize_f = function(d, i) {
@@ -121,8 +121,7 @@ d3.svg.axis = function() {
     // Furthermore, to ensure that tick/axis animation is smooth and provides a correct progression
     // from major-to-minor and vice versa, we render all ticks from a single selection batch, where
     // we identify 'minor' ticks by simply looking at their non-zero .subindex value.
-    var majorticks = [],
-        arr = ticks.range,
+    var arr = ticks.range,
         d,
         i;
 
@@ -139,7 +138,6 @@ d3.svg.axis = function() {
       // receive a label...
       var context = tickFilter({
         ticks: ticks,                            // Object { ticks: Array of Tick Objects, submodulo: Number }
-        majorticks: majorticks,                  // Array of Tick Object { value: domainvalue, subindex: Number, majorindex: Number }
         range: range                             // array[2]
       }, {
         // the read-only context components:
@@ -153,7 +151,6 @@ d3.svg.axis = function() {
         tickFormatExtended: tickFormatExtended_  // functor(d, i)
       }) || {};
       ticks = (context.ticks || ticks);
-      majorticks = (context.majorticks || majorticks);
       range = (context.range || range);
     } else {
       // When the tickFilter is a number or an array, than this is the minimum required spacing between individual
@@ -161,19 +158,16 @@ d3.svg.axis = function() {
       // set of major and minor ticks.
       var min_spacing;
       if (!Array.isArray(tickFilter) || !tickFilter.length) {
-        min_spacing = [ Number(tickFilter) || 2, Number(tickFilter) || 2 ];
+        min_spacing = [ (Number(tickFilter) || 2), (Number(tickFilter) || 2) ];
       } else {
         min_spacing = tickFilter;
         if (!min_spacing[1]) {
-          min_spacing[1] = min_spacing[0] || 2;
+          min_spacing[1] = (min_spacing[0] || 2);
         }
       }
       for (i = 0; i < arr.length; i++) {
         d = arr[i];
-        if (d.subindex) {
-          subticks.push(d);
-        } else {
-          majorticks.push(d);
+        if (!d.subindex) {
         }
       }
     }
@@ -264,7 +258,7 @@ d3.svg.axis = function() {
 
         // And render the axis with ticks and all:
         var labelPos_f = (tickLabelPosition_ == null ?
-          (orient == "bottom" ?
+          orient == "bottom" ?
             function (d, i) {
               d3.select(this).attr("dy", ".71em").style("text-anchor", "middle");
             } : orient == "top" ?
@@ -276,8 +270,7 @@ d3.svg.axis = function() {
                 var l = tickSize_f(d, i);
                 return l < 0 ? "end" : "start";
               });
-            }
-          ) : tickLabelPosition_);
+            } : tickLabelPosition_);
 
         switch (orient) {
         case "bottom":
