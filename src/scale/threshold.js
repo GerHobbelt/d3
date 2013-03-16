@@ -12,6 +12,28 @@ function d3_scale_threshold(domain, range) {
     return range[d3.bisect(domain, x)];
   }
 
+  scale.invert = function(y) {
+    if (Number(range[0]) === NaN) {
+      for (var i = 0; i < range.length; ++i) {
+        if (range[i] === y) {
+          return domain[i];
+        }
+      }
+      return NaN;
+    } else {
+      var i0 = d3.bisect(range, y);
+      var i1 = i0 + 1;
+      if (i1 < domain.length) {
+        var delta = (y - range[i0]) / (range[i1] - range[i0]);
+        return domain[i0] + delta * (domain[i1] - domain[i0]);
+      } else if (i0 > 0) {
+        return domain[i0] + delta * (domain[i0 - 1] - domain[i0]);
+      } else {
+        return domain[i0] + delta;
+      }
+    }
+  };
+
   scale.domain = function(_) {
     if (!arguments.length) return domain;
     domain = _;
