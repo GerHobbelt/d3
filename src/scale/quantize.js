@@ -34,7 +34,7 @@ function d3_scale_quantize(x0, x1, range) {
     if (i <= 0) return [];
     // produce nice tick values (erase the long decimal tails due to floating point calc inaccuracy),
     // x1 is not inclusive
-    return d3.range(x0, x1 - 0.5 / kx, 1.0 / kx).map(function(x, i) {
+    return d3.range(x0, x1, kx * (x1 - x0)).map(function(x, i) {
       // heuristic: round to 3 extra digits to remove FP calc inaccuracy
       var p = d3_format_precision(x, 4);
       var v = d3.round(x, p);
