@@ -14,31 +14,49 @@ d3.svg.axis = function() {
       tickArguments_ = [10],
       tickValues = null,
       tickFormat_ = null,
-      tickFormatExtended_,
+      tickFormatExtended_ = null,
       tickFilter = true,
       tickSubdivide = 0;
 
   function axis(g) {
     // Ticks (+ optional subticks), or domain values for ordinal scales.
     var ticks = (tickValues == null ?
-                 (scale.ticks ?
-                  scale.ticks.apply(scale, tickArguments_, tickSubdivide) :
-                  { range: scale.domain().map(d3_svg_axisMapTicks), submodulus: 0 }) :
+                 scale.ticks ?
+                  ((ticks = scale.ticks.apply(scale, tickArguments_, tickSubdivide)) && ticks.range) ?
+				   ticks :
+				   ticks.map(d3_svg_axisMapTicks) :
+                  { range: scale.domain().map(d3_svg_axisMapTicks), submodulus: 0 } :
                  tickValues.range ?
                   tickValues :
                   { range: tickValues.map(d3_svg_axisMapTicks), submodulus: 0 }),
         tickFormat = (tickFormat_ == null ? (scale.tickFormat ? scale.tickFormat.apply(scale, tickArguments_) : d3.format(".f")) : tickFormat_);
 
     // Minor ticks?
-    var subticks;
+    var subticks = [],
+        majorticks = [],
+        arr = ticks.range,
+        d,
+        i;
     if (typeof tickFilter === "function") {
-      subticks = ticks.range.filter(function(d, i, a) {
-        return tickFilter(d, d.index, ticks, i, a);
-      });
+      for (i = 0; i < arr.length; i++) {
+        d = arr[i];
+        if (tickFilter(d, i, ticks)) {
+          subticks.push(d);
+        } else {
+          majorticks.push(d);
+        }
+      }
     } else if (tickFilter) {
-      subticks = ticks.range; // TODO: should we clone the array?
+      for (i = 0; i < arr.length; i++) {
+        d = arr[i];
+        if (d.subindex) {
+          subticks.push(d);
+        } else {
+          majorticks.push(d);
+        }
+      }
     } else {
-      subticks = [];
+      majorticks = arr;
     }
 
     var range = d3_scaleRange(scale);
@@ -46,16 +64,16 @@ d3.svg.axis = function() {
     if (g) {
       g.each(function() {
         var g = d3.select(this);
-        var subtick = g.selectAll(".tick.minor");
-        subtick = subtick.data(subticks, function(d, i) {
+        // Draw the (minor) ticks.
+        var subtick = g.selectAll(".tick.minor").data(subticks, function(d, i) {
           return String(d.value);
         });
         var subtickEnter = subtick.enter().insert("line", ".tick").attr("class", "tick minor").style("opacity", 1e-6);
         var subtickExit = d3.transition(subtick.exit()).style("opacity", 1e-6).remove();
         var subtickUpdate = d3.transition(subtick).style("opacity", 1);
 
-        // Draw the ticks.
-        var tick = g.selectAll(".tick.major").data(ticks, function(d, i) {
+        // Draw the (major) ticks.
+        var tick = g.selectAll(".tick.major").data(majorticks, function(d, i) {
               return String(d.value);
             }),
             tickEnter = tick.enter().insert("g", "path").attr("class", "tick major").style("opacity", 1e-6),
@@ -187,7 +205,10 @@ d3.svg.axis = function() {
         // - any exiting ticks are undefined in the new scale
         // Therefore, we only need to transition updating ticks.
         else {
-          var dx = scale1.rangeBand() / 2, x = function(d) { return scale1(d) + dx; };
+          var dx = scale1.rangeBand() / 2,
+              x = function(d) {
+                return scale1(d) + dx;
+              };
           tickEnter.call(tickTransform, x);
           tickUpdate.call(tickTransform, x);
         }
@@ -197,8 +218,10 @@ d3.svg.axis = function() {
       // when using d3.axis other than in a d3.selection.call(...); produce the ticks, etc. for custom work:
       return {
         ticks: ticks,
+        majorticks: majorticks,
         subticks: subticks,
         range: range,                            // array[2]
+		orient: orient,                          // String
         tickMajorSize: tickMajorSize,            // functor(d, i)
         tickMinorSize: tickMinorSize,            // functor(d, i)
         tickEndSize: tickEndSize,                // functor(d, i)
@@ -294,6 +317,7 @@ function d3_svg_axisY(selection, y) {
 function d3_svg_axisMapTicks(v, i, ticks) {
   return {
     value: v,
-    index: i
+    subindex: 0,
+    majorindex: i
   };
 }

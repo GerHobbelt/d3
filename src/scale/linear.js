@@ -87,6 +87,7 @@ function d3_scale_linearRebind(scale, linear) {
 }
 
 function d3_scale_linearNice(dx) {
+  // round the number x to the 2 most significant digits:
   dx = Math.pow(10, Math.round(Math.log(dx) / Math.LN10) - 1);
   return dx && {
     floor: function(x) { return Math.floor(x / dx) * dx; },
@@ -154,7 +155,7 @@ function d3_scale_linearTicks(domain, m, subdiv_count) {
       range.push({
         value: j / k,
         subindex: i % subdiv_count,
-        majorindex: (i / subdiv_count) | 0       // fastest way to parseInt() across browsers: http://jsperf.com/math-floor-vs-math-round-vs-parseint/18
+        majorindex: (i / subdiv_count) | 0       // fastest way to turn a float into an integer across browsers: http://jsperf.com/math-floor-vs-math-round-vs-parseint/18
       });
     }
   } else {
@@ -164,7 +165,7 @@ function d3_scale_linearTicks(domain, m, subdiv_count) {
       range.push({
         value: j / k,
         subindex: i % subdiv_count,
-        majorindex: (i / subdiv_count) | 0       // fastest way to parseInt() across browsers: http://jsperf.com/math-floor-vs-math-round-vs-parseint/18
+        majorindex: (i / subdiv_count) | 0       // fastest way to turn a float into an integer across browsers: http://jsperf.com/math-floor-vs-math-round-vs-parseint/18
       });
     }
   }
