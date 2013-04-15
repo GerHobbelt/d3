@@ -1,5 +1,5 @@
 d3 = (function(){
-  var d3 = {version: "3.1.0pre"}; // semver
+  var d3 = {version: "3.1.5"}; // semver
 if (!Date.now) Date.now = function() {
   return +new Date();
 };
@@ -542,6 +542,15 @@ function d3_eventSource() {
   return e;
 }
 
+// Registers an event listener for the specified target that cancels the next
+// event for the specified type, but only if it occurs immediately. This is
+// useful to disambiguate dragging from clicking.
+function d3_eventSuppress(target, type) {
+  function off() { target.on(type, null); }
+  target.on(type, function() { d3_eventCancel(); off(); }, true);
+  setTimeout(off, 0); // clear the handler if it doesn't fire
+}
+
 // Like d3.dispatch, but for custom events abstracting native UI events. These
 // events have a target component (such as a brush), a target element (such as
 // the svg:g element containing the brush) and the standard arguments `d` (the
@@ -749,17 +758,11 @@ d3.behavior.drag = function() {
       // if moved, prevent the mouseup (and possibly click) from propagating
       if (moved) {
         d3_eventCancel();
-        if (d3.event.target === eventTarget) w.on("click.drag", click, true);
+        if (d3.event.target === eventTarget) d3_eventSuppress(w, "click");
       }
 
       w .on(touchId != null ? "touchmove.drag-" + touchId : "mousemove.drag", null)
         .on(touchId != null ? "touchend.drag-" + touchId : "mouseup.drag", null);
-    }
-
-    // prevent the subsequent click from propagating (e.g., for anchors)
-    function click() {
-      d3_eventCancel();
-      w.on("click.drag", null);
     }
   }
 
@@ -1675,12 +1678,7 @@ d3.behavior.zoom = function() {
     function mouseup() {
       if (moved) d3_eventCancel();
       w.on("mousemove.zoom", null).on("mouseup.zoom", null);
-      if (moved && d3.event.target === eventTarget) w.on("click.zoom", click, true);
-    }
-
-    function click() {
-      d3_eventCancel();
-      w.on("click.zoom", null);
+      if (moved && d3.event.target === eventTarget) d3_eventSuppress(w, "click.zoom");
     }
   }
 
@@ -2786,7 +2784,7 @@ if (d3_format_grouping) {
 d3.geo = {};
 
 d3.geo.stream = function(object, listener) {
-  if (d3_geo_streamObjectType.hasOwnProperty(object.type)) {
+  if (object && d3_geo_streamObjectType.hasOwnProperty(object.type)) {
     d3_geo_streamObjectType[object.type](object, listener);
   } else {
     d3_geo_streamGeometry(object, listener);
@@ -2794,7 +2792,7 @@ d3.geo.stream = function(object, listener) {
 };
 
 function d3_geo_streamGeometry(geometry, listener) {
-  if (d3_geo_streamGeometryType.hasOwnProperty(geometry.type)) {
+  if (geometry && d3_geo_streamGeometryType.hasOwnProperty(geometry.type)) {
     d3_geo_streamGeometryType[geometry.type](geometry, listener);
   }
 }
@@ -3150,8 +3148,8 @@ function d3_geo_clipPolygon(segments, compare, inside, interpolate, listener) {
       clip = [];
 
   segments.forEach(function(segment) {
-    if ((n = segment.length) <= 1) return;
-    var n, p0 = segment[0], p1 = segment[n - 1];
+    if ((n = segment.length - 1) <= 0) return;
+    var n, p0 = segment[0], p1 = segment[n];
 
     // If the first and last points of a segment are coincident, then treat as
     // a closed ring.
@@ -3691,7 +3689,7 @@ function d3_geo_clipCircle(radius) {
   }
 }
 
-var d3_geo_clipViewMAX = 1e15;
+var d3_geo_clipViewMAX = 1e9;
 
 function d3_geo_clipView(x0, y0, x1, y1) {
   return function(listener) {
@@ -3801,6 +3799,8 @@ function d3_geo_clipView(x0, y0, x1, y1) {
     }
 
     function linePoint(x, y) {
+      x = Math.max(-d3_geo_clipViewMAX, Math.min(d3_geo_clipViewMAX, x));
+      y = Math.max(-d3_geo_clipViewMAX, Math.min(d3_geo_clipViewMAX, y));
       var v = visible(x, y);
       if (polygon) ring.push([x, y]);
       if (first) {
@@ -3822,6 +3822,9 @@ function d3_geo_clipView(x0, y0, x1, y1) {
             }
             listener.point(b[0], b[1]);
             if (!v) listener.lineEnd();
+          } else {
+            listener.lineStart();
+            listener.point(x, y);
           }
         }
       }
@@ -3854,11 +3857,6 @@ function d3_geo_clipView(x0, y0, x1, y1) {
 
   // Liang–Barsky line clipping.
   function clipLine(a, b) {
-    a[0] = Math.max(-d3_geo_clipViewMAX, Math.min(d3_geo_clipViewMAX, a[0]));
-    a[1] = Math.max(-d3_geo_clipViewMAX, Math.min(d3_geo_clipViewMAX, a[1]));
-    b[0] = Math.max(-d3_geo_clipViewMAX, Math.min(d3_geo_clipViewMAX, b[0]));
-    b[1] = Math.max(-d3_geo_clipViewMAX, Math.min(d3_geo_clipViewMAX, b[1]));
-
     var dx = b[0] - a[0],
         dy = b[1] - a[1],
         t = [0, 1];
@@ -3885,7 +3883,7 @@ function d3_geo_clipView(x0, y0, x1, y1) {
 }
 
 function d3_geo_clipViewT(num, denominator, t) {
-  if (Math.abs(denominator) < ε) return num < 0;
+  if (Math.abs(denominator) < ε) return num <= 0;
 
   var u = num / denominator;
 
@@ -4300,7 +4298,7 @@ d3.geo.graticule = function() {
 
   graticule.lines = function() {
     return lines().map(function(coordinates) { return {type: "LineString", coordinates: coordinates}; });
-  }
+  };
 
   graticule.outline = function() {
     return {
@@ -4428,7 +4426,7 @@ d3.geo.interpolate = function(source, target) {
     source[0] * d3_radians, source[1] * d3_radians,
     target[0] * d3_radians, target[1] * d3_radians
   );
-}
+};
 
 function d3_geo_interpolate(x0, y0, x1, y1) {
   var cy0 = Math.cos(y0),
@@ -4877,9 +4875,6 @@ function d3_geo_pathContext(context) {
   return stream;
 }
 
-// TODO better encapsulation for d3_geo_pathArea; move to area.js
-// TODO better encapsulation for d3_geo_pathCentroid; move to centroid.js
-
 d3.geo.path = function() {
   var pointRadius = 4.5,
       projection,
@@ -5084,8 +5079,41 @@ d3_geo_mercator.invert = function(x, y) {
   return [x, 2 * Math.atan(Math.exp(y)) - π / 2];
 };
 
+function d3_geo_mercatorProjection(project) {
+  var m = d3_geo_projection(project),
+      scale = m.scale,
+      translate = m.translate,
+      clipExtent = m.clipExtent,
+      clipAuto;
+
+  m.scale = function() {
+    var v = scale.apply(m, arguments);
+    return v === m ? (clipAuto ? m.clipExtent(null) : m) : v;
+  };
+
+  m.translate = function() {
+    var v = translate.apply(m, arguments);
+    return v === m ? (clipAuto ? m.clipExtent(null) : m) : v;
+  };
+
+  m.clipExtent = function(_) {
+    var v = clipExtent.apply(m, arguments);
+    if (v === m) {
+      if (clipAuto = _ == null) {
+        var k = π * scale(), t = translate();
+        clipExtent([[t[0] - k, t[1] - k], [t[0] + k, t[1] + k]]);
+      }
+    } else if (clipAuto) {
+      v = null;
+    }
+    return v;
+  };
+
+  return m.clipExtent(null);
+}
+
 (d3.geo.mercator = function() {
-  return d3_geo_projection(d3_geo_mercator);
+  return d3_geo_mercatorProjection(d3_geo_mercator);
 }).raw = d3_geo_mercator;
 
 var d3_geo_orthographic = d3_geo_azimuthal(
@@ -5122,9 +5150,485 @@ d3_geo_transverseMercator.invert = function(x, y) {
 };
 
 (d3.geo.transverseMercator = function() {
-  return d3_geo_projection(d3_geo_transverseMercator);
+  return d3_geo_mercatorProjection(d3_geo_transverseMercator);
 }).raw = d3_geo_transverseMercator;
 d3.geom = {};
+d3.svg = {};
+
+function d3_svg_line(projection) {
+  var x = d3_svg_lineX,
+      y = d3_svg_lineY,
+      defined = d3_true,
+      interpolate = d3_svg_lineLinear,
+      interpolateKey = interpolate.key,
+      tension = .7;
+
+  function line(data) {
+    var segments = [],
+        points = [],
+        i = -1,
+        n = data.length,
+        d,
+        fx = d3_functor(x),
+        fy = d3_functor(y);
+
+    function segment() {
+      segments.push("M", interpolate(projection(points), tension));
+    }
+
+    while (++i < n) {
+      if (defined.call(this, d = data[i], i)) {
+        points.push([+fx.call(this, d, i), +fy.call(this, d, i)]);
+      } else if (points.length) {
+        segment();
+        points = [];
+      }
+    }
+
+    if (points.length) segment();
+
+    return segments.length ? segments.join("") : null;
+  }
+
+  line.x = function(_) {
+    if (!arguments.length) return x;
+    x = _;
+    return line;
+  };
+
+  line.y = function(_) {
+    if (!arguments.length) return y;
+    y = _;
+    return line;
+  };
+
+  line.defined  = function(_) {
+    if (!arguments.length) return defined;
+    defined = _;
+    return line;
+  };
+
+  line.interpolate = function(_) {
+    if (!arguments.length) return interpolateKey;
+    if (typeof _ === "function") interpolateKey = interpolate = _;
+    else interpolateKey = (interpolate = d3_svg_lineInterpolators.get(_) || d3_svg_lineLinear).key;
+    return line;
+  };
+
+  line.tension = function(_) {
+    if (!arguments.length) return tension;
+    tension = _;
+    return line;
+  };
+
+  return line;
+}
+
+d3.svg.line = function() {
+  return d3_svg_line(d3_identity);
+};
+
+// The default `x` property, which references d[0].
+function d3_svg_lineX(d) {
+  return d[0];
+}
+
+// The default `y` property, which references d[1].
+function d3_svg_lineY(d) {
+  return d[1];
+}
+
+// The various interpolators supported by the `line` class.
+var d3_svg_lineInterpolators = d3.map({
+  "linear": d3_svg_lineLinear,
+  "linear-closed": d3_svg_lineLinearClosed,
+  "step-before": d3_svg_lineStepBefore,
+  "step-after": d3_svg_lineStepAfter,
+  "basis": d3_svg_lineBasis,
+  "basis-open": d3_svg_lineBasisOpen,
+  "basis-closed": d3_svg_lineBasisClosed,
+  "bundle": d3_svg_lineBundle,
+  "cardinal": d3_svg_lineCardinal,
+  "cardinal-open": d3_svg_lineCardinalOpen,
+  "cardinal-closed": d3_svg_lineCardinalClosed,
+  "monotone": d3_svg_lineMonotone
+});
+
+d3_svg_lineInterpolators.forEach(function(key, value) {
+  value.key = key;
+  value.closed = /-closed$/.test(key);
+});
+
+// Linear interpolation; generates "L" commands.
+function d3_svg_lineLinear(points) {
+  return points.join("L");
+}
+
+function d3_svg_lineLinearClosed(points) {
+  return d3_svg_lineLinear(points) + "Z";
+}
+
+// Step interpolation; generates "H" and "V" commands.
+function d3_svg_lineStepBefore(points) {
+  var i = 0,
+      n = points.length,
+      p = points[0],
+      path = [p[0], ",", p[1]];
+  while (++i < n) path.push("V", (p = points[i])[1], "H", p[0]);
+  return path.join("");
+}
+
+// Step interpolation; generates "H" and "V" commands.
+function d3_svg_lineStepAfter(points) {
+  var i = 0,
+      n = points.length,
+      p = points[0],
+      path = [p[0], ",", p[1]];
+  while (++i < n) path.push("H", (p = points[i])[0], "V", p[1]);
+  return path.join("");
+}
+
+// Open cardinal spline interpolation; generates "C" commands.
+function d3_svg_lineCardinalOpen(points, tension) {
+  return points.length < 4
+      ? d3_svg_lineLinear(points)
+      : points[1] + d3_svg_lineHermite(points.slice(1, points.length - 1),
+        d3_svg_lineCardinalTangents(points, tension));
+}
+
+// Closed cardinal spline interpolation; generates "C" commands.
+function d3_svg_lineCardinalClosed(points, tension) {
+  return points.length < 3
+      ? d3_svg_lineLinear(points)
+      : points[0] + d3_svg_lineHermite((points.push(points[0]), points),
+        d3_svg_lineCardinalTangents([points[points.length - 2]]
+        .concat(points, [points[1]]), tension));
+}
+
+// Cardinal spline interpolation; generates "C" commands.
+function d3_svg_lineCardinal(points, tension) {
+  return points.length < 3
+      ? d3_svg_lineLinear(points)
+      : points[0] + d3_svg_lineCubicPolynomialSpline(points,
+        d3_svg_lineCardinalTangents(points, tension));
+}
+
+// Hermite spline construction; generates "C" commands.
+function d3_svg_lineHermite(points, tangents) {
+  if (tangents.length < 1
+      || (points.length != tangents.length
+      && points.length != tangents.length + 2)) {
+    return d3_svg_lineLinear(points);
+  }
+
+  var quad = points.length != tangents.length,
+      path = "",
+      p0 = points[0],
+      p = points[1],
+      t0 = tangents[0],
+      t = t0,
+      pi = 1;
+
+  if (quad) {
+    path += "Q" + (p[0] - t0[0] * 2 / 3) + "," + (p[1] - t0[1] * 2 / 3)
+        + "," + p[0] + "," + p[1];
+    p0 = points[1];
+    pi = 2;
+  }
+
+  if (tangents.length > 1) {
+    t = tangents[1];
+    p = points[pi];
+    pi++;
+    path += "C" + (p0[0] + t0[0]) + "," + (p0[1] + t0[1])
+        + "," + (p[0] - t[0]) + "," + (p[1] - t[1])
+        + "," + p[0] + "," + p[1];
+    for (var i = 2; i < tangents.length; i++, pi++) {
+      p = points[pi];
+      t = tangents[i];
+      path += "S" + (p[0] - t[0]) + "," + (p[1] - t[1])
+          + "," + p[0] + "," + p[1];
+    }
+  }
+
+  if (quad) {
+    var lp = points[pi];
+    path += "Q" + (p[0] + t[0] * 2 / 3) + "," + (p[1] + t[1] * 2 / 3)
+        + "," + lp[0] + "," + lp[1];
+  }
+
+  return path;
+}
+
+// Cubic polynomial spline construction; generates "C" commands.
+function d3_svg_lineCubicPolynomialSpline(points, tangents) {
+  if (tangents.length < 1
+      || (points.length != tangents.length
+      && points.length != tangents.length + 2)) {
+    return d3_svg_lineLinear(points);
+  }
+
+  var quad = points.length != tangents.length,
+      path = "",
+      p0 = points[0],
+      p = points[1],
+      t0 = tangents[0],
+      t = t0,
+      pi = 0,
+      dx = points[1][0] - points[0][0],
+      tp, pp;
+
+  if (quad) {
+    path += "Q" + (p[0] - (dx / 2)) + "," + (p[1] - t0[1]/t0[0] * (dx / 2))
+        + "," + p[0] + "," + p[1];
+    p0 = points[1];
+    pi = 1;
+  }
+
+  if (tangents.length > 1) {
+    tp = tangents[0];
+    pp = points[pi];
+    pi++;
+    for (var i = 1; i < tangents.length; i++, pi++) {
+      p = points[pi]; t = tangents[i];
+      dx = p[0] - pp[0];
+      path += "C" + (pp[0] + (dx / 3)) + "," + (pp[1] + (tp[1]/tp[0]) * (dx / 3))
+        + "," + (p[0] - (dx / 3)) + "," + (p[1] - (t[1]/t[0]) * (dx / 3))
+        + "," + p[0] + "," + p[1];
+      pp = p; tp = t;
+    }
+  }
+
+  if (quad) {
+    var lp = points[pi];
+    dx = lp[0] - p[0];
+    path += "Q" + (p[0] + (dx / 2)) + "," + (p[1] + t[1]/t[0] * (dx / 2))
+        + "," + lp[0] + "," + lp[1];
+  }
+
+  return path;
+}
+
+// Generates tangents for a cardinal spline.
+function d3_svg_lineCardinalTangents(points, tension) {
+  var tangents = [],
+      a = (1 - tension) / 2,
+      p0,
+      p1 = points[0],
+      p2 = points[1],
+      i = 1,
+      n = points.length;
+  while (++i < n) {
+    p0 = p1;
+    p1 = p2;
+    p2 = points[i];
+    tangents.push([a * (p2[0] - p0[0]), a * (p2[1] - p0[1])]);
+  }
+  return tangents;
+}
+
+// B-spline interpolation; generates "C" commands.
+function d3_svg_lineBasis(points) {
+  if (points.length < 3) return d3_svg_lineLinear(points);
+  var i = 1,
+      n = points.length,
+      pi = points[0],
+      x0 = pi[0],
+      y0 = pi[1],
+      px = [x0, x0, x0, (pi = points[1])[0]],
+      py = [y0, y0, y0, pi[1]],
+      path = [x0, ",", y0];
+  d3_svg_lineBasisBezier(path, px, py);
+  while (++i < n) {
+    pi = points[i];
+    px.shift(); px.push(pi[0]);
+    py.shift(); py.push(pi[1]);
+    d3_svg_lineBasisBezier(path, px, py);
+  }
+  i = -1;
+  while (++i < 2) {
+    px.shift(); px.push(pi[0]);
+    py.shift(); py.push(pi[1]);
+    d3_svg_lineBasisBezier(path, px, py);
+  }
+  return path.join("");
+}
+
+// Open B-spline interpolation; generates "C" commands.
+function d3_svg_lineBasisOpen(points) {
+  if (points.length < 4) return d3_svg_lineLinear(points);
+  var path = [],
+      i = -1,
+      n = points.length,
+      pi,
+      px = [0],
+      py = [0];
+  while (++i < 3) {
+    pi = points[i];
+    px.push(pi[0]);
+    py.push(pi[1]);
+  }
+  path.push(d3_svg_lineDot4(d3_svg_lineBasisBezier3, px)
+    + "," + d3_svg_lineDot4(d3_svg_lineBasisBezier3, py));
+  --i; while (++i < n) {
+    pi = points[i];
+    px.shift(); px.push(pi[0]);
+    py.shift(); py.push(pi[1]);
+    d3_svg_lineBasisBezier(path, px, py);
+  }
+  return path.join("");
+}
+
+// Closed B-spline interpolation; generates "C" commands.
+function d3_svg_lineBasisClosed(points) {
+  var path,
+      i = -1,
+      n = points.length,
+      m = n + 4,
+      pi,
+      px = [],
+      py = [];
+  while (++i < 4) {
+    pi = points[i % n];
+    px.push(pi[0]);
+    py.push(pi[1]);
+  }
+  path = [
+    d3_svg_lineDot4(d3_svg_lineBasisBezier3, px), ",",
+    d3_svg_lineDot4(d3_svg_lineBasisBezier3, py)
+  ];
+  --i; while (++i < m) {
+    pi = points[i % n];
+    px.shift(); px.push(pi[0]);
+    py.shift(); py.push(pi[1]);
+    d3_svg_lineBasisBezier(path, px, py);
+  }
+  return path.join("");
+}
+
+function d3_svg_lineBundle(points, tension) {
+  var n = points.length - 1;
+  if (n) {
+    var x0 = points[0][0],
+        y0 = points[0][1],
+        dx = points[n][0] - x0,
+        dy = points[n][1] - y0,
+        i = -1,
+        p,
+        t;
+    while (++i <= n) {
+      p = points[i];
+      t = i / n;
+      p[0] = tension * p[0] + (1 - tension) * (x0 + t * dx);
+      p[1] = tension * p[1] + (1 - tension) * (y0 + t * dy);
+    }
+  }
+  return d3_svg_lineBasis(points);
+}
+
+// Returns the dot product of the given four-element vectors.
+function d3_svg_lineDot4(a, b) {
+  return a[0] * b[0] + a[1] * b[1] + a[2] * b[2] + a[3] * b[3];
+}
+
+// Matrix to transform basis (b-spline) control points to bezier
+// control points. Derived from FvD 11.2.8.
+var d3_svg_lineBasisBezier1 = [0, 2/3, 1/3, 0],
+    d3_svg_lineBasisBezier2 = [0, 1/3, 2/3, 0],
+    d3_svg_lineBasisBezier3 = [0, 1/6, 2/3, 1/6];
+
+// Pushes a "C" Bézier curve onto the specified path array, given the
+// two specified four-element arrays which define the control points.
+function d3_svg_lineBasisBezier(path, x, y) {
+  path.push(
+      "C", d3_svg_lineDot4(d3_svg_lineBasisBezier1, x),
+      ",", d3_svg_lineDot4(d3_svg_lineBasisBezier1, y),
+      ",", d3_svg_lineDot4(d3_svg_lineBasisBezier2, x),
+      ",", d3_svg_lineDot4(d3_svg_lineBasisBezier2, y),
+      ",", d3_svg_lineDot4(d3_svg_lineBasisBezier3, x),
+      ",", d3_svg_lineDot4(d3_svg_lineBasisBezier3, y));
+}
+
+// Computes the slope from points p0 to p1.
+function d3_svg_lineSlope(p0, p1) {
+  return (p1[1] - p0[1]) / (p1[0] - p0[0]);
+}
+
+// Compute three-point differences for the given points.
+// http://en.wikipedia.org/wiki/Cubic_Hermite_spline#Finite_difference
+function d3_svg_lineFiniteDifferences(points) {
+  var i = 0,
+      j = points.length - 1,
+      m = [],
+      p0 = points[0],
+      p1 = points[1],
+      d = m[0] = d3_svg_lineSlope(p0, p1);
+  while (++i < j) {
+    m[i] = (d + (d = d3_svg_lineSlope(p0 = p1, p1 = points[i + 1]))) / 2;
+  }
+  m[i] = d;
+  return m;
+}
+
+// Interpolates the given points using Fritsch-Carlson Monotone cubic Hermite
+// interpolation. Returns an array of tangent vectors. For details, see
+// http://en.wikipedia.org/wiki/Monotone_cubic_interpolation
+function d3_svg_lineMonotoneTangents(points) {
+  var tangents = [],
+      d,
+      a,
+      b,
+      s,
+      m = d3_svg_lineFiniteDifferences(points),
+      i = -1,
+      j = points.length - 1;
+
+  // The first two steps are done by computing finite-differences:
+  // 1. Compute the slopes of the secant lines between successive points.
+  // 2. Initialize the tangents at every point as the average of the secants.
+
+  // Then, for each segment…
+  while (++i < j) {
+    d = d3_svg_lineSlope(points[i], points[i + 1]);
+
+    // 3. If two successive yk = y{k + 1} are equal (i.e., d is zero), then set
+    // mk = m{k + 1} = 0 as the spline connecting these points must be flat to
+    // preserve monotonicity. Ignore step 4 and 5 for those k.
+
+    if (Math.abs(d) < 1e-6) {
+      m[i] = m[i + 1] = 0;
+    } else {
+      // 4. Let ak = mk / dk and bk = m{k + 1} / dk.
+      a = m[i] / d;
+      b = m[i + 1] / d;
+
+      // 5. Prevent overshoot and ensure monotonicity by restricting the
+      // magnitude of vector <ak, bk> to a circle of radius 3.
+      s = a * a + b * b;
+      if (s > 9) {
+        s = d * 3 / Math.sqrt(s);
+        m[i] = s * a;
+        m[i + 1] = s * b;
+      }
+    }
+  }
+
+  // Compute the normalized tangent vector from the slopes. Note that if x is
+  // not monotonic, it's possible that the slope will be infinite, so we protect
+  // against NaN by setting the coordinate to zero.
+  i = -1; while (++i <= j) {
+    s = (points[Math.min(j, i + 1)][0] - points[Math.max(0, i - 1)][0]) / (6 * (1 + m[i] * m[i]));
+    tangents.push([s || 0, m[i] * s || 0]);
+  }
+
+  return tangents;
+}
+
+function d3_svg_lineMonotone(points) {
+  return points.length < 3
+      ? d3_svg_lineLinear(points)
+      : points[0] + d3_svg_lineCubicPolynomialSpline(points, d3_svg_lineMonotoneTangents(points));
+}
 
 /**
  * Computes the 2D convex hull of a set of points using Graham's scanning
@@ -5136,85 +5640,111 @@ d3.geom = {};
  * @returns polygon [[x1, y1], [x2, y2], …]
  */
 d3.geom.hull = function(vertices) {
-  if (vertices.length < 3) return [];
+  var x = d3_svg_lineX,
+      y = d3_svg_lineY;
 
-  var len = vertices.length,
-      plen = len - 1,
-      points = [],
-      stack = [],
-      i, j, h = 0, x1, y1, x2, y2, u, v, a, sp;
+  if (arguments.length) return hull(vertices);
 
-  // find the starting ref point: leftmost point with the minimum y coord
-  for (i=1; i<len; ++i) {
-    if (vertices[i][1] < vertices[h][1]) {
-      h = i;
-    } else if (vertices[i][1] == vertices[h][1]) {
-      h = (vertices[i][0] < vertices[h][0] ? i : h);
+  function hull(data) {
+    if (data.length < 3) return [];
+
+    var fx = d3_functor(x),
+        fy = d3_functor(y),
+        n = data.length,
+        vertices, // TODO use parallel arrays
+        plen = n - 1,
+        points = [],
+        stack = [],
+        d,
+        i, j, h = 0, x1, y1, x2, y2, u, v, a, sp;
+
+    if (fx === d3_svg_lineX && y === d3_svg_lineY) vertices = data;
+    else for (i = 0, vertices = []; i < n; ++i) {
+      vertices.push([+fx.call(this, d = data[i], i), +fy.call(this, d, i)]);
     }
-  }
 
-  // calculate polar angles from ref point and sort
-  for (i=0; i<len; ++i) {
-    if (i === h) continue;
-    y1 = vertices[i][1] - vertices[h][1];
-    x1 = vertices[i][0] - vertices[h][0];
-    points.push({angle: Math.atan2(y1, x1), index: i});
-  }
-  points.sort(function(a, b) { return a.angle - b.angle; });
+    // find the starting ref point: leftmost point with the minimum y coord
+    for (i=1; i<n; ++i) {
+      if (vertices[i][1] < vertices[h][1]) {
+        h = i;
+      } else if (vertices[i][1] == vertices[h][1]) {
+        h = (vertices[i][0] < vertices[h][0] ? i : h);
+      }
+    }
 
-  // toss out duplicate angles
-  a = points[0].angle;
-  v = points[0].index;
-  u = 0;
-  for (i=1; i<plen; ++i) {
-    j = points[i].index;
-    if (a == points[i].angle) {
-      // keep angle for point most distant from the reference
-      x1 = vertices[v][0] - vertices[h][0];
-      y1 = vertices[v][1] - vertices[h][1];
-      x2 = vertices[j][0] - vertices[h][0];
-      y2 = vertices[j][1] - vertices[h][1];
-      if ((x1*x1 + y1*y1) >= (x2*x2 + y2*y2)) {
-        points[i].index = -1;
+    // calculate polar angles from ref point and sort
+    for (i=0; i<n; ++i) {
+      if (i === h) continue;
+      y1 = vertices[i][1] - vertices[h][1];
+      x1 = vertices[i][0] - vertices[h][0];
+      points.push({angle: Math.atan2(y1, x1), index: i});
+    }
+    points.sort(function(a, b) { return a.angle - b.angle; });
+
+    // toss out duplicate angles
+    a = points[0].angle;
+    v = points[0].index;
+    u = 0;
+    for (i=1; i<plen; ++i) {
+      j = points[i].index;
+      if (a == points[i].angle) {
+        // keep angle for point most distant from the reference
+        x1 = vertices[v][0] - vertices[h][0];
+        y1 = vertices[v][1] - vertices[h][1];
+        x2 = vertices[j][0] - vertices[h][0];
+        y2 = vertices[j][1] - vertices[h][1];
+        if ((x1*x1 + y1*y1) >= (x2*x2 + y2*y2)) {
+          points[i].index = -1;
+        } else {
+          points[u].index = -1;
+          a = points[i].angle;
+          u = i;
+          v = j;
+        }
       } else {
-        points[u].index = -1;
         a = points[i].angle;
         u = i;
         v = j;
       }
-    } else {
-      a = points[i].angle;
-      u = i;
-      v = j;
     }
+
+    // initialize the stack
+    stack.push(h);
+    for (i=0, j=0; i<2; ++j) {
+      if (points[j].index !== -1) {
+        stack.push(points[j].index);
+        i++;
+      }
+    }
+    sp = stack.length;
+
+    // do graham's scan
+    for (; j<plen; ++j) {
+      if (points[j].index === -1) continue; // skip tossed out points
+      while (sp >= 2 && !d3_geom_hullCCW(stack[sp-2], stack[sp-1], points[j].index, vertices)) {
+        --sp;
+      }
+      stack[sp++] = points[j].index;
+    }
+
+    // construct the hull
+    var poly = [];
+    for (i=0; i<sp; ++i) {
+      poly.push(data[stack[i]]);
+    }
+    return poly;
   }
 
-  // initialize the stack
-  stack.push(h);
-  for (i=0, j=0; i<2; ++j) {
-    if (points[j].index !== -1) {
-      stack.push(points[j].index);
-      i++;
-    }
-  }
-  sp = stack.length;
+  hull.x = function(_) {
+    return arguments.length ? (x = _, hull) : x;
+  };
 
-  // do graham's scan
-  for (; j<plen; ++j) {
-    if (points[j].index === -1) continue; // skip tossed out points
-    while (sp >= 2 && !d3_geom_hullCCW(stack[sp-2], stack[sp-1], points[j].index, vertices)) {
-      --sp;
-    }
-    stack[sp++] = points[j].index;
-  }
+  hull.y = function(_) {
+    return arguments.length ? (y = _, hull) : y;
+  };
 
-  // construct the hull
-  var poly = [];
-  for (i=0; i<sp; ++i) {
-    poly.push(vertices[stack[i]]);
-  }
-  return poly;
-}
+  return hull;
+};
 
 // are three points in counter-clockwise order?
 function d3_geom_hullCCW(i1, i2, i3, v) {
@@ -5306,6 +5836,38 @@ function d3_geom_polygonIntersect(c, d, a, b) {
   return [x1 + ua * x21, y1 + ua * y21];
 }
 
+/**
+* @param vertices [[x1, y1], [x2, y2], …]
+* @returns triangles [[[x1, y1], [x2, y2], [x3, y3]], …]
+ */
+d3.geom.delaunay = function(vertices) {
+  var edges = vertices.map(function() { return []; }),
+      triangles = [];
+
+  // Use the Voronoi tessellation to determine Delaunay edges.
+  d3_geom_voronoiTessellate(vertices, function(e) {
+    edges[e.region.l.index].push(vertices[e.region.r.index]);
+  });
+
+  // Reconnect the edges into counterclockwise triangles.
+  edges.forEach(function(edge, i) {
+    var v = vertices[i],
+        cx = v[0],
+        cy = v[1];
+    edge.forEach(function(v) {
+      v.angle = Math.atan2(v[0] - cx, v[1] - cy);
+    });
+    edge.sort(function(a, b) {
+      return a.angle - b.angle;
+    });
+    for (var j = 0, m = edge.length - 1; j < m; j++) {
+      triangles.push([v, edge[j], edge[j + 1]]);
+    }
+  });
+
+  return triangles;
+};
+
 // Adapted from Nicolas Garcia Belmonte's JIT implementation:
 // http://blog.thejit.org/2010/02/12/voronoi-tessellation/
 // http://blog.thejit.org/assets/voronoijs/voronoi.js
@@ -5317,102 +5879,197 @@ function d3_geom_polygonIntersect(c, d, a, b) {
 // clip them to a particular shape you will need to do that either in SVG or by
 // post-processing with d3.geom.polygon's clip method.
 //
-// If any vertices are coincident or have NaN positions, the behavior of this
+// If any points are coincident or have NaN positions, the behavior of this
 // method is undefined. Most likely invalid polygons will be returned. You
 // should filter invalid points, and consolidate coincident points, before
 // computing the tessellation.
 
 /**
- * @param vertices [[x1, y1], [x2, y2], …]
+ * @param points [[x1, y1], [x2, y2], …]
  * @returns polygons [[[x1, y1], [x2, y2], …], …]
  */
-d3.geom.voronoi = function(vertices) {
-  var polygons = vertices.map(function() { return []; }),
-      Z = 1e6;
+d3.geom.voronoi = function(points) {
+  var size = null,
+      x = d3_svg_lineX,
+      y = d3_svg_lineY,
+      clip;
 
-  d3_geom_voronoiTessellate(vertices, function(e) {
-    var s1,
-        s2,
-        x1,
-        x2,
-        y1,
-        y2;
-    if (e.a === 1 && e.b >= 0) {
-      s1 = e.ep.r;
-      s2 = e.ep.l;
-    } else {
-      s1 = e.ep.l;
-      s2 = e.ep.r;
+  // For backwards-compatibility.
+  if (arguments.length) return voronoi(points);
+
+  function voronoi(data) {
+    var points,
+        polygons = data.map(function() { return []; }),
+        fx = d3_functor(x),
+        fy = d3_functor(y),
+        d,
+        i,
+        n = data.length,
+        Z = 1e6;
+
+    if (fx === d3_svg_lineX && fy === d3_svg_lineY) points = data;
+    else for (points = [], i = 0; i < n; ++i) {
+      points.push([+fx.call(this, d = data[i], i), +fy.call(this, d, i)]);
     }
-    if (e.a === 1) {
-      y1 = s1 ? s1.y : -Z;
-      x1 = e.c - e.b * y1;
-      y2 = s2 ? s2.y : Z;
-      x2 = e.c - e.b * y2;
-    } else {
-      x1 = s1 ? s1.x : -Z;
-      y1 = e.c - e.a * x1;
-      x2 = s2 ? s2.x : Z;
-      y2 = e.c - e.a * x2;
-    }
-    var v1 = [x1, y1],
-        v2 = [x2, y2];
-    polygons[e.region.l.index].push(v1, v2);
-    polygons[e.region.r.index].push(v1, v2);
-  });
 
-  // Connect edges into counterclockwise polygons without coincident points.
-  polygons = polygons.map(function(polygon, i) {
-    var cx = vertices[i][0],
-        cy = vertices[i][1],
-        angle = polygon.map(function(v) { return Math.atan2(v[0] - cx, v[1] - cy); }),
-        order = d3.range(polygon.length).sort(function(a, b) { return angle[a] - angle[b]; });
-    return order
-        .filter(function(d, i) { return !i || (angle[d] - angle[order[i - 1]] > ε); })
-        .map(function(d) { return polygon[d]; });
-  });
-
-  // Fix degenerate polygons.
-  polygons.forEach(function(polygon, i) {
-    var n = polygon.length;
-    if (!n) return polygon.push([-Z, -Z], [-Z, Z], [Z, Z], [Z, -Z]);
-    if (n > 2) return;
-
-    var p0 = vertices[i],
-        p1 = polygon[0],
-        p2 = polygon[1],
-        x0 = p0[0], y0 = p0[1],
-        x1 = p1[0], y1 = p1[1],
-        x2 = p2[0], y2 = p2[1],
-        dx = Math.abs(x2 - x1), dy = y2 - y1;
-
-    if (Math.abs(dy) < ε) { // 0°
-      var y = y0 < y1 ? -Z : Z;
-      polygon.push([-Z, y], [Z, y]);
-    } else if (dx < ε) { // ±90°
-      var x = x0 < x1 ? -Z : Z;
-      polygon.push([x, -Z], [x, Z]);
-    } else {
-      var y = (x2 - x1) * (y1 - y0) < (x1 - x0) * (y2 - y1) ? Z : -Z,
-          z = Math.abs(dy) - dx;
-      if (Math.abs(z) < ε) { // ±45°
-        polygon.push([dy < 0 ? y : -y, y]);
+    d3_geom_voronoiTessellate(points, function(e) {
+      var s1,
+          s2,
+          x1,
+          x2,
+          y1,
+          y2;
+      if (e.a === 1 && e.b >= 0) {
+        s1 = e.ep.r;
+        s2 = e.ep.l;
       } else {
-        if (z > 0) y *= -1;
-        polygon.push([-Z, y], [Z, y]);
+        s1 = e.ep.l;
+        s2 = e.ep.r;
       }
-    }
-  });
+      if (e.a === 1) {
+        y1 = s1 ? s1.y : -Z;
+        x1 = e.c - e.b * y1;
+        y2 = s2 ? s2.y : Z;
+        x2 = e.c - e.b * y2;
+      } else {
+        x1 = s1 ? s1.x : -Z;
+        y1 = e.c - e.a * x1;
+        x2 = s2 ? s2.x : Z;
+        y2 = e.c - e.a * x2;
+      }
+      var v1 = [x1, y1],
+          v2 = [x2, y2];
+      polygons[e.region.l.index].push(v1, v2);
+      polygons[e.region.r.index].push(v1, v2);
+    });
 
-  return polygons;
+    // Connect edges into counterclockwise polygons without coincident points.
+    polygons = polygons.map(function(polygon, i) {
+      var cx = points[i][0],
+          cy = points[i][1],
+          angle = polygon.map(function(v) { return Math.atan2(v[0] - cx, v[1] - cy); }),
+          order = d3.range(polygon.length).sort(function(a, b) { return angle[a] - angle[b]; });
+      return order
+          .filter(function(d, i) { return !i || (angle[d] - angle[order[i - 1]] > ε); })
+          .map(function(d) { return polygon[d]; });
+    });
+
+    // Fix degenerate polygons.
+    polygons.forEach(function(polygon, i) {
+      var n = polygon.length;
+      if (!n) return polygon.push([-Z, -Z], [-Z, Z], [Z, Z], [Z, -Z]);
+      if (n > 2) return;
+
+      var p0 = points[i],
+          p1 = polygon[0],
+          p2 = polygon[1],
+          x0 = p0[0], y0 = p0[1],
+          x1 = p1[0], y1 = p1[1],
+          x2 = p2[0], y2 = p2[1],
+          dx = Math.abs(x2 - x1), dy = y2 - y1;
+
+      if (Math.abs(dy) < ε) { // 0°
+        var y = y0 < y1 ? -Z : Z;
+        polygon.push([-Z, y], [Z, y]);
+      } else if (dx < ε) { // ±90°
+        var x = x0 < x1 ? -Z : Z;
+        polygon.push([x, -Z], [x, Z]);
+      } else {
+        var y = (x2 - x1) * (y1 - y0) < (x1 - x0) * (y2 - y1) ? Z : -Z,
+            z = Math.abs(dy) - dx;
+        if (Math.abs(z) < ε) { // ±45°
+          polygon.push([dy < 0 ? y : -y, y]);
+        } else {
+          if (z > 0) y *= -1;
+          polygon.push([-Z, y], [Z, y]);
+        }
+      }
+    });
+
+    if (clip) for (i = 0; i < n; ++i) clip(polygons[i]);
+    for (i = 0; i < n; ++i) polygons[i].point = data[i];
+
+    return polygons;
+  }
+
+  voronoi.x = function(_) {
+    return arguments.length ? (x = _, voronoi) : x;
+  };
+
+  voronoi.y = function(_) {
+    return arguments.length ? (y = _, voronoi) : y;
+  };
+
+  voronoi.size = function(_) {
+    if (!arguments.length) return size;
+    if (_ == null) {
+      clip = null;
+    } else {
+      size = [+_[0], +_[1]];
+      clip = d3.geom.polygon([[0, 0], [0, size[1]], size, [size[0], 0]]).clip;
+    }
+    return voronoi;
+  };
+
+  voronoi.links = function(data) {
+    var points,
+        graph = data.map(function() { return []; }),
+        links = [],
+        fx = d3_functor(x),
+        fy = d3_functor(y),
+        d,
+        i,
+        n = data.length;
+
+    if (fx === d3_svg_lineX && fy === d3_svg_lineY) points = data;
+    else for (i = 0; i < n; ++i) {
+      points.push([+fx.call(this, d = data[i], i), +fy.call(this, d, i)]);
+    }
+
+    d3_geom_voronoiTessellate(points, function(e) {
+      var l = e.region.l.index,
+          r = e.region.r.index;
+      if (graph[l][r]) return;
+      graph[l][r] = graph[r][l] = true;
+      links.push({source: data[l], target: data[r]});
+    });
+
+    return links;
+  };
+
+  voronoi.triangles = function(data) {
+    if (x === d3_svg_lineX && y === d3_svg_lineY) return d3.geom.delaunay(data);
+
+    var points,
+        point,
+        fx = d3_functor(x),
+        fy = d3_functor(y),
+        d,
+        i,
+        n;
+
+    for (i = 0, points = [], n = data.length; i < n; ++i) {
+      point = [+fx.call(this, d = data[i], i), +fy.call(this, d, i)];
+      point.data = d;
+      points.push(point);
+    }
+
+    return d3.geom.delaunay(points).map(function(triangle) {
+      return triangle.map(function(point) {
+        return point.data;
+      });
+    });
+  };
+
+  return voronoi;
 };
 
 var d3_geom_voronoiOpposite = {l: "r", r: "l"};
 
-function d3_geom_voronoiTessellate(vertices, callback) {
+function d3_geom_voronoiTessellate(points, callback) {
 
   var Sites = {
-    list: vertices
+    list: points
       .map(function(v, i) {
         return {
           index: i,
@@ -5748,137 +6405,175 @@ function d3_geom_voronoiTessellate(vertices, callback) {
   }
 }
 
-/**
-* @param vertices [[x1, y1], [x2, y2], …]
-* @returns triangles [[[x1, y1], [x2, y2], [x3, y3]], …]
- */
-d3.geom.delaunay = function(vertices) {
-  var edges = vertices.map(function() { return []; }),
-      triangles = [];
-
-  // Use the Voronoi tessellation to determine Delaunay edges.
-  d3_geom_voronoiTessellate(vertices, function(e) {
-    edges[e.region.l.index].push(vertices[e.region.r.index]);
-  });
-
-  // Reconnect the edges into counterclockwise triangles.
-  edges.forEach(function(edge, i) {
-    var v = vertices[i],
-        cx = v[0],
-        cy = v[1];
-    edge.forEach(function(v) {
-      v.angle = Math.atan2(v[0] - cx, v[1] - cy);
-    });
-    edge.sort(function(a, b) {
-      return a.angle - b.angle;
-    });
-    for (var j = 0, m = edge.length - 1; j < m; j++) {
-      triangles.push([v, edge[j], edge[j + 1]]);
-    }
-  });
-
-  return triangles;
-};
-
 d3.geom.quadtree = function(points, x1, y1, x2, y2) {
-  var p,
-      i = -1,
-      n = points.length;
+  var x = d3_svg_lineX,
+      y = d3_svg_lineY,
+      compat;
 
-  // Allow bounds to be specified explicitly.
-  if (arguments.length < 5) {
-    if (arguments.length === 3) {
+  // For backwards-compatibility.
+  if (compat = arguments.length) {
+    x = d3_geom_quadtreeCompatX;
+    y = d3_geom_quadtreeCompatY;
+    if (compat === 3) {
       y2 = y1;
       x2 = x1;
       y1 = x1 = 0;
-    } else {
-      x1 = y1 = Infinity;
-      x2 = y2 = -Infinity;
-
-      // Compute bounds.
-      while (++i < n) {
-        p = points[i];
-        if (p.x < x1) x1 = p.x;
-        if (p.y < y1) y1 = p.y;
-        if (p.x > x2) x2 = p.x;
-        if (p.y > y2) y2 = p.y;
-      }
     }
+    return quadtree(points);
   }
 
-  // Squarify the bounds.
-  var dx = x2 - x1,
-      dy = y2 - y1;
-  if (dx > dy) y2 = y1 + dx;
-  else x2 = x1 + dy;
+  function quadtree(data) {
+    var d,
+        fx = d3_functor(x),
+        fy = d3_functor(y),
+        xs,
+        ys,
+        i,
+        n,
+        x1_,
+        y1_,
+        x2_,
+        y2_;
 
-  // Recursively inserts the specified point p at the node n or one of its
-  // descendants. The bounds are defined by [x1, x2] and [y1, y2].
-  function insert(n, p, x1, y1, x2, y2) {
-    if (isNaN(p.x) || isNaN(p.y)) return; // ignore invalid points
-    if (n.leaf) {
-      var v = n.point;
-      if (v) {
-        // If the point at this leaf node is at the same position as the new
-        // point we are adding, we leave the point associated with the
-        // internal node while adding the new point to a child node. This
-        // avoids infinite recursion.
-        if ((Math.abs(v.x - p.x) + Math.abs(v.y - p.y)) < .01) {
-          insertChild(n, p, x1, y1, x2, y2);
+    if (x1 != null) {
+      x1_ = x1, y1_ = y1, x2_ = x2, y2_ = y2;
+    } else {
+      // Compute bounds, and cache points temporarily.
+      x2_ = y2_ = -(x1_ = y1_ = Infinity);
+      xs = [], ys = [];
+      n = data.length;
+      if (compat) for (i = 0; i < n; ++i) {
+        d = data[i];
+        if (d.x < x1_) x1_ = d.x;
+        if (d.y < y1_) y1_ = d.y;
+        if (d.x > x2_) x2_ = d.x;
+        if (d.y > y2_) y2_ = d.y;
+        xs.push(d.x);
+        ys.push(d.y);
+      } else for (i = 0; i < n; ++i) {
+        var x_ = +fx(d = data[i], i),
+            y_ = +fy(d, i);
+        if (x_ < x1_) x1_ = x_;
+        if (y_ < y1_) y1_ = y_;
+        if (x_ > x2_) x2_ = x_;
+        if (y_ > y2_) y2_ = y_;
+        xs.push(x_);
+        ys.push(y_);
+      }
+    }
+
+    // Squarify the bounds.
+    var dx = x2_ - x1_,
+        dy = y2_ - y1_;
+    if (dx > dy) y2_ = y1_ + dx;
+    else x2_ = x1_ + dy;
+
+    // Recursively inserts the specified point p at the node n or one of its
+    // descendants. The bounds are defined by [x1, x2] and [y1, y2].
+    function insert(n, d, x, y, x1, y1, x2, y2) {
+      if (isNaN(x) || isNaN(y)) return; // ignore invalid points
+      if (n.leaf) {
+        var nx = n.x,
+            ny = n.y;
+        if (nx != null) {
+          // If the point at this leaf node is at the same position as the new
+          // point we are adding, we leave the point associated with the
+          // internal node while adding the new point to a child node. This
+          // avoids infinite recursion.
+          if ((Math.abs(nx - x) + Math.abs(ny - y)) < .01) {
+            insertChild(n, d, x, y, x1, y1, x2, y2);
+          } else {
+            var nPoint = n.point;
+            n.x = n.y = n.point = null;
+            insertChild(n, nPoint, nx, ny, x1, y1, x2, y2);
+            insertChild(n, d, x, y, x1, y1, x2, y2);
+          }
         } else {
-          n.point = null;
-          insertChild(n, v, x1, y1, x2, y2);
-          insertChild(n, p, x1, y1, x2, y2);
+          n.x = x, n.y = y, n.point = d;
         }
       } else {
-        n.point = p;
+        insertChild(n, d, x, y, x1, y1, x2, y2);
       }
-    } else {
-      insertChild(n, p, x1, y1, x2, y2);
     }
+
+    // Recursively inserts the specified point [x, y] into a descendant of node
+    // n. The bounds are defined by [x1, x2] and [y1, y2].
+    function insertChild(n, d, x, y, x1, y1, x2, y2) {
+      // Compute the split point, and the quadrant in which to insert p.
+      var sx = (x1 + x2) * .5,
+          sy = (y1 + y2) * .5,
+          right = x >= sx,
+          bottom = y >= sy,
+          i = (bottom << 1) + right;
+
+      // Recursively insert into the child node.
+      n.leaf = false;
+      n = n.nodes[i] || (n.nodes[i] = d3_geom_quadtreeNode());
+
+      // Update the bounds as we recurse.
+      if (right) x1 = sx; else x2 = sx;
+      if (bottom) y1 = sy; else y2 = sy;
+      insert(n, d, x, y, x1, y1, x2, y2);
+    }
+
+    // Create the root node.
+    var root = d3_geom_quadtreeNode();
+
+    root.add = function(d) {
+      insert(root, d, +fx(d, ++i), +fy(d, i), x1_, y1_, x2_, y2_);
+    };
+
+    root.visit = function(f) {
+      d3_geom_quadtreeVisit(f, root, x1_, y1_, x2_, y2_);
+    };
+
+    // Insert all points.
+    i = -1;
+    if (x1 == null) {
+      while (++i < n) {
+        insert(root, data[i], xs[i], ys[i], x1_, y1_, x2_, y2_);
+      }
+      --i; // index of last insertion
+    } else data.forEach(root.add);
+
+    // Discard captured fields.
+    xs = ys = data = d = null;
+
+    return root;
   }
 
-  // Recursively inserts the specified point p into a descendant of node n. The
-  // bounds are defined by [x1, x2] and [y1, y2].
-  function insertChild(n, p, x1, y1, x2, y2) {
-    // Compute the split point, and the quadrant in which to insert p.
-    var sx = (x1 + x2) * .5,
-        sy = (y1 + y2) * .5,
-        right = p.x >= sx,
-        bottom = p.y >= sy,
-        i = (bottom << 1) + right;
-
-    // Recursively insert into the child node.
-    n.leaf = false;
-    n = n.nodes[i] || (n.nodes[i] = d3_geom_quadtreeNode());
-
-    // Update the bounds as we recurse.
-    if (right) x1 = sx; else x2 = sx;
-    if (bottom) y1 = sy; else y2 = sy;
-    insert(n, p, x1, y1, x2, y2);
-  }
-
-  // Create the root node.
-  var root = d3_geom_quadtreeNode();
-
-  root.add = function(p) {
-    insert(root, p, x1, y1, x2, y2);
+  quadtree.x = function(_) {
+    return arguments.length ? (x = _, quadtree) : x;
   };
 
-  root.visit = function(f) {
-    d3_geom_quadtreeVisit(f, root, x1, y1, x2, y2);
+  quadtree.y = function(_) {
+    return arguments.length ? (y = _, quadtree) : y;
   };
 
-  // Insert all points.
-  points.forEach(root.add);
-  return root;
+  quadtree.size = function(_) {
+    if (!arguments.length) return x1 == null ? null : [x2, y2];
+    if (_ == null) {
+      x1 = y1 = x2 = y2 = null;
+    } else {
+      x1 = y1 = 0;
+      x2 = +_[0], y2 = +_[1];
+    }
+    return quadtree;
+  };
+
+  return quadtree;
 };
+
+function d3_geom_quadtreeCompatX(d) { return d.x; }
+function d3_geom_quadtreeCompatY(d) { return d.y; }
 
 function d3_geom_quadtreeNode() {
   return {
     leaf: true,
     nodes: [],
-    point: null
+    point: null,
+    x: null,
+    y: null
   };
 }
 
@@ -5975,7 +6670,7 @@ var d3_transformIdentity = {a: 1, b: 0, c: 0, d: 1, e: 0, f: 0};
 d3.interpolateNumber = d3_interpolateNumber;
 
 function d3_interpolateNumber(a, b) {
-  b -= a;
+  b -= a = +a;
   return function(t) { return a + b * t; };
 }
 
@@ -6070,6 +6765,9 @@ function d3_interpolateString(a, b) {
       n, // q.length
       o;
 
+  // Coerce inputs to strings.
+  a = a + "", b = b + "";
+
   // Reset our regular expression!
   d3_interpolate_number.lastIndex = 0;
 
@@ -6157,11 +6855,13 @@ function d3_interpolateByName(name) {
 }
 
 d3.interpolators = [
-  d3_interpolateObject,
-  function(a, b) { return Array.isArray(b) && d3_interpolateArray(a, b); },
-  function(a, b) { return (typeof a === "string" || typeof b === "string") && d3_interpolateString(a + "", b + ""); },
-  function(a, b) { return (typeof b === "string" ? d3_rgb_names.has(b) || /^(#|rgb\(|hsl\()/.test(b) : b instanceof d3_Color) && d3_interpolateRgb(a, b); },
-  function(a, b) { return !isNaN(a = +a) && !isNaN(b = +b) && d3_interpolateNumber(a, b); }
+  function(a, b) {
+    var t = typeof b;
+    return (t === "string" || t !== typeof a ? (d3_rgb_names.has(b) || /^(#|rgb\(|hsl\()/.test(b) ? d3_interpolateRgb : d3_interpolateString)
+        : b instanceof d3_Color ? d3_interpolateRgb
+        : t === "object" ? (Array.isArray(b) ? d3_interpolateArray : d3_interpolateObject)
+        : d3_interpolateNumber)(a, b);
+  }
 ];
 
 d3.interpolateArray = d3_interpolateArray;
@@ -7202,7 +7902,7 @@ d3.layout.pie = function() {
     // Compute the angular scale factor: from value to radians.
     var k = ((typeof endAngle === "function"
         ? endAngle.apply(this, arguments)
-        : endAngle) - startAngle)
+        : endAngle) - a)
         / d3.sum(values);
 
     // Optionally sort the data.
@@ -7362,7 +8062,7 @@ d3.layout.stack = function() {
   };
 
   return stack;
-}
+};
 
 function d3_layout_stackX(d) {
   return d.x;
@@ -8373,573 +9073,6 @@ function d3_layout_treemapPad(node, padding) {
   if (dy < 0) { y += dy / 2; dy = 0; }
   return {x: x, y: y, dx: dx, dy: dy};
 }
-d3.svg = {};
-
-function d3_svg_line(projection) {
-  var x = d3_svg_lineX,
-      y = d3_svg_lineY,
-      defined = d3_true,
-      interpolate = d3_svg_lineLinear,
-      interpolateKey = interpolate.key,
-      tension = .7;
-
-  function line(data) {
-    var segments = [],
-        points = [],
-        i = -1,
-        n = data.length,
-        d,
-        fx = d3_functor(x),
-        fy = d3_functor(y);
-
-    function segment() {
-      segments.push("M", interpolate(projection(points), tension));
-    }
-
-    while (++i < n) {
-      if (defined.call(this, d = data[i], i)) {
-        points.push([+fx.call(this, d, i), +fy.call(this, d, i)]);
-      } else if (points.length) {
-        segment();
-        points = [];
-      }
-    }
-
-    if (points.length) segment();
-
-    return segments.length ? segments.join("") : null;
-  }
-
-  line.x = function(_) {
-    if (!arguments.length) return x;
-    x = _;
-    return line;
-  };
-
-  line.y = function(_) {
-    if (!arguments.length) return y;
-    y = _;
-    return line;
-  };
-
-  line.defined  = function(_) {
-    if (!arguments.length) return defined;
-    defined = _;
-    return line;
-  };
-
-  line.interpolate = function(_) {
-    if (!arguments.length) return interpolateKey;
-    if (typeof _ === "function") interpolateKey = interpolate = _;
-    else interpolateKey = (interpolate = d3_svg_lineInterpolators.get(_) || d3_svg_lineLinear).key;
-    return line;
-  };
-
-  line.tension = function(_) {
-    if (!arguments.length) return tension;
-    tension = _;
-    return line;
-  };
-
-  return line;
-}
-
-d3.svg.line = function() {
-  return d3_svg_line(d3_identity);
-};
-
-// The default `x` property, which references d[0].
-function d3_svg_lineX(d) {
-  return d[0];
-}
-
-// The default `y` property, which references d[1].
-function d3_svg_lineY(d) {
-  return d[1];
-}
-
-// The various interpolators supported by the `line` class.
-var d3_svg_lineInterpolators = d3.map({
-  "linear": d3_svg_lineLinear,
-  "linear-closed": d3_svg_lineLinearClosed,
-  "step-before": d3_svg_lineStepBefore,
-  "step-after": d3_svg_lineStepAfter,
-  "basis": d3_svg_lineBasis,
-  "basis-open": d3_svg_lineBasisOpen,
-  "basis-closed": d3_svg_lineBasisClosed,
-  "bundle": d3_svg_lineBundle,
-  "cardinal": d3_svg_lineCardinal,
-  "cardinal-open": d3_svg_lineCardinalOpen,
-  "cardinal-closed": d3_svg_lineCardinalClosed,
-  "monotone": d3_svg_lineMonotone
-});
-
-d3_svg_lineInterpolators.forEach(function(key, value) {
-  value.key = key;
-  value.closed = /-closed$/.test(key);
-});
-
-// Linear interpolation; generates "L" commands.
-function d3_svg_lineLinear(points) {
-  return points.join("L");
-}
-
-function d3_svg_lineLinearClosed(points) {
-  return d3_svg_lineLinear(points) + "Z";
-}
-
-// Step interpolation; generates "H" and "V" commands.
-function d3_svg_lineStepBefore(points) {
-  var i = 0,
-      n = points.length,
-      p = points[0],
-      path = [p[0], ",", p[1]];
-  while (++i < n) path.push("V", (p = points[i])[1], "H", p[0]);
-  return path.join("");
-}
-
-// Step interpolation; generates "H" and "V" commands.
-function d3_svg_lineStepAfter(points) {
-  var i = 0,
-      n = points.length,
-      p = points[0],
-      path = [p[0], ",", p[1]];
-  while (++i < n) path.push("H", (p = points[i])[0], "V", p[1]);
-  return path.join("");
-}
-
-// Open cardinal spline interpolation; generates "C" commands.
-function d3_svg_lineCardinalOpen(points, tension) {
-  return points.length < 4
-      ? d3_svg_lineLinear(points)
-      : points[1] + d3_svg_lineHermite(points.slice(1, points.length - 1),
-        d3_svg_lineCardinalTangents(points, tension));
-}
-
-// Closed cardinal spline interpolation; generates "C" commands.
-function d3_svg_lineCardinalClosed(points, tension) {
-  return points.length < 3
-      ? d3_svg_lineLinear(points)
-      : points[0] + d3_svg_lineHermite((points.push(points[0]), points),
-        d3_svg_lineCardinalTangents([points[points.length - 2]]
-        .concat(points, [points[1]]), tension));
-}
-
-// Cardinal spline interpolation; generates "C" commands.
-function d3_svg_lineCardinal(points, tension) {
-  return points.length < 3
-      ? d3_svg_lineLinear(points)
-      : points[0] + d3_svg_lineCubicPolynomialSpline(points,
-        d3_svg_lineCardinalTangents(points, tension));
-}
-
-// Hermite spline construction; generates "C" commands.
-function d3_svg_lineHermite(points, tangents) {
-  if (tangents.length < 1
-      || (points.length != tangents.length
-      && points.length != tangents.length + 2)) {
-    return d3_svg_lineLinear(points);
-  }
-
-  var quad = points.length != tangents.length,
-      path = "",
-      p0 = points[0],
-      p = points[1],
-      t0 = tangents[0],
-      t = t0,
-      pi = 1;
-
-  if (quad) {
-    path += "Q" + (p[0] - t0[0] * 2 / 3) + "," + (p[1] - t0[1] * 2 / 3)
-        + "," + p[0] + "," + p[1];
-    p0 = points[1];
-    pi = 2;
-  }
-
-  if (tangents.length > 1) {
-    t = tangents[1];
-    p = points[pi];
-    pi++;
-    path += "C" + (p0[0] + t0[0]) + "," + (p0[1] + t0[1])
-        + "," + (p[0] - t[0]) + "," + (p[1] - t[1])
-        + "," + p[0] + "," + p[1];
-    for (var i = 2; i < tangents.length; i++, pi++) {
-      p = points[pi];
-      t = tangents[i];
-      path += "S" + (p[0] - t[0]) + "," + (p[1] - t[1])
-          + "," + p[0] + "," + p[1];
-    }
-  }
-
-  if (quad) {
-    var lp = points[pi];
-    path += "Q" + (p[0] + t[0] * 2 / 3) + "," + (p[1] + t[1] * 2 / 3)
-        + "," + lp[0] + "," + lp[1];
-  }
-
-  return path;
-}
-
-// Cubic polynomial spline construction; generates "C" commands.
-function d3_svg_lineCubicPolynomialSpline(points, tangents) {
-  if (tangents.length < 1
-      || (points.length != tangents.length
-      && points.length != tangents.length + 2)) {
-    return d3_svg_lineLinear(points);
-  }
-
-  var quad = points.length != tangents.length,
-      path = "",
-      p0 = points[0],
-      p = points[1],
-      t0 = tangents[0],
-      t = t0,
-      pi = 0,
-      dx = points[1][0] - points[0][0],
-      tp, pp;
-
-  if (quad) {
-    path += "Q" + (p[0] - (dx / 2)) + "," + (p[1] - t0[1]/t0[0] * (dx / 2))
-        + "," + p[0] + "," + p[1];
-    p0 = points[1];
-    pi = 1;
-  }
-
-  if (tangents.length > 1) {
-    tp = tangents[0];
-    pp = points[pi];
-    pi++;
-    for (var i = 1; i < tangents.length; i++, pi++) {
-      p = points[pi]; t = tangents[i];
-      dx = p[0] - pp[0];
-      path += "C" + (pp[0] + (dx / 3)) + "," + (pp[1] + (tp[1]/tp[0]) * (dx / 3))
-        + "," + (p[0] - (dx / 3)) + "," + (p[1] - (t[1]/t[0]) * (dx / 3))
-        + "," + p[0] + "," + p[1];
-      pp = p; tp = t;
-    }
-  }
-
-  if (quad) {
-    var lp = points[pi];
-    dx = lp[0] - p[0];
-    path += "Q" + (p[0] + (dx / 2)) + "," + (p[1] + t[1]/t[0] * (dx / 2))
-        + "," + lp[0] + "," + lp[1];
-  }
-
-  return path;
-}
-
-// Generates tangents for a cardinal spline.
-function d3_svg_lineCardinalTangents(points, tension) {
-  var tangents = [],
-      a = (1 - tension) / 2,
-      p0,
-      p1 = points[0],
-      p2 = points[1],
-      i = 1,
-      n = points.length;
-  while (++i < n) {
-    p0 = p1;
-    p1 = p2;
-    p2 = points[i];
-    tangents.push([a * (p2[0] - p0[0]), a * (p2[1] - p0[1])]);
-  }
-  return tangents;
-}
-
-// B-spline interpolation; generates "C" commands.
-function d3_svg_lineBasis(points) {
-  if (points.length < 3) return d3_svg_lineLinear(points);
-  var i = 1,
-      n = points.length,
-      pi = points[0],
-      x0 = pi[0],
-      y0 = pi[1],
-      px = [x0, x0, x0, (pi = points[1])[0]],
-      py = [y0, y0, y0, pi[1]],
-      path = [x0, ",", y0];
-  d3_svg_lineBasisBezier(path, px, py);
-  while (++i < n) {
-    pi = points[i];
-    px.shift(); px.push(pi[0]);
-    py.shift(); py.push(pi[1]);
-    d3_svg_lineBasisBezier(path, px, py);
-  }
-  i = -1;
-  while (++i < 2) {
-    px.shift(); px.push(pi[0]);
-    py.shift(); py.push(pi[1]);
-    d3_svg_lineBasisBezier(path, px, py);
-  }
-  return path.join("");
-}
-
-// Open B-spline interpolation; generates "C" commands.
-function d3_svg_lineBasisOpen(points) {
-  if (points.length < 4) return d3_svg_lineLinear(points);
-  var path = [],
-      i = -1,
-      n = points.length,
-      pi,
-      px = [0],
-      py = [0];
-  while (++i < 3) {
-    pi = points[i];
-    px.push(pi[0]);
-    py.push(pi[1]);
-  }
-  path.push(d3_svg_lineDot4(d3_svg_lineBasisBezier3, px)
-    + "," + d3_svg_lineDot4(d3_svg_lineBasisBezier3, py));
-  --i; while (++i < n) {
-    pi = points[i];
-    px.shift(); px.push(pi[0]);
-    py.shift(); py.push(pi[1]);
-    d3_svg_lineBasisBezier(path, px, py);
-  }
-  return path.join("");
-}
-
-// Closed B-spline interpolation; generates "C" commands.
-function d3_svg_lineBasisClosed(points) {
-  var path,
-      i = -1,
-      n = points.length,
-      m = n + 4,
-      pi,
-      px = [],
-      py = [];
-  while (++i < 4) {
-    pi = points[i % n];
-    px.push(pi[0]);
-    py.push(pi[1]);
-  }
-  path = [
-    d3_svg_lineDot4(d3_svg_lineBasisBezier3, px), ",",
-    d3_svg_lineDot4(d3_svg_lineBasisBezier3, py)
-  ];
-  --i; while (++i < m) {
-    pi = points[i % n];
-    px.shift(); px.push(pi[0]);
-    py.shift(); py.push(pi[1]);
-    d3_svg_lineBasisBezier(path, px, py);
-  }
-  return path.join("");
-}
-
-function d3_svg_lineBundle(points, tension) {
-  var n = points.length - 1;
-  if (n) {
-    var x0 = points[0][0],
-        y0 = points[0][1],
-        dx = points[n][0] - x0,
-        dy = points[n][1] - y0,
-        i = -1,
-        p,
-        t;
-    while (++i <= n) {
-      p = points[i];
-      t = i / n;
-      p[0] = tension * p[0] + (1 - tension) * (x0 + t * dx);
-      p[1] = tension * p[1] + (1 - tension) * (y0 + t * dy);
-    }
-  }
-  return d3_svg_lineBasis(points);
-}
-
-// Returns the dot product of the given four-element vectors.
-function d3_svg_lineDot4(a, b) {
-  return a[0] * b[0] + a[1] * b[1] + a[2] * b[2] + a[3] * b[3];
-}
-
-// Matrix to transform basis (b-spline) control points to bezier
-// control points. Derived from FvD 11.2.8.
-var d3_svg_lineBasisBezier1 = [0, 2/3, 1/3, 0],
-    d3_svg_lineBasisBezier2 = [0, 1/3, 2/3, 0],
-    d3_svg_lineBasisBezier3 = [0, 1/6, 2/3, 1/6];
-
-// Pushes a "C" Bézier curve onto the specified path array, given the
-// two specified four-element arrays which define the control points.
-function d3_svg_lineBasisBezier(path, x, y) {
-  path.push(
-      "C", d3_svg_lineDot4(d3_svg_lineBasisBezier1, x),
-      ",", d3_svg_lineDot4(d3_svg_lineBasisBezier1, y),
-      ",", d3_svg_lineDot4(d3_svg_lineBasisBezier2, x),
-      ",", d3_svg_lineDot4(d3_svg_lineBasisBezier2, y),
-      ",", d3_svg_lineDot4(d3_svg_lineBasisBezier3, x),
-      ",", d3_svg_lineDot4(d3_svg_lineBasisBezier3, y));
-}
-
-// Computes the slope from points p0 to p1.
-function d3_svg_lineSlope(p0, p1) {
-  return (p1[1] - p0[1]) / (p1[0] - p0[0]);
-}
-
-// Compute three-point differences for the given points.
-// http://en.wikipedia.org/wiki/Cubic_Hermite_spline#Finite_difference
-function d3_svg_lineFiniteDifferences(points) {
-  var i = 0,
-      j = points.length - 1,
-      m = [],
-      p0 = points[0],
-      p1 = points[1],
-      d = m[0] = d3_svg_lineSlope(p0, p1);
-  while (++i < j) {
-    m[i] = (d + (d = d3_svg_lineSlope(p0 = p1, p1 = points[i + 1]))) / 2;
-  }
-  m[i] = d;
-  return m;
-}
-
-// Interpolates the given points using Fritsch-Carlson Monotone cubic Hermite
-// interpolation. Returns an array of tangent vectors. For details, see
-// http://en.wikipedia.org/wiki/Monotone_cubic_interpolation
-function d3_svg_lineMonotoneTangents(points) {
-  var tangents = [],
-      d,
-      a,
-      b,
-      s,
-      m = d3_svg_lineFiniteDifferences(points),
-      i = -1,
-      j = points.length - 1;
-
-  // The first two steps are done by computing finite-differences:
-  // 1. Compute the slopes of the secant lines between successive points.
-  // 2. Initialize the tangents at every point as the average of the secants.
-
-  // Then, for each segment…
-  while (++i < j) {
-    d = d3_svg_lineSlope(points[i], points[i + 1]);
-
-    // 3. If two successive yk = y{k + 1} are equal (i.e., d is zero), then set
-    // mk = m{k + 1} = 0 as the spline connecting these points must be flat to
-    // preserve monotonicity. Ignore step 4 and 5 for those k.
-
-    if (Math.abs(d) < 1e-6) {
-      m[i] = m[i + 1] = 0;
-    } else {
-      // 4. Let ak = mk / dk and bk = m{k + 1} / dk.
-      a = m[i] / d;
-      b = m[i + 1] / d;
-
-      // 5. Prevent overshoot and ensure monotonicity by restricting the
-      // magnitude of vector <ak, bk> to a circle of radius 3.
-      s = a * a + b * b;
-      if (s > 9) {
-        s = d * 3 / Math.sqrt(s);
-        m[i] = s * a;
-        m[i + 1] = s * b;
-      }
-    }
-  }
-
-  // Compute the normalized tangent vector from the slopes. Note that if x is
-  // not monotonic, it's possible that the slope will be infinite, so we protect
-  // against NaN by setting the coordinate to zero.
-  i = -1; while (++i <= j) {
-    s = (points[Math.min(j, i + 1)][0] - points[Math.max(0, i - 1)][0]) / (6 * (1 + m[i] * m[i]));
-    tangents.push([s || 0, m[i] * s || 0]);
-  }
-
-  return tangents;
-}
-
-function d3_svg_lineMonotone(points) {
-  return points.length < 3
-      ? d3_svg_lineLinear(points)
-      : points[0] + d3_svg_lineCubicPolynomialSpline(points, d3_svg_lineMonotoneTangents(points));
-}
-
-d3.layout.voronoi = function() {
-  var size = null,
-      x = d3_svg_lineX,
-      y = d3_svg_lineY,
-      clip;
-
-  function voronoi(data) {
-    var points = [],
-        cells,
-        fx = d3_functor(x),
-        fy = d3_functor(y),
-        d,
-        i,
-        n = data.length;
-    for (i = 0; i < n; ++i) points.push([+fx.call(this, d = data[i], i), +fy.call(this, d, i)]);
-    cells = d3.geom.voronoi(points);
-    for (i = 0; i < n; ++i) cells[i].data = data[i];
-    if (clip) for (i = 0; i < n; ++i) clip(cells[i]);
-    return cells;
-  }
-
-  voronoi.x = function(_) {
-    return arguments.length ? (x = _, voronoi) : x;
-  };
-
-  voronoi.y = function(_) {
-    return arguments.length ? (y = _, voronoi) : y;
-  };
-
-  voronoi.size = function(_) {
-    if (!arguments.length) return size;
-    if (_ == null) {
-      clip = null;
-    } else {
-      var w = +_[0], h = +_[1];
-      clip = d3.geom.polygon([[0, 0], [0, h], [w, h], [w, 0]]).clip;
-    }
-    return voronoi;
-  };
-
-  voronoi.links = function(data) {
-    var points = [],
-        graph = [],
-        links = [],
-        fx = d3_functor(x),
-        fy = d3_functor(y),
-        d,
-        i,
-        n = data.length;
-
-    for (i = 0; i < n; ++i) {
-      points.push([+fx.call(this, d = data[i], i), +fy.call(this, d, i)]);
-      graph.push([]);
-    }
-
-    d3_geom_voronoiTessellate(points, function(e) {
-      var l = e.region.l.index,
-          r = e.region.r.index;
-      if (graph[l][r]) return;
-      graph[l][r] = graph[r][l] = true;
-      links.push({source: data[l], target: data[r]});
-    });
-
-    return links;
-  };
-
-  voronoi.triangles = function(data) {
-    var points = [],
-        point,
-        fx = d3_functor(x),
-        fy = d3_functor(y),
-        d,
-        i,
-        n = data.length;
-
-    for (i = 0; i < n; ++i) {
-      point = [+fx.call(this, d = data[i], i), +fy.call(this, d, i)];
-      point.data = d;
-      points.push(point);
-    }
-
-    return d3.geom.delaunay(points).map(function(triangle) {
-      return triangle.map(function(vertex) {
-        return vertex.data;
-      });
-    });
-  };
-
-  return voronoi;
-};
 d3.random = {
   normal: function(µ, σ) {
     var n = arguments.length;
@@ -11530,8 +11663,9 @@ d3.time.years = d3.time.year.range;
 d3.time.years.utc = d3.time.year.utc.range;
 
 d3.time.day = d3_time_interval(function(date) {
-  var day = new d3_time(1970, 0);
+  var day = new d3_time(0);
   day.setFullYear(date.getFullYear(), date.getMonth(), date.getDate());
+  day.setHours(0, 0, 0, 0);
   return day;
 }, function(date, offset) {
   date.setDate(date.getDate() + offset);
