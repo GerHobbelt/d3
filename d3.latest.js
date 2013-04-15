@@ -2607,8 +2607,8 @@ var d3_timer_frame = d3_window.requestAnimationFrame
     || d3_window.msRequestAnimationFrame
     || function(callback) { setTimeout(callback, 17); };
 var d3_format_decimalPoint = ".",
-    d3_format_thousandsSeparator = ",",
-    d3_format_grouping = [3, 3];
+    d3_format_thousandsSeparator = "",
+    d3_format_grouping = [-1];
 
 
 var d3_formatPrefixes = ["y","z","a","f","p","n","µ","m","","k","M","G","T","P","E","Z","Y"].map(d3_formatPrefix);
