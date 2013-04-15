@@ -439,7 +439,7 @@ d3 = function() {
   d3.mouse = function(container) {
     return d3_mousePoint(container, d3_eventSource());
   };
-  var d3_mouse_bug44083 = /WebKit/.test(d3_window.navigator.userAgent) ? -1 : 0;
+  var d3_mouse_bug44083 = d3_window.navigator && /WebKit/.test(d3_window.navigator.userAgent) ? -1 : 0;
   function d3_mousePoint(container, e) {
     var svg = container.ownerSVGElement || container;
     if (svg.createSVGPoint) {
@@ -1858,7 +1858,7 @@ d3 = function() {
   var d3_timer_frame = d3_window.requestAnimationFrame || d3_window.webkitRequestAnimationFrame || d3_window.mozRequestAnimationFrame || d3_window.oRequestAnimationFrame || d3_window.msRequestAnimationFrame || function(callback) {
     setTimeout(callback, 17);
   };
-  var d3_format_decimalPoint = ".", d3_format_thousandsSeparator = ",", d3_format_grouping = [ 3, 3 ];
+  var d3_format_decimalPoint = ".", d3_format_thousandsSeparator = "", d3_format_grouping = [ -1 ];
   var d3_formatPrefixes = [ "y", "z", "a", "f", "p", "n", "µ", "m", "", "k", "M", "G", "T", "P", "E", "Z", "Y" ].map(d3_formatPrefix);
   d3.formatPrefix = function(value, precision) {
     var i = 0;
@@ -7861,7 +7861,7 @@ d3 = function() {
     }
   };
   var d3_time_prototype = Date.prototype;
-  var d3_time_formatDateTime = "%a %b %e %X %Y", d3_time_formatDate = "%m/%d/%Y", d3_time_formatTime = "%H:%M:%S";
+  var d3_time_formatDateTime = "%a %b %e %H:%M:%S %Y", d3_time_formatDate = "%m/%d/%y", d3_time_formatTime = "%H:%M:%S";
   var d3_time_days = [ "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday" ], d3_time_dayAbbreviations = [ "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" ], d3_time_months = [ "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December" ], d3_time_monthAbbreviations = [ "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" ];
   function d3_time_interval(local, step, number) {
     function round(date) {
