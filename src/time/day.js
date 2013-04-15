@@ -3,8 +3,9 @@ import "time";
 import "year";
 
 d3.time.day = d3_time_interval(function(date) {
-  var day = new d3_time(1970, 0);
+  var day = new d3_time(0);
   day.setFullYear(date.getFullYear(), date.getMonth(), date.getDate());
+  day.setHours(0, 0, 0, 0);
   return day;
 }, function(date, offset) {
   date.setDate(date.getDate() + offset);
