@@ -44,7 +44,7 @@ console.log(JSON.stringify({
     "vows": "0.7.x"
   },
   "scripts": {
-    "test": "node_modules/.bin/vows"
+    "test": "node_modules/.bin/vows -i"
   },
   "licenses": [
     {
