@@ -1,3 +1,5 @@
+import "../core/document";
+
 //A solution to fix the problem with IE9 and setting the style of an element.
 //
 // See [this commit](https://github.com/mbostock/d3/commit/c2e37352ac84eb8b4be89feed90bc2249866f715) for more information.

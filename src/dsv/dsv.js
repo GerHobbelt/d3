@@ -1,3 +1,6 @@
+import "../arrays/set";
+import "../xhr/xhr";
+
 function d3_dsv(delimiter, mimeType) {
   var reFormat = new RegExp("[\"" + delimiter + "\n]"),
       delimiterCode = delimiter.charCodeAt(0);
@@ -103,6 +106,26 @@ function d3_dsv(delimiter, mimeType) {
   };
 
   dsv.format = function(rows) {
+    if (Array.isArray(rows[0])) return dsv.formatRows(rows); // deprecated; use formatRows
+    var fieldSet = new d3_Set, fields = [];
+
+    // Compute unique fields in order of discovery.
+    rows.forEach(function(row) {
+      for (var field in row) {
+        if (!fieldSet.has(field)) {
+          fields.push(fieldSet.add(field));
+        }
+      }
+    });
+
+    return [fields.map(formatValue).join(delimiter)].concat(rows.map(function(row) {
+      return fields.map(function(field) {
+        return formatValue(row[field]);
+      }).join(delimiter);
+    })).join("\n");
+  };
+
+  dsv.formatRows = function(rows) {
     return rows.map(formatRow).join("\n");
   };
 

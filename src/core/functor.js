@@ -13,7 +13,7 @@
 //             j(10) == 20
 function d3_functor(v) {
   return typeof v === "function" ? v : function() {
-  	return v;
+  	return v; 
   };
 }
 

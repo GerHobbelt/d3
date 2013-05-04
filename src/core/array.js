@@ -1,3 +1,5 @@
+import "document";
+
 //Due to function hoisting, read the next two functions first.
 
 var d3_array = d3_arraySlice; // conversion for NodeLists

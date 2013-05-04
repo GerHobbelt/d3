@@ -1,10 +1,19 @@
+import "../behavior/drag";
+import "../core/identity";
+import "../core/rebind";
+import "../event/event";
+import "../event/dispatch";
+import "../event/timer";
+import "../geom/quadtree";
+import "layout";
+
 // A rudimentary force layout using Gauss-Seidel.
 d3.layout.force = function() {
   var force = {},
       event = d3.dispatch("start", "tick", "end"),
       size = [1, 1],
       drag,
-      alpha,                                     
+      alpha,
       interval,
       nodes = [],
       links = [],
@@ -13,21 +22,21 @@ d3.layout.force = function() {
       neighbors,
       epsilon = 0.1, // minimal distance-squared for which the approximation holds; any smaller distance is assumed to be this large to prevent instable approximations
       charges,
-	  charge_abssum = -1, // negative value signals the need to recalculate this one
-	  friction_f,
-	  charge_f,
-	  gravity_f,
-	  theta_f,    
-	  linkDistance_f,
-	  linkStrength_f,
-	  // These model parameters can be either a function or a direct numeric value:
-      friction = .9,
-      linkDistance = d3_layout_forceLinkDistance,
-      linkStrength = d3_layout_forceLinkStrength,
-      charge = -30,
-      gravity = .1,
-      theta = .8,
-      repulsor = false;
+      charge_abssum = -1, // negative value signals the need to recalculate this one
+      friction_f,
+      charge_f,
+      gravity_f,
+      theta_f,
+      linkDistance_f,
+      linkStrength_f,
+      // These model parameters can be either a function or a direct numeric value:
+    friction = .9,
+    linkDistance = d3_layout_forceLinkDistance,
+    linkStrength = d3_layout_forceLinkStrength,
+    charge = -30,
+    gravity = .1,
+    theta = .8,
+    repulsor = false;
 
   setup_model_parameter_functors();
 
@@ -36,10 +45,10 @@ d3.layout.force = function() {
     charge_f = d3_functor(charge);
     gravity_f = d3_functor(gravity);
     theta_f = d3_functor(theta);
-    linkDistance_f = d3_functor(LinkDistance);
-    linkStrength_f = d3_functor(LinkStrength);
+    linkDistance_f = d3_functor(linkDistance);
+    linkStrength_f = d3_functor(linkStrength);
   }
-  
+
   function repulse(node, i) {
     return function(quad, x1, y1, x2, y2) {
       if (quad.point !== node) {
@@ -147,14 +156,14 @@ d3.layout.force = function() {
     f = 0;
     q = d3.geom.quadtree(nodes);
     // recalculate charges on every tick if need be:
-	if (charge_abssum < 0 || typeof charge === "function") {
+    if (charge_abssum < 0 || typeof charge === "function") {
       charges = [];
       for (i = 0; i < n; ++i) {
         charges[i] = k = +charge_f.call(this, nodes[i], i, q);
         f += Math.abs(k);
       }
-	  charge_abssum = f;
-	}
+      charge_abssum = f;
+    }
     if (charge_abssum != 0) {
       d3_layout_forceAccumulate(q, alpha, charges);
       i = -1; while (++i < n) {
@@ -163,9 +172,9 @@ d3.layout.force = function() {
         }
       }
     }
-	if (typeof repulsor === "function") {
+    if (typeof repulsor === "function") {
       repulsor.call(this, q, charges, distances, strengths);
-	}
+    }
 
     // position verlet integration
     i = -1; while (++i < n) {
@@ -306,12 +315,12 @@ d3.layout.force = function() {
     distances = [];
     for (i = 0; i < m; ++i) {
       distances[i] = +linkDistance_f.call(this, links[i], i);
-	}
+    }
 
     strengths = [];
     for (i = 0; i < m; ++i) {
       strengths[i] = +linkStrength_f.call(this, links[i], i);
-	}
+    }
 
     charges = [];
     j = 0;

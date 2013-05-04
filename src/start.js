@@ -2,6 +2,6 @@
 //Used here by the [Makefile](https://github.com/mbostock/d3/blob/master/Makefile#L15).
 
 d3 = (function(){
-
+  var d3 = {version: VERSION}; // semver
 
 //Next: [compat/date.js](/d3/src/compat/date.html)

@@ -1,5 +1,16 @@
+import "../arrays/range";
+import "../core/rebind";
+import "../interpolate/interpolate";
+import "../interpolate/round";
+import "../interpolate/uninterpolate";
+import "../format/format";
+import "bilinear";
+import "nice";
+import "polylinear";
+import "scale";
+
 d3.scale.linear = function() {
-  return d3_scale_linear([0, 1], [0, 1], d3.interpolate, false);
+  return d3_scale_linear([0, 1], [0, 1], d3_interpolate, false);
 };
 
 function d3_scale_linear(domain, range, interpolate, clamp) {
@@ -10,7 +21,7 @@ function d3_scale_linear(domain, range, interpolate, clamp) {
     var linear = Math.min(domain.length, range.length) > 2 ? d3_scale_polylinear : d3_scale_bilinear,
         uninterpolate = clamp ? d3_uninterpolateClamp : d3_uninterpolateNumber;
     output = linear(domain, range, uninterpolate, interpolate);
-    input = linear(range, domain, uninterpolate, d3.interpolate);
+    input = linear(range, domain, uninterpolate, d3_interpolate);
     return scale;
   }
 
@@ -36,7 +47,7 @@ function d3_scale_linear(domain, range, interpolate, clamp) {
   };
 
   scale.rangeRound = function(x) {
-    return scale.range(x).interpolate(d3.interpolateRound);
+    return scale.range(x).interpolate(d3_interpolateRound);
   };
 
   scale.clamp = function(x) {
@@ -55,8 +66,8 @@ function d3_scale_linear(domain, range, interpolate, clamp) {
     return d3_scale_linearTicks(domain, m, subdiv_count);
   };
 
-  scale.tickFormat = function(m) {
-    return d3_scale_linearTickFormat(domain, m);
+  scale.tickFormat = function(m, format) {
+    return d3_scale_linearTickFormat(domain, m, format);
   };
 
   scale.nice = function() {
@@ -76,6 +87,7 @@ function d3_scale_linearRebind(scale, linear) {
 }
 
 function d3_scale_linearNice(dx) {
+  // round the number x to the 2 most significant digits:
   dx = Math.pow(10, Math.round(Math.log(dx) / Math.LN10) - 1);
   return dx && {
     floor: function(x) { return Math.floor(x / dx) * dx; },
@@ -86,14 +98,14 @@ function d3_scale_linearNice(dx) {
 function d3_scale_linearTickRange(domain, m, subdiv_count) {
   var extent = d3_scaleExtent(domain),
       span = extent[1] - extent[0],
-      step, 
-	  err,
-	  substep;
+      step,
+      err,
+      substep;
 
   // Prevent errors and otherwise odd behaviour by providing a sane extent, even when the domain carries zero or one(1) data point only:
   if (span == 0 || !extent.every(isFinite)) {
     step = 1;
-	err = 1;
+    err = 1;
   } else {
     step = Math.pow(10, Math.floor(Math.log(span / m) / Math.LN10));
     err = m / span * step;
@@ -111,7 +123,7 @@ function d3_scale_linearTickRange(domain, m, subdiv_count) {
   extent[5] = Math.ceil(extent[0] / substep) * substep;
   extent[6] = Math.floor(extent[1] / substep) * substep + substep * .5; // inclusive
   extent[7] = substep;
-  
+
   // Round start and stop values to step interval.
   extent[0] = Math.ceil(extent[0] / step) * step;
   extent[1] = Math.floor(extent[1] / step) * step + step * .5; // inclusive
@@ -121,35 +133,39 @@ function d3_scale_linearTickRange(domain, m, subdiv_count) {
 
 function d3_scale_linearTicks(domain, m, subdiv_count) {
   var extent = d3_scale_linearTickRange(domain, m, subdiv_count);
-  if (!subdiv_count || subdiv_count == 1)
+
+  // backwards compatible behaviour: when subdiv_count is undefined (or zero/falsey), a simple array of tick values is produced:
+  if (!subdiv_count) {
+    //subdiv_count = 1;
     return d3.range.apply(d3, extent);
-    
+  }
+
   // d3.range but now producing a series of tick objects
   var start = extent[0] - extent[2], stop = extent[6], step = extent[7], left_edge = extent[3];
-  if ((stop - start) / step === Infinity) throw new Error("infinite range");
+  if (!isFinite((stop - start) / step)) throw new Error("infinite range");
   var range = [],
       k = d3_range_integerScale(Math.abs(step)),
       i = -1,
       j;
   start *= k, stop *= k, step *= k, left_edge *= k;
   if (step < 0) {
-    while ((j = start + step * ++i) > left_edge) 
+    while ((j = start + step * ++i) > left_edge)
       ;
     for ( ; j > stop; j = start + step * ++i) {
       range.push({
         value: j / k,
-        sub: i % subdiv_count,
-        major: (i / subdiv_count)
+        subindex: i % subdiv_count,
+        majorindex: (i / subdiv_count) | 0       // fastest way to turn a float into an integer across browsers: http://jsperf.com/math-floor-vs-math-round-vs-parseint/18
       });
     }
   } else {
-    while ((j = start + step * ++i) < left_edge) 
+    while ((j = start + step * ++i) < left_edge)
       ;
     for ( ; j < stop; j = start + step * ++i) {
       range.push({
         value: j / k,
         subindex: i % subdiv_count,
-        majorindex: (i / subdiv_count)
+        majorindex: (i / subdiv_count) | 0       // fastest way to turn a float into an integer across browsers: http://jsperf.com/math-floor-vs-math-round-vs-parseint/18
       });
     }
   }
@@ -159,6 +175,9 @@ function d3_scale_linearTicks(domain, m, subdiv_count) {
   };
 }
 
-function d3_scale_linearTickFormat(domain, m) {
-  return d3.format(",." + Math.max(0, -Math.floor(Math.log(d3_scale_linearTickRange(domain, m, 1)[2]) / Math.LN10 + .01)) + "f");
+function d3_scale_linearTickFormat(domain, m, format) {
+  var precision = -Math.floor(Math.log(d3_scale_linearTickRange(domain, m, 1)[2]) / Math.LN10 + .01);
+  return d3.format(format
+      ? format.replace(d3_format_re, function(a, b, c, d, e, f, g, h, i, j) { return [b, c, d, e, f, g, h, i || "." + (precision - (j === "%") * 2), j].join(""); })
+      : ",." + precision + "f");
 }
