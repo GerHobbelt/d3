@@ -5,11 +5,13 @@ JS_TESTER = $(NODE_PATH)/vows/bin/vows
 PACKAGE_JSON = package.json
 LOCALE ?= en_US
 
-all: \
+GENERATED_FILES = \
 	d3.js \
+	d3.latest.js \
 	d3.min.js \
-	component.json \
-	package.json
+	component.json
+
+all: $(GENERATED_FILES)
 
 .PHONY: clean all test
 
@@ -27,7 +29,7 @@ src/time/format-localized.js: src/locale.js src/time/format-locale.js
 
 d3.latest.js: $(shell $(SMASH) --list src/d3.js)
 	@rm -f $@
-	$(SMASH) src/d3.js > $@
+	$(SMASH) src/d3.js | sed 's/[[:<:]]VERSION[[:>:]]/"$(shell ./version)"/' > $@
 	@chmod a-w $@
 
 d3.js: d3.latest.js
@@ -45,13 +47,13 @@ component.json: src/component.js d3.js
 	node src/component.js > $@
 	@chmod a-w $@
 
-package.json: src/package.js d3.js
-	@rm -f $@
-	node src/package.js > $@
-	@chmod a-w $@
+#package.json: src/package.js d3.js
+#	@rm -f $@
+#	node src/package.js > $@
+#	@chmod a-w $@
 
 clean:
-	rm -f d3*.js
+	rm -f -- $(GENERATED_FILES)
 
 
 
