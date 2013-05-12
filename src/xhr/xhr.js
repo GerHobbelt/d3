@@ -13,7 +13,9 @@ d3.xhr = function(url, mimeType, callback) {
 
   "onload" in request
       ? request.onload = request.onerror = respond
-      : request.onreadystatechange = function() { request.readyState > 3 && respond(); };
+      : request.onreadystatechange = function() {
+          request.readyState > 3 && respond();
+        };
 
   function respond() {
     var s = request.status;
@@ -25,15 +27,21 @@ d3.xhr = function(url, mimeType, callback) {
   request.onprogress = function(event) {
     var o = d3.event;
     d3.event = event;
-    try { dispatch.progress.call(xhr, request); }
-    finally { d3.event = o; }
+    try {
+      dispatch.progress.call(xhr, request);
+    } finally {
+      d3.event = o;
+    }
   };
 
   xhr.header = function(name, value) {
     name = (name + "").toLowerCase();
-    if (arguments.length < 2) return headers[name];
-    if (value == null) delete headers[name];
-    else headers[name] = value + "";
+    if (arguments.length < 2)
+      return headers[name];
+    if (value == null)
+      delete headers[name];
+    else
+      headers[name] = value + "";
     return xhr;
   };
 
@@ -60,12 +68,26 @@ d3.xhr = function(url, mimeType, callback) {
 
   // If callback is non-null, it will be used for error and load events.
   xhr.send = function(method, data, callback) {
-    if (arguments.length === 2 && typeof data === "function") callback = data, data = null;
+    if (arguments.length === 2 && typeof data === "function") {
+      callback = data;
+      data = null;
+    }
     request.open(method, url, true);
-    if (mimeType != null && !("accept" in headers)) headers["accept"] = mimeType + ",*/*";
-    if (request.setRequestHeader) for (var name in headers) request.setRequestHeader(name, headers[name]);
-    if (mimeType != null && request.overrideMimeType) request.overrideMimeType(mimeType);
-    if (callback != null) xhr.on("error", callback).on("load", function(request) { callback(null, request); });
+    if (mimeType != null && !("accept" in headers)) {
+      headers["accept"] = mimeType + ",*/*";
+    }
+    if (request.setRequestHeader) {
+      for (var name in headers)
+        request.setRequestHeader(name, headers[name]);
+    }
+    if (mimeType != null && request.overrideMimeType) {
+      request.overrideMimeType(mimeType);
+	}
+    if (callback != null) {
+      xhr.on("error", callback).on("load", function(request) {
+        callback(null, request);
+      });
+    }
     request.send(data == null ? null : data);
     return xhr;
   };
@@ -77,7 +99,10 @@ d3.xhr = function(url, mimeType, callback) {
 
   d3.rebind(xhr, dispatch, "on");
 
-  if (arguments.length === 2 && typeof mimeType === "function") callback = mimeType, mimeType = null;
+  if (arguments.length === 2 && typeof mimeType === "function") {
+    callback = mimeType;
+	mimeType = null;
+  }
   return callback == null ? xhr : xhr.get(d3_xhr_fixCallback(callback));
 };
 

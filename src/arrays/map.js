@@ -1,7 +1,7 @@
 import "../core/class";
 
 d3.map = function(object) {
-  var map = new d3_Map;
+  var map = new d3_Map();
   for (var key in object) map.set(key, object[key]);
   return map;
 };
@@ -24,17 +24,26 @@ d3_class(d3_Map, {
   },
   keys: function() {
     var keys = [];
-    this.forEach(function(key) { keys.push(key); });
+    this.forEach(function(key) { 
+      keys.push(key); 
+    });
     return keys;
   },
   values: function() {
     var values = [];
-    this.forEach(function(key, value) { values.push(value); });
+    this.forEach(function(key, value) { 
+      values.push(value); 
+    });
     return values;
   },
   entries: function() {
     var entries = [];
-    this.forEach(function(key, value) { entries.push({key: key, value: value}); });
+    this.forEach(function(key, value) { 
+      entries.push({
+        key: key, 
+        value: value
+      }); 
+    });
     return entries;
   },
   forEach: function(f) {

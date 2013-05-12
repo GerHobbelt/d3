@@ -1,11 +1,11 @@
 _site
-node_modules
 .DS_Store
+*.zip
 
 # Editor backup files
-*~
 *.bak
+*~
 
-
-*.zip
+# NodeJS/NPM crud
+node_modules
 

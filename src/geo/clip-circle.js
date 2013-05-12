@@ -4,7 +4,7 @@ import "clip";
 import "circle";
 import "spherical";
 
-// Clip features against a small circle centered at [0°, 0°].
+// Clip features against a circle centered at [0°, 0°], with a given radius.
 function d3_geo_clipCircle(radius) {
   var cr = Math.cos(radius),
       smallRadius = cr > 0,

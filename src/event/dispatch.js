@@ -4,7 +4,9 @@ d3.dispatch = function() {
   var dispatch = new d3_dispatch,
       i = -1,
       n = arguments.length;
-  while (++i < n) dispatch[arguments[i]] = d3_dispatch_event(dispatch);
+  while (++i < n) {
+    dispatch[arguments[i]] = d3_dispatch_event(dispatch);
+  }
   return dispatch;
 };
 
@@ -41,7 +43,11 @@ function d3_dispatch_event(dispatch) {
         i = -1,
         n = z.length,
         l;
-    while (++i < n) if (l = z[i].on) l.apply(this, arguments);
+    while (++i < n) {
+      if (l = z[i].on) {
+        l.apply(this, arguments);
+      }
+    }
     return dispatch;
   }
 
@@ -60,7 +66,11 @@ function d3_dispatch_event(dispatch) {
     }
 
     // add the new listener, if any
-    if (listener) listeners.push(listenerByName.set(name, {on: listener}));
+    if (listener) {
+      listeners.push(listenerByName.set(name, {
+        on: listener
+      }));
+    }
 
     return dispatch;
   };

@@ -84,6 +84,24 @@ function d3_time_formatPad(value, fill, width) {
   return length < width ? new Array(width - length + 1).join(fill) + value : value;
 }
 
+function d3_time_ordinal_suffix(number) {
+  var suffix = "th",
+      tail = number % 100;
+
+  if (tail < 11 || tail > 13) {
+    switch (tail % 10) {
+      case 1: suffix = "st"; break;
+      case 2: suffix = "nd"; break;
+      case 3: suffix = "rd"; break;
+      default: break;
+    }
+  }
+
+  return suffix;
+}
+
+//console.log("d3_time_day, etc: ", d3_time_days, d3_time_dayAbbreviations, d3_time_months, d3_time_monthAbbreviations);
+
 var d3_time_dayRe = d3_time_formatRe(d3_time_days),
     d3_time_dayAbbrevRe = d3_time_formatRe(d3_time_dayAbbreviations),
     d3_time_monthRe = d3_time_formatRe(d3_time_months),
@@ -112,6 +130,7 @@ var d3_time_formats = {
   m: function(d, p) { return d3_time_formatPad(d.getMonth() + 1, p, 2); },
   M: function(d, p) { return d3_time_formatPad(d.getMinutes(), p, 2); },
   p: function(d) { return d.getHours() >= 12 ? "PM" : "AM"; },
+  s: function(d) { return d3_time_ordinal_suffix(d.getDate()); },
   S: function(d, p) { return d3_time_formatPad(d.getSeconds(), p, 2); },
   U: function(d, p) { return d3_time_formatPad(d3.time.sundayOfYear(d), p, 2); },
   w: function(d) { return d.getDay(); },
@@ -203,7 +222,8 @@ function d3_time_parseYear(date, string, i) {
 }
 
 function d3_time_expandYear(d) {
-  return d + (d > 68 ? 1900 : 2000);
+  // convert to 4-digit year according to POSIX/ISO rules (strptime) ~ http://docs.python.org/py3k/library/time.html
+  return d + (((d >= 69) && (d < 100)) ? 1900 : 2000);
 }
 
 function d3_time_parseMonthNumber(date, string, i) {

@@ -30,13 +30,18 @@ function d3_dsv(delimiter, mimeType) {
 
   dsv.parse = function(text, f) {
     var o;
-    return dsv.parseRows(text, function(row, i) {
-      if (o) return o(row, i - 1);
-      var a = new Function("d", "return {" + row.map(function(name, i) {
-        return JSON.stringify(name) + ": d[" + i + "]";
-      }).join(",") + "}");
-      o = f ? function(row, i) { return f(a(row), i); } : a;
-    });
+
+    function process(text) {
+      return dsv.parseRows(text, function(row, i) {
+        if (o) return o(row, i - 1);
+        var a = new Function("d", "return {" + row.map(function(name, i) {
+          return JSON.stringify(name) + ": d[" + i + "]";
+        }).join(",") + "}");
+        o = f ? function(row, i) { return f(a(row), i); } : a;
+      });
+    }
+
+    return (arguments.length) ? process(text) : process;
   };
 
   dsv.parseRows = function(text, f) {

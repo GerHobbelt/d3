@@ -13,19 +13,16 @@ function d3_arraySlice(pseudoarray) {
 }
 
 try {
+  // Test whether the DOM nodes have array methods attached; if not, we add the one(s) we need.
   d3_array(d3_document.documentElement.childNodes)[0].nodeType;
 } catch(e) {
   d3_array = d3_arrayCopy;
 }
 
-var d3_arraySubclass = [].__proto__?
-
-// Until ECMAScript supports array subclassing, prototype injection works well.
-function(array, prototype) {
+var d3_arraySubclass = [].__proto__ ? function(array, prototype) {
+  // Until ECMAScript supports array subclassing, prototype injection works well.
   array.__proto__ = prototype;
-}:
-
-// And if your browser doesn't support __proto__, we'll use direct extension.
-function(array, prototype) {
+} : function(array, prototype) {
+  // And if your browser doesn't support __proto__, we'll use direct extension.
   for (var property in prototype) array[property] = prototype[property];
 };

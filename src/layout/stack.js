@@ -99,6 +99,7 @@ function d3_layout_stackY(d) {
 
 function d3_layout_stackOut(d, y0, y) {
   d.y0 = y0;
+  d.y1 = y0 + y;
   d.y = y;
 }
 
@@ -206,7 +207,6 @@ var d3_layout_stackOffsets = d3.map({
   },
 
   "zero": d3_layout_stackOffsetZero
-
 });
 
 function d3_layout_stackOrderDefault(data) {

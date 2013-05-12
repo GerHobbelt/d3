@@ -39,6 +39,10 @@ function d3_scale_quantile(domain, range) {
     return thresholds;
   };
 
+  scale.ticks = function(m) {
+    return thresholds;
+  };
+
   scale.copy = function() {
     return d3_scale_quantile(domain, range); // copy on write!
   };

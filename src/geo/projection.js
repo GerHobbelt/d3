@@ -59,6 +59,12 @@ function d3_geo_projectionMutator(projectAt) {
     return projection;
   };
 
+  projection.clipGeometry = function(_) {
+    if (!arguments.length) return clip.geometry();
+    clip = d3_geo_clipGeometry(_);
+    return projection;
+  };
+
   projection.scale = function(_) {
     if (!arguments.length) return k;
     k = +_;

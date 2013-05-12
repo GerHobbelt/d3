@@ -1,6 +1,7 @@
 LOCALE ?= en_US
 
 GENERATED_FILES = \
+	d3.latest.js \
 	d3.js \
 	d3.min.js \
 	component.json

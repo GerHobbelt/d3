@@ -106,6 +106,15 @@ var d3_format_types = d3.map({
   X: function(x) { return x.toString(16).toUpperCase(); },
   g: function(x, p) { return x.toPrecision(p); },
   e: function(x, p) { return x.toExponential(p); },
+  E: function(x, p) {
+    var rv;
+    var p1 = d3_format_precision(x, 1);
+    if (p1 >= -5 && p1 <= 3)
+      rv = x.toFixed(Math.max(0, p, p1));
+    else
+      rv = x.toExponential(p);
+    return rv;
+  },
   f: function(x, p) { return x.toFixed(p); },
   r: function(x, p) { return (x = d3.round(x, d3_format_precision(x, p))).toFixed(Math.max(0, Math.min(20, d3_format_precision(x * (1 + 1e-15), p)))); }
 });
@@ -113,6 +122,10 @@ var d3_format_types = d3.map({
 function d3_format_precision(x, p) {
   return p - (x ? Math.ceil(Math.log(x) / Math.LN10) : 1);
 }
+
+d3.formatPrecision = function(x, p) {
+  return d3_format_precision(x, p || 0);
+};
 
 function d3_format_typeDefault(x) {
   return x + "";

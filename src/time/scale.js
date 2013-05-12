@@ -135,7 +135,7 @@ var d3_time_scaleLocalFormats = [
   [d3.time.format("%B"), function(d, a) { return a.getMonth() !== d.getMonth() && d.getDay(); }],
   [d3.time.format("%b %d"), function(d, a) { return a.getDate() !== d.getDate() && !d.getDay(); }],
   [d3.time.format("%a %d"), function(d, a) { return a.getDate() !== d.getDate(); }],
-  [d3.time.format("%I %p"), function(d, a) { return a.getHours() !== d.getHours(); }],
+  [d3.time.format("%H"), function(d, a) { return a.getHours() !== d.getHours(); }],   // [abh] Make the "auto-scaling" time formats use 24-hour hours instead of 12-hours and AM/PM
   [d3.time.format("%I:%M"), function(d, a) { return a.getMinutes() !== d.getMinutes(); }],
   [d3.time.format(":%S"), function(d, a) { return a.getSeconds() !== d.getSeconds(); }],
   [d3.time.format(".%L"), d3_true]
