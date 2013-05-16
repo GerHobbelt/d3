@@ -4,7 +4,7 @@ var document = global.document = require("jsdom").jsdom("<html><head></head><bod
 // https://github.com/chad3814/CSSStyleDeclaration/issues/3
 var CSSStyleDeclaration_prototype,
     CSSStyleDeclaration_setProperty;
-if (window.CSSStyleDeclaration) {
+if (typeof window !== 'undefined' && window.CSSStyleDeclaration) {
   CSSStyleDeclaration_prototype = window.CSSStyleDeclaration.prototype;
   CSSStyleDeclaration_setProperty = CSSStyleDeclaration_prototype.setProperty;
 
