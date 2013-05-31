@@ -8292,7 +8292,7 @@ d3 = function() {
     }
   };
   var d3_time_prototype = Date.prototype;
-  var d3_time_formatDateTime = "%a %b %e %H:%M:%S %Y", d3_time_formatDate = "%m/%d/%y", d3_time_formatTime = "%H:%M:%S";
+  var d3_time_formatDateTime = "%a %d %b %Y %r %Z", d3_time_formatDate = "%m/%d/%Y", d3_time_formatTime = "%r";
   var d3_time_days = [ "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday" ], d3_time_dayAbbreviations = [ "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" ], d3_time_months = [ "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December" ], d3_time_monthAbbreviations = [ "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" ];
   function d3_time_interval(local, step, number) {
     function round(date) {

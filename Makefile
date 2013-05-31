@@ -29,7 +29,7 @@ src/time/format-localized.js: src/locale.js src/time/format-locale.js
 
 d3.latest.js: $(shell $(SMASH) --list src/d3.js)
 	@rm -f $@
-	$(SMASH) src/d3.js | sed 's/[[:<:]]VERSION[[:>:]]/"$(shell ./version)"/' > $@
+	$(SMASH) src/d3.js | sed 's/\bVERSION\b/"$(shell ./version)"/' > $@
 	@chmod a-w $@
 
 d3.js: d3.latest.js

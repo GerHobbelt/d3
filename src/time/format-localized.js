@@ -1,7 +1,7 @@
 // The date and time format (%c), date format (%x) and time format (%X).
-var d3_time_formatDateTime = "%a %b %e %H:%M:%S %Y",
-    d3_time_formatDate = "%m/%d/%y",
-    d3_time_formatTime = "%H:%M:%S";
+var d3_time_formatDateTime = "%a %d %b %Y %r %Z",
+    d3_time_formatDate = "%m/%d/%Y",
+    d3_time_formatTime = "%r";
 
 // The weekday and month names.
 var d3_time_days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
