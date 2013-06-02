@@ -37,7 +37,7 @@ d3.js: d3.latest.js
 
 d3.min.js: d3.js
 	@rm -f $@
-	node_modules/.bin/uglifyjs $< -c -m -o $@
+	bin/uglify $< > $@
 
 component.json: bin/component d3.js package.json
 	@rm -f $@
