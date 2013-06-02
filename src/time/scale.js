@@ -34,7 +34,7 @@ function d3_time_scale(linear, methods, format) {
   };
 
   scale.ticks = function(m, k, subdiv_count) {
-    var extent = d3_time_scaleExtent(scale.domain());
+    var extent = d3_scaleExtent(scale.domain());
     if (typeof m !== "function") {
       var span = extent[1] - extent[0],
           target = span / m,
@@ -57,14 +57,7 @@ function d3_time_scale(linear, methods, format) {
     return d3_time_scale(linear.copy(), methods, format);
   };
 
-  // TOOD expose d3_scale_linear_rebind?
-  return d3.rebind(scale, linear, "range", "rangeRound", "interpolate", "clamp");
-}
-
-// TODO expose d3_scaleExtent?
-function d3_time_scaleExtent(domain) {
-  var start = domain[0], stop = domain[domain.length - 1];
-  return start < stop ? [start, stop] : [stop, start];
+  return d3_scale_linearRebind(scale, linear);
 }
 
 function d3_time_scaleDate(t) {
@@ -73,8 +66,9 @@ function d3_time_scaleDate(t) {
 
 function d3_time_scaleFormat(formats) {
   return function(date) {
-    var i = formats.length - 1, f = formats[i];
-    while (!f[1](date)) f = formats[--i];
+    d3_time_scaleBoundaryDate.setTime(date - 1);
+    var i = 0, f = formats[i];
+    while (!f[1](date, d3_time_scaleBoundaryDate)) f = formats[++i];
     return f[0](date);
   };
 }
@@ -134,15 +128,17 @@ var d3_time_scaleLocalMethods = [
   [d3.time.year, 1]
 ];
 
+var d3_time_scaleBoundaryDate = new Date;
+
 var d3_time_scaleLocalFormats = [
-  [d3.time.format("%Y"), d3_true],
-  [d3.time.format("%B"), function(d) { return d.getMonth(); }],
-  [d3.time.format("%b %d"), function(d) { return d.getDate() != 1; }],
-  [d3.time.format("%a %d"), function(d) { return d.getDay() && d.getDate() != 1; }],
-  [d3.time.format("%H"), function(d) { return d.getHours(); }],   // [abh] Make the "auto-scaling" time formats use 24-hour hours instead of 12-hours and AM/PM
-  [d3.time.format("%I:%M"), function(d) { return d.getMinutes(); }],
-  [d3.time.format(":%S"), function(d) { return d.getSeconds(); }],
-  [d3.time.format(".%L"), function(d) { return d.getMilliseconds(); }]
+  [d3.time.format("%Y"), function(d, a) { return a.getFullYear() !== d.getFullYear(); }],
+  [d3.time.format("%B"), function(d, a) { return a.getMonth() !== d.getMonth() && d.getDay(); }],
+  [d3.time.format("%b %d"), function(d, a) { return a.getDate() !== d.getDate() && !d.getDay(); }],
+  [d3.time.format("%a %d"), function(d, a) { return a.getDate() !== d.getDate(); }],
+  [d3.time.format("%H"), function(d, a) { return a.getHours() !== d.getHours(); }],   // [abh] Make the "auto-scaling" time formats use 24-hour hours instead of 12-hours and AM/PM
+  [d3.time.format("%I:%M"), function(d, a) { return a.getMinutes() !== d.getMinutes(); }],
+  [d3.time.format(":%S"), function(d, a) { return a.getSeconds() !== d.getSeconds(); }],
+  [d3.time.format(".%L"), d3_true]
 ];
 
 var d3_time_scaleLinear = d3.scale.linear(),

@@ -3,7 +3,7 @@ import "time";
 import "year";
 
 d3.time.day = d3_time_interval(function(date) {
-  var day = new d3_time(0);
+  var day = new d3_time(2000, 0);
   day.setFullYear(date.getFullYear(), date.getMonth(), date.getDate());
   day.setHours(0, 0, 0, 0);
   return day;
@@ -20,3 +20,7 @@ d3.time.dayOfYear = function(date) {
   var year = d3.time.year(date);
   return Math.floor((date - year - (date.getTimezoneOffset() - year.getTimezoneOffset()) * 6e4) / 864e5);
 };
+
+function d3_time_dayEqual(a, b) {
+  return a.getDate() === b.getDate() && a.getMonth() === b.getMonth() && a.getFullYear() === b.getFullYear();
+}

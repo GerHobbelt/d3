@@ -46,6 +46,11 @@ function d3_scale_threshold(domain, range) {
     return scale;
   };
 
+  scale.invertExtent = function(y) {
+    y = range.indexOf(y);
+    return [domain[y - 1], domain[y]];
+  };
+  
   scale.ticks = function(m, subdiv_count) {
     var l = Math.min(domain.length, range.length - 1);
     if (l > 0) {

@@ -287,19 +287,16 @@ suite.addBatch({
       },
       "area of a polygon": function(p) {
         var area = p.area({type: "Polygon", coordinates: [[[-122, 37], [-71, 42], [-80, 25], [-122, 37]]]});
-        assert.inDelta(area, 109021.503, 1e-3);
+        assert.inDelta(area, 124884.274, 1e-3);
       },
       "bounds of a line string": function(p) {
-        var bounds = p.bounds({type: "LineString", coordinates: [[-122, 37], [-74, 40], [-100, 0]]});
-        assert.inDelta(bounds[0][0], -5.1214, 1e-3);
-        assert.inDelta(bounds[0][1], 174.825, 1e-3);
-        assert.inDelta(bounds[1][0], 794.602, 1e-3);
-        assert.inDelta(bounds[1][1], 856.501, 1e-3);
+        assert.inDelta(p.bounds({type: "LineString", coordinates: [[-122, 37], [-74, 40], [-100, 0]]}),
+          [[109.378, 189.584], [797.758, 504.660]], 1e-3);
       },
       "centroid of a line string": function(p) {
         var centroid = p.centroid({type: "LineString", coordinates: [[-122, 37], [-74, 40], [-100, 0]]});
-        assert.inDelta(centroid[0], 434.655, 1e-3);
-        assert.inDelta(centroid[1], 397.940, 1e-3);
+        assert.inDelta(centroid[0], 545.131, 1e-3);
+        assert.inDelta(centroid[1], 253.860, 1e-3);
       }
     },
 
@@ -334,13 +331,13 @@ suite.addBatch({
       },
       "coerces point radius to a number": {
         "when the radius is specified as a constant": function(path) {
-          var p = path().context(testContext).pointRadius("6");
+          var p = path().projection(null).context(testContext).pointRadius("6");
           assert.strictEqual(p.pointRadius(), 6);
           p({type: "Point", coordinates: [0, 0]});
           assert.strictEqual(testContext.buffer().filter(function(d) { return d.type === "arc"; })[0].r, 6);
         },
         "when the radius is specified as a function": function(path) {
-          var p = path().context(testContext).pointRadius(function() { return "6"; });
+          var p = path().projection(null).context(testContext).pointRadius(function() { return "6"; });
           p({type: "Point", coordinates: [0, 0]});
           assert.strictEqual(testContext.buffer().filter(function(d) { return d.type === "arc"; })[0].r, 6);
         }
@@ -762,18 +759,37 @@ suite.addBatch({
     },
 
     "with an Albers projection and adaptive resampling": {
-      topic: function(path) {
-        return path()
+      "correctly resamples near the poles": function(path) {
+        var p = path()
             .context(testContext)
             .projection(_.geo.albers()
               .scale(140)
               .rotate([0, 0])
               .precision(1));
-      },
-      "correctly resamples near the poles": function(p) {
         p({type: "LineString", coordinates: [[0, 88], [180, 89]]});
         assert.isTrue(testContext.buffer().filter(function(d) { return d.type === "lineTo"; }).length > 1);
         p({type: "LineString", coordinates: [[180, 90], [1, 89.5]]});
+        assert.isTrue(testContext.buffer().filter(function(d) { return d.type === "lineTo"; }).length > 1);
+      },
+      "rotate([11.5, 285])": function(path) {
+        var p = path()
+            .context(testContext)
+            .projection(_.geo.albers()
+              .scale(140)
+              .rotate([11.5, 285])
+              .precision(1));
+        p({type: "LineString", coordinates: [[170, 20], [170, 0]]});
+        assert.isTrue(testContext.buffer().filter(function(d) { return d.type === "lineTo"; }).length > 1);
+      },
+      "wavy projection": function(path) {
+        var p = path()
+            .context(testContext)
+            .projection(_.geo.projection(function(λ, φ) {
+                return [λ, Math.sin(λ * 4)];
+              })
+              .scale(140)
+              .precision(1));
+        p({type: "LineString", coordinates: [[-45, 0], [45, 0]]});
         assert.isTrue(testContext.buffer().filter(function(d) { return d.type === "lineTo"; }).length > 1);
       }
     },
