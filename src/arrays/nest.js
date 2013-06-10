@@ -54,15 +54,15 @@ d3.nest = function() {
 
     map.forEach(function(key, keyMap) {
       array.push({
-	    key: key, 
-		values: entries(keyMap, depth)
-	  });
+        key: key,
+        values: entries(keyMap, depth)
+      });
     });
 
     return sortKey
-        ? array.sort(function(a, b) { 
-		    return sortKey(a.key, b.key); 
-		  })
+        ? array.sort(function(a, b) {
+            return sortKey(a.key, b.key);
+          })
         : array;
   }
 

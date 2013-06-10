@@ -13,8 +13,8 @@ function d3_target(d) {
 function d3_source(d) {
   return d.source;
 }
-var d3_format_decimalPoint = ".", 
-    d3_format_thousandsSeparator = ",", 
+var d3_format_decimalPoint = ".",
+    d3_format_thousandsSeparator = ",",
     d3_format_grouping = [ 3, 3 ];
 if (!Date.now) Date.now = function() {
   return +new Date();
@@ -90,25 +90,25 @@ d3_class(d3_Map, {
   },
   keys: function() {
     var keys = [];
-    this.forEach(function(key) { 
-      keys.push(key); 
+    this.forEach(function(key) {
+      keys.push(key);
     });
     return keys;
   },
   values: function() {
     var values = [];
-    this.forEach(function(key, value) { 
-      values.push(value); 
+    this.forEach(function(key, value) {
+      values.push(value);
     });
     return values;
   },
   entries: function() {
     var entries = [];
-    this.forEach(function(key, value) { 
+    this.forEach(function(key, value) {
       entries.push({
-        key: key, 
+        key: key,
         value: value
-      }); 
+      });
     });
     return entries;
   },
@@ -130,8 +130,8 @@ function d3_true() {
   return true;
 }
 function d3_functor(v) {
-  return typeof v === "function" ? v : function() { 
-  	return v; 
+  return typeof v === "function" ? v : function() {
+    return v;
   };
 }
 
@@ -327,8 +327,8 @@ d3.bisector = function(f) {
   };
 };
 
-var d3_bisector = d3.bisector(function(d) { 
-  return d; 
+var d3_bisector = d3.bisector(function(d) {
+  return d;
 });
 d3.bisectLeft = d3_bisector.left;
 d3.bisect = d3.bisectRight = d3_bisector.right;
@@ -386,15 +386,15 @@ d3.nest = function() {
 
     map.forEach(function(key, keyMap) {
       array.push({
-	    key: key, 
-		values: entries(keyMap, depth)
-	  });
+        key: key,
+        values: entries(keyMap, depth)
+      });
     });
 
     return sortKey
-        ? array.sort(function(a, b) { 
-		    return sortKey(a.key, b.key); 
-		  })
+        ? array.sort(function(a, b) {
+            return sortKey(a.key, b.key);
+          })
         : array;
   }
 
@@ -445,10 +445,10 @@ d3.values = function(map) {
 d3.entries = function(map) {
   var entries = [];
   for (var key in map) {
-  	entries.push({
-  	  key: key, 
-  	  value: map[key]
-  	});
+    entries.push({
+      key: key,
+      value: map[key]
+    });
   }
   return entries;
 };
@@ -577,7 +577,7 @@ d3.xhr = function(url, mimeType, callback) {
     }
     if (mimeType != null && request.overrideMimeType) {
       request.overrideMimeType(mimeType);
-	}
+    }
     if (callback != null) {
       xhr.on("error", callback).on("load", function(request) {
         callback(null, request);
@@ -596,7 +596,7 @@ d3.xhr = function(url, mimeType, callback) {
 
   if (arguments.length === 2 && typeof mimeType === "function") {
     callback = mimeType;
-	mimeType = null;
+    mimeType = null;
   }
   return callback == null ? xhr : xhr.get(d3_xhr_fixCallback(callback));
 };
@@ -655,7 +655,7 @@ d3.ns = {
     }
     return d3_nsPrefix.hasOwnProperty(prefix)
         ? {
-            space: d3_nsPrefix[prefix], 
+            space: d3_nsPrefix[prefix],
             local: name
           }
         : name;
@@ -4757,7 +4757,7 @@ d3.svg.axis = function() {
 
         // Domain.
         var path = g.selectAll(".domain").data([0]);
-		path.enter().append("path").attr("class", "domain");
+        path.enter().append("path").attr("class", "domain");
         var pathUpdate = d3.transition(path);
 
         // Stash a snapshot of the new scale, and retrieve the old snapshot.
@@ -5911,7 +5911,7 @@ d3.layout.force = function() {
       event = d3.dispatch("start", "tick", "end"),
       size = [1, 1],
       drag,
-      alpha,                                     
+      alpha,
       interval,
       nodes = [],
       links = [],
@@ -5919,14 +5919,14 @@ d3.layout.force = function() {
       strengths,
       epsilon = 0.1, // minimal distance-squared for which the approximation holds; any smaller distance is assumed to be this large to prevent instable approximations
       charges,
-	  charge_abssum = -1, // negative value signals the need to recalculate this one
-	  friction_f,
-	  charge_f,
-	  gravity_f,
-	  theta_f,    
-	  linkDistance_f,
-	  linkStrength_f,
-	  // These model parameters can be either a function or a direct numeric value:
+      charge_abssum = -1, // negative value signals the need to recalculate this one
+      friction_f,
+      charge_f,
+      gravity_f,
+      theta_f,
+      linkDistance_f,
+      linkStrength_f,
+      // These model parameters can be either a function or a direct numeric value:
       friction = .9,
       linkDistance = d3_layout_forceLinkDistance,
       linkStrength = d3_layout_forceLinkStrength,
@@ -5944,7 +5944,7 @@ d3.layout.force = function() {
     linkDistance_f = d3_functor(LinkDistance);
     linkStrength_f = d3_functor(LinkStrength);
   }
-  
+
   function repulse(node, i) {
     return function(quad, x1, y1, x2, y2) {
       if (quad.point !== node) {
@@ -6052,14 +6052,14 @@ d3.layout.force = function() {
     f = 0;
     q = d3.geom.quadtree(nodes);
     // recalculate charges on every tick if need be:
-	if (charge_abssum < 0 || typeof charge === "function") {
+    if (charge_abssum < 0 || typeof charge === "function") {
       charges = [];
       for (i = 0; i < n; ++i) {
         charges[i] = k = +charge_f.call(this, nodes[i], i, q);
         f += Math.abs(k);
       }
-	  charge_abssum = f;
-	}
+      charge_abssum = f;
+    }
     if (charge_abssum != 0) {
       d3_layout_forceAccumulate(q, alpha, charges);
       i = -1; while (++i < n) {
@@ -6198,12 +6198,12 @@ d3.layout.force = function() {
     distances = [];
     for (i = 0; i < m; ++i) {
       distances[i] = +linkDistance_f.call(this, links[i], i);
-	}
+    }
 
     strengths = [];
     for (i = 0; i < m; ++i) {
       strengths[i] = +linkStrength_f.call(this, links[i], i);
-	}
+    }
 
     charges = [];
     j = 0;
@@ -10609,14 +10609,14 @@ d3_time_utc.prototype = {
 
 var d3_time_prototype = Date.prototype;
 // The date and time format (%c), date format (%x) and time format (%X).
-var d3_time_formatDateTime = "%a %b %e %X %Y", 
-    d3_time_formatDate = "%m/%d/%Y", 
+var d3_time_formatDateTime = "%a %b %e %X %Y",
+    d3_time_formatDate = "%m/%d/%Y",
     d3_time_formatTime = "%H:%M:%S";
 
 // The weekday and month names.
-var d3_time_days = [ "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday" ], 
-    d3_time_dayAbbreviations = [ "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" ], 
-    d3_time_months = [ "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December" ], 
+var d3_time_days = [ "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday" ],
+    d3_time_dayAbbreviations = [ "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" ],
+    d3_time_months = [ "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December" ],
     d3_time_monthAbbreviations = [ "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" ];
 d3.time.format = function(template) {
   var n = template.length;

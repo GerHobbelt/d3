@@ -54,7 +54,7 @@ d3.svg.axis = function() {
 
         // Domain.
         var path = g.selectAll(".domain").data([0]);
-		path.enter().append("path").attr("class", "domain");
+        path.enter().append("path").attr("class", "domain");
         var pathUpdate = d3.transition(path);
 
         // Stash a snapshot of the new scale, and retrieve the old snapshot.

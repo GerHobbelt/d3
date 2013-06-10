@@ -11,7 +11,10 @@ d3.interpolate = d3_interpolate;
 
 function d3_interpolate(a, b) {
   var i = d3.interpolators.length, f;
-  while (--i >= 0 && !(f = d3.interpolators[i](a, b)));
+  // lib/_/d3.latest.js:1103: WARNING - If this if/for/while really shouldn't have a body, use {}
+  while (--i >= 0 && !(f = d3.interpolators[i](a, b))) {
+    ;
+  }
   return f;
 }
 

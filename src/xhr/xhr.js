@@ -10,8 +10,8 @@ function d3_xhrType(response) {
   return function(url, mimeType, callback) {
     if (arguments.length === 2 && typeof mimeType === "function") {
       callback = mimeType;
-	  mimeType = null;
-	}
+      mimeType = null;
+    }
     return d3_xhr(url, mimeType, response, callback);
   };
 }
@@ -61,12 +61,14 @@ function d3_xhr(url, mimeType, response, callback) {
 
   xhr.header = function(name, value) {
     name = (name + "").toLowerCase();
-    if (arguments.length < 2)
+    if (arguments.length < 2) {
       return headers[name];
-    if (value == null)
+    }
+    if (value == null) {
       delete headers[name];
-    else
+    } else {
       headers[name] = value + "";
+    }
     return xhr;
   };
 
@@ -114,11 +116,11 @@ function d3_xhr(url, mimeType, response, callback) {
         request.setRequestHeader(name, headers[name]);
     }
     if (mimeType != null && request.overrideMimeType) {
-	  request.overrideMimeType(mimeType);
-	}
+      request.overrideMimeType(mimeType);
+    }
     if (responseType != null) {
-	  request.responseType = responseType;
-	}
+      request.responseType = responseType;
+    }
     if (callback != null) {
       xhr.on("error", callback).on("load", function(request) {
         callback(null, request);
