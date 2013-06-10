@@ -3503,11 +3503,6 @@ d3 = function() {
       postclip = _ == null ? d3_identity : d3_geo_clipView(_[0][0], _[0][1], _[1][0], _[1][1]);
       return invalidate();
     };
-    projection.clipGeometry = function(_) {
-      if (!arguments.length) return clip.geometry();
-      clip = d3_geo_clipGeometry(_);
-      return projection;
-    };
     projection.scale = function(_) {
       if (!arguments.length) return k;
       k = +_;
