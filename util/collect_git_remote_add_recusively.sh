@@ -5,11 +5,11 @@
 # machines (and keeping the info in the repository)
 #
 
-pushd $(dirname $0)       2> /dev/null
+pushd $(dirname $0)                                                                                     2> /dev/null  > /dev/null
 
 # go to root of project or 'git submodule foreach' won't run
 cd ..
 
 git submodule foreach git remote -v | gawk -f util/collect_git_remote_add_recusively.awk > util/register_git_remotes_recursive.sh
 
-popd       2> /dev/null
+popd                                                                                                    2> /dev/null  > /dev/null
