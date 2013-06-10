@@ -34,10 +34,10 @@
     }
   },
   "dependencies": {
-    "jsdom": ">=0.5.3"
+    "jsdom": ">=0.6.5"
   },
   "devDependencies": {
-    "smash": ">=0.0.8",
+    "smash": ">=0.0.11",
     "uglify-js": ">=2.3.6",
     "vows": ">=0.7.0"
   },
