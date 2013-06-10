@@ -78,7 +78,7 @@ function d3_timer_sweep() {
 }
 
 var d3_timer_frame = (typeof d3_window === 'undefined' ? false :
-    || d3_window.requestAnimationFrame
+       d3_window.requestAnimationFrame
     || d3_window.webkitRequestAnimationFrame
     || d3_window.mozRequestAnimationFrame
     || d3_window.oRequestAnimationFrame
