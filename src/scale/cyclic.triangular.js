@@ -26,16 +26,16 @@ d3.scale.cyclic.triangular = function() {
 function d3_scale_cyclic_triangular(period, offset) {
 
   function scale(x) {
-  	// http://jsperf.com/correct-modulo-operator-implementation
-  	var y;
-  	x -= offset;
-	if ((y = x % (2 * period)) < 0 && period > 0 || y > 0 && period < 0) {
-  	  y += period;
-	}
+    // http://jsperf.com/correct-modulo-operator-implementation
+    var y;
+    x -= offset;
+    if ((y = x % (2 * period)) < 0 && period > 0 || y > 0 && period < 0) {
+      y += period;
+    }
     // the range is INCLUSIVE 'period', hence the output range is [0..period] (plus offset, of course):
-	if (y > period) {
-	  y = 2 * period - y;
-	}
+    if (y > period) {
+      y = 2 * period - y;
+    }
     return y + offset;
   }
 

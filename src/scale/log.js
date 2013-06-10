@@ -20,12 +20,12 @@ function d3_scale_log(linear, base, log, pow, domain) {
   scale.domain = function(x) {
     if (!arguments.length) return domain;
     if (x[0] < 0) {
-		log = d3_scale_logn;
-		pow = d3_scale_pown;
-	} else {
-		log = d3_scale_logp;
-		pow = d3_scale_powp;
-	}
+        log = d3_scale_logn;
+        pow = d3_scale_pown;
+    } else {
+        log = d3_scale_logp;
+        pow = d3_scale_powp;
+    }
     linear.domain((domain = x.map(Number)).map(log));
     return scale;
   };
@@ -74,6 +74,7 @@ function d3_scale_log(linear, base, log, pow, domain) {
         f = log === d3_scale_logn ? (e = -1e-12, Math.floor) : (e = 1e-12, Math.ceil),
         e,
         h = (k >= 0.5);
+
     // Always try to print the .5 tick text whenever possible, f.e.: 1,2,3,5 is better than 1,2,3,4.
     // If you can do 1,2,3 you can also safely do 1,2,3,5.
     // If you can do 1,2-and-a-bit you can also safely do 1,2,5.

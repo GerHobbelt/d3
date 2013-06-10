@@ -23,30 +23,22 @@ d3.layout.force = function() {
       epsilon = 0.1, // minimal distance-squared for which the approximation holds; any smaller distance is assumed to be this large to prevent instable approximations
       charges,
       charge_abssum = -1, // negative value signals the need to recalculate this one
-      friction_f,
-      charge_f,
       gravity_f,
       theta_f,
-      linkDistance_f,
-      linkStrength_f,
       // These model parameters can be either a function or a direct numeric value:
-    friction = .9,
-    linkDistance = d3_layout_forceLinkDistance,
-    linkStrength = d3_layout_forceLinkStrength,
-    charge = -30,
-    gravity = .1,
-    theta = .8,
-    repulsor = false;
+      friction = .9,
+      linkDistance = d3_layout_forceLinkDistance,
+      linkStrength = d3_layout_forceLinkStrength,
+      charge = -30,
+      gravity = .1,
+      theta = .8,
+      repulsor = false;
 
   setup_model_parameter_functors();
 
   function setup_model_parameter_functors() {
-    friction_f = d3_functor(friction);
-    charge_f = d3_functor(charge);
     gravity_f = d3_functor(gravity);
     theta_f = d3_functor(theta);
-    linkDistance_f = d3_functor(linkDistance);
-    linkStrength_f = d3_functor(linkStrength);
   }
 
   function repulse(node, i) {
@@ -153,20 +145,27 @@ d3.layout.force = function() {
     }
 
     // compute quadtree center of mass and apply charge forces
-    f = 0;
     q = d3.geom.quadtree(nodes);
     // recalculate charges on every tick if need be:
     if (charge_abssum < 0 || typeof charge === "function") {
       charges = [];
-      for (i = 0; i < n; ++i) {
-        charges[i] = k = +charge_f.call(this, nodes[i], i, q);
-        f += Math.abs(k);
+      if (typeof charge === "function") {
+        f = 0;
+        for (i = 0; i < n; ++i) {
+          charges[i] = k = +charge.call(this, nodes[i], i, q);
+          f += Math.abs(k);
+        }
+      } else {
+        for (i = 0; i < n; ++i) {
+          charges[i] = charge;
+        }
+        f = n * Math.abs(charge);
       }
       charge_abssum = f;
     }
     if (charge_abssum != 0) {
       d3_layout_forceAccumulate(q, alpha, charges);
-      i = -1; while (++i < n) {
+      for (i = 0; i < n; ++i) {
         if (!(o = nodes[i]).fixed) {
           q.visit(repulse(o, i));
         }
@@ -177,15 +176,29 @@ d3.layout.force = function() {
     }
 
     // position verlet integration
-    i = -1; while (++i < n) {
-      o = nodes[i];
-      if (o.fixed) {
-        o.x = o.px;
-        o.y = o.py;
-      } else {
-        f = friction_f.call(this, o, i);
-        o.x -= (o.px - (o.px = o.x)) * f;
-        o.y -= (o.py - (o.py = o.y)) * f;
+    if (typeof friction === "function") {
+      for (i = 0; i < n; ++i) {
+        o = nodes[i];
+        if (o.fixed) {
+          o.x = o.px;
+          o.y = o.py;
+        } else {
+          f = friction.call(this, o, i);
+          o.x -= (o.px - (o.px = o.x)) * f;
+          o.y -= (o.py - (o.py = o.y)) * f;
+        }
+      }
+    } else {
+      f = friction;
+      for (i = 0; i < n; ++i) {
+        o = nodes[i];
+        if (o.fixed) {
+          o.x = o.px;
+          o.y = o.py;
+        } else {
+          o.x -= (o.px - (o.px = o.x)) * f;
+          o.y -= (o.py - (o.py = o.y)) * f;
+        }
       }
     }
 
@@ -204,7 +217,7 @@ d3.layout.force = function() {
     return force;
   };
 
-  force.neighbours = function() {
+  force.neighbors = function() {
     neighbor(0);
     return neighbors;
   };
@@ -218,7 +231,6 @@ d3.layout.force = function() {
   force.linkDistance = function(x) {
     if (!arguments.length) return linkDistance;
     linkDistance = typeof x === "function" ? x : +x;
-    setup_model_parameter_functors();
     return force;
   };
 
@@ -228,21 +240,18 @@ d3.layout.force = function() {
   force.linkStrength = function(x) {
     if (!arguments.length) return linkStrength;
     linkStrength = typeof x === "function" ? x : +x;
-    setup_model_parameter_functors();
     return force;
   };
 
   force.friction = function(x) {
     if (!arguments.length) return friction;
     friction = typeof x === "function" ? x : +x;
-    setup_model_parameter_functors();
     return force;
   };
 
   force.charge = function(x) {
     if (!arguments.length) return charge;
     charge = typeof x === "function" ? x : +x;
-    setup_model_parameter_functors();
     charge_abssum = -1;
     return force;
   };
@@ -313,36 +322,58 @@ d3.layout.force = function() {
     }
 
     distances = [];
-    for (i = 0; i < m; ++i) {
-      distances[i] = +linkDistance_f.call(this, links[i], i);
+    // for maximum performance, only use the function when there actually is the need for it:
+    if (typeof linkDistance === "function") {
+      for (i = 0; i < m; ++i) {
+        distances[i] = +linkDistance.call(this, links[i], i);
+      }
+    } else {
+      for (i = 0; i < m; ++i) {
+        distances[i] = linkDistance;
+      }
     }
 
     strengths = [];
-    for (i = 0; i < m; ++i) {
-      strengths[i] = +linkStrength_f.call(this, links[i], i);
+    if (typeof linkStrength === "function") {
+      for (i = 0; i < m; ++i) {
+        strengths[i] = +linkStrength.call(this, links[i], i);
+      }
+    } else {
+      for (i = 0; i < m; ++i) {
+        strengths[i] = linkStrength;
+      }
     }
 
     charges = [];
-    j = 0;
-    for (i = 0; i < n; ++i) {
-      charges[i] = o = +charge_f.call(this, nodes[i], i);
-      j += Math.abs(o);
+    if (typeof charge === "function") {
+      j = 0;
+      for (i = 0; i < n; ++i) {
+        charges[i] = o = +charge.call(this, nodes[i], i);
+        j += Math.abs(o);
+      }
+    } else {
+      for (i = 0; i < n; ++i) {
+        charges[i] = charge;
+      }
+      j = n * Math.abs(charge);
     }
     charge_abssum = j;
 
     // initialize node position based on first neighbor
     function position(dimension, size, i) {
       var my_neighbors = neighbor(i),
-          j = -1,
+          j,
           m = my_neighbors.outlinks.length,
           x;
-      while (++j < m)
+      for (j = 0; j < m; ++j) {
         if (!isNaN(x = my_neighbors.outlinks[j].target[dimension]))
           return x;
+      }
       m = my_neighbors.inlinks.length;
-      while (++j < m)
+      for (j = 0; j < m; ++j) {
         if (!isNaN(x = my_neighbors.inlinks[j].source[dimension]))
           return x;
+      }
       return Math.random() * size;
     }
 

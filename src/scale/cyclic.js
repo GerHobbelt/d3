@@ -15,17 +15,17 @@
  * We support both 'sawtooth' and 'triangle' waveform-based repetition in d3.scale.cyclic():
  * the above use case would all most probably suit the 'sawtooth' cyclic scale, but scales
  * exist which require a 'mirroring' approach to the repetition, i.e. where an input range
- * of 0..1..2..3..4..5..6 would not map onto 0..1..2..3=0..1..2..6=0 (sawtooth) but instead 
- * should map onto the 'mirrored' range 0..1..2..3=3..2..1..6=0, thus creating a 
+ * of 0..1..2..3..4..5..6 would not map onto 0..1..2..3=0..1..2..6=0 (sawtooth) but instead
+ * should map onto the 'mirrored' range 0..1..2..3=3..2..1..6=0, thus creating a
  * 'triangular waveform' rather than a 'sawtooth waveform'.
  *
  * Design Considerations
  * ---------------------
  *
  * When considering how to create various polar (radial) graphs and projections, I realized that
- * assuming a unit like 'radians' or 'degrees' would be overly restrictive on the accepted 
- * input coordinates / values. (And then you still need to decide wether you wish to only support 
- * the highschool math '360 degrees is full circle' or also the '400 degrees is full circle' 
+ * assuming a unit like 'radians' or 'degrees' would be overly restrictive on the accepted
+ * input coordinates / values. (And then you still need to decide wether you wish to only support
+ * the highschool math '360 degrees is full circle' or also the '400 degrees is full circle'
  * unit of measure in use in some engineering / carthography settings...)
  *
  * As other 'cycling' plots come to mind, it is essential to provide the most flexible input
@@ -34,11 +34,11 @@
  * plus the introduction of the d3.coordsystem group of coordinate system transformation classes.
  *
  * When you wonder why you would want to plot timelines on a radial chart, imagine for example
- * graphs showing room temperature logs on a daily basis, where you plot multiple days onto 
+ * graphs showing room temperature logs on a daily basis, where you plot multiple days onto
  * the same 24 hour circular graph.
  * If you are into (seasonal) climate change analysis, the same type of chart would then sport
  * a 1 year cycle rather than a 24 hour cycle.
- * 
+ *
  * When you are interested in weekly behaviours, e.g. when investigating stock market factors,
  * you might use a basic cycle of 1 week, while an electronics engineer might want to plot a
  * radial response chart with a radial base of 2F so that odd and even harmonics end up in
@@ -55,15 +55,15 @@ d3.scale.cyclic = function() {
 function d3_scale_cyclic(period, offset) {
 
   function scale(x) {
-  	// http://jsperf.com/correct-modulo-operator-implementation
-  	var y;
-  	x -= offset;
+    // http://jsperf.com/correct-modulo-operator-implementation
+    var y;
+    x -= offset;
   // the range is EXCLUSIVE 'period', hence the output range is [0..period> (plus offset, of course):
-	if ((y = x % period) < 0 && period > 0 || y > 0 && period < 0) {
-  	  return y + period + offset;
-	} else {
-  	  return y + offset;
-	}
+    if ((y = x % period) < 0 && period > 0 || y > 0 && period < 0) {
+      return y + period + offset;
+    } else {
+      return y + offset;
+    }
   }
 
   function rescale(domain) {

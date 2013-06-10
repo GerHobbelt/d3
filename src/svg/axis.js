@@ -342,7 +342,7 @@ d3.svg.axis = function() {
         ticks: ticks,                            // Object { ticks: Array of Tick Objects, submodulo: Number } where each Tick Object: { value: domainvalue, subindex: Number, majorindex: Number }
         range: range,                            // array[2]
         scale: scale,                            // d3.scale
-		    orient: orient,                          // String
+            orient: orient,                          // String
         tickSize: tickSize_f,                    // functor(d, i)
         tickEndSize: tickEndSize_f,              // functor(d, i)
         tickPadding: tickPadding,                // Number
