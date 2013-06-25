@@ -9,7 +9,7 @@ function d3_scale_threshold(domain, range) {
 
   function scale(x) {
     // ASSUMPTION: domain.length == range.length - 1
-    return range[d3.bisect(domain, x)];
+    if (x <= x) return range[d3.bisect(domain, x)];
   }
 
   scale.domain = function(_) {
