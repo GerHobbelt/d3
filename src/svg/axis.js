@@ -47,7 +47,7 @@ d3.svg.axis = function() {
         var tick = g.selectAll(".tick.major").data(ticks, function(d, i) {
               return String(d.value);
             }),
-            tickEnter = tick.enter().insert("g", "path").attr("class", "tick major").style("opacity", 1e-6),
+            tickEnter = tick.enter().insert("g", ".domain").attr("class", "tick major").style("opacity", 1e-6),
             tickExit = d3.transition(tick.exit()).style("opacity", 1e-6).remove(),
             tickUpdate = d3.transition(tick).style("opacity", 1),
             tickTransform;
