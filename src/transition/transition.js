@@ -16,7 +16,7 @@ function d3_transition(groups, id) {
 var d3_transitionPrototype = [],
     d3_transitionId = 0,
     d3_transitionInheritId,
-    d3_transitionInherit = {ease: d3_ease_cubicInOut, delay: 0, duration: 250};
+    d3_transitionInherit;
 
 d3_transitionPrototype.call = d3_selectionPrototype.call;
 d3_transitionPrototype.empty = d3_selectionPrototype.empty;
@@ -54,7 +54,6 @@ function d3_transitionNode(node, i, id, inherit) {
 
     transition = lock[id] = {
       tween: new d3_Map,
-      event: d3.dispatch("start", "end"), // TODO construct lazily?
       time: time,
       ease: inherit.ease,
       delay: inherit.delay,
@@ -66,7 +65,6 @@ function d3_transitionNode(node, i, id, inherit) {
     d3.timer(function(elapsed) {
       var d = node.__data__,
           ease = transition.ease,
-          event = transition.event,
           delay = transition.delay,
           duration = transition.duration,
           tweened = [];
@@ -78,7 +76,7 @@ function d3_transitionNode(node, i, id, inherit) {
       function start(elapsed) {
         if (lock.active > id) return stop();
         lock.active = id;
-        event.start.call(node, d, i);
+        transition.event && transition.event.start.call(node, d, i);
 
         transition.tween.forEach(function(key, value) {
           if (value = value.call(node, d, i)) {
@@ -103,7 +101,7 @@ function d3_transitionNode(node, i, id, inherit) {
 
         if (t >= 1) {
           stop();
-          event.end.call(node, d, i);
+          transition.event && transition.event.end.call(node, d, i);
           return 1;
         }
       }
