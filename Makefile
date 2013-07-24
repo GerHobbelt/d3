@@ -11,7 +11,7 @@ GENERATED_FILES = \
 
 all: $(GENERATED_FILES)
 
-.PHONY: clean all test
+.PHONY: clean all test benchmark
 
 test:
 	@npm test
@@ -47,5 +47,9 @@ d3.min.js: d3.js
 	bin/$* > $@
 	@chmod a-w $@
 
+# When you nuke the generated files, smash crashes and does not recover. The 'echo x' and 'touch' lines are a hotfix for that one as it takes too long to fix in smash itself.
 clean:
-	rm -f -- $(GENERATED_FILES)
+	-rm -f -- $(GENERATED_FILES)
+	@echo x!y > src/format/format-localized.js
+	@echo x!y > src/time/format-localized.js
+	@touch bin/locale
