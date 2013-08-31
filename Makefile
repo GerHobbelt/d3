@@ -38,7 +38,7 @@ d3.js: d3.latest.js
 	cat $< | node_modules/.bin/uglifyjs - -b indent-level=2 -o $@
 	@chmod a-w $@
 
-d3.min.js: d3.js
+d3.min.js: d3.js bin/uglify
 	@rm -f $@
 	bin/uglify $< > $@
 
