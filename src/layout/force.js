@@ -23,20 +23,23 @@ d3.layout.force = function() {
       charges,
       charge_abssum = -1, // negative value signals the need to recalculate this one
       gravity_f,
-      theta_f,
+      theta2_f,
+	  has_theta2_f = false,
       // These model parameters can be either a function or a direct numeric value:
       friction = .9,
       linkDistance = d3_layout_forceLinkDistance,
       linkStrength = d3_layout_forceLinkStrength,
       charge = -30,
+      chargeDistance2 = d3_layout_forceChargeDistance2,
       gravity = .1,
-      theta = .8;
+      theta2 = .64;
 
   setup_model_parameter_functors();
 
   function setup_model_parameter_functors() {
     gravity_f = d3_functor(gravity);
-    theta_f = d3_functor(theta);
+    theta2_f = d3_functor(theta2);
+	has_theta2_f = (typeof theta2 === "function");
   }
 
   function repulse(node, i) {
@@ -44,10 +47,19 @@ d3.layout.force = function() {
       if (quad.point !== node) {
         var dx = quad.cx - node.x,
             dy = quad.cy - node.y,
+            dw = x2 - x1,
             l = dx * dx + dy * dy,
             dn = 1 / Math.max(epsilon, l),
             k = quad.charge * dn,
-            th = theta_f.call(this, node, i, quad, l, x1, x2, k);
+            th2;
+			
+		if (has_theta2_f) {
+			// when this is a FUNCTION it calculates theta, NOT theta²!
+			th2 = theta2_f.call(this, node, i, quad, l, x1, x2, k);
+			th2 *= th2;
+		} else {
+			th2 = theta2;
+		}
 
         /*
         Based on the Barnes-Hut criterion.
@@ -69,10 +81,12 @@ d3.layout.force = function() {
         small, we do accept the consolidated quad data; otherwise we need process the
         child nodes.
         */
-        if (l * k * k < th * th) {
-          k *= alpha;
-          node.px -= dx * k;
-          node.py -= dy * k;
+        if (l * k * k < th2) {
+		  if (l < chargeDistance2) {
+            k *= alpha;
+            node.px -= dx * k;
+            node.py -= dy * k;
+          }
           return true;
         }
 
@@ -145,7 +159,7 @@ d3.layout.force = function() {
     // compute quadtree center of mass and apply charge forces
     q = d3.geom.quadtree(nodes);
     // recalculate charges on every tick if need be:
-    if (charge_abssum < 0 || typeof charge === "function") {
+    if (charge_abssum < 0 || typeof charge === "function" || isFinite(chargeDistance2)) {
       charges = [];
       if (typeof charge === "function") {
         f = 0;
@@ -246,6 +260,12 @@ d3.layout.force = function() {
     return force;
   };
 
+  force.chargeDistance = function(x) {
+    if (!arguments.length) return Math.sqrt(chargeDistance2);
+    chargeDistance2 = x * x;
+    return force;
+  };
+
   force.gravity = function(x) {
     if (!arguments.length) return gravity;
     gravity = typeof x === "function" ? x : +x;
@@ -254,8 +274,16 @@ d3.layout.force = function() {
   };
 
   force.theta = function(x) {
-    if (!arguments.length) return theta;
-    theta = typeof x === "function" ? x : +x;
+    if (!arguments.length) {
+	  if (has_theta2_f) {
+	    return theta2;
+	  } else {
+	    return Math.sqrt(theta2);
+	  }
+	}
+	// set theta2 to x² when x is a value (this is done as a calculation optimization for when rendering the force graph).
+	// When x is a function, we need to do the squaring on every quad on every iteration anyhow.
+    theta2 = typeof x === "function" ? x : x * x;
     setup_model_parameter_functors();
     return force;
   };
@@ -466,4 +494,6 @@ function d3_layout_forceAccumulate(quad, alpha, charges) {
 }
 
 var d3_layout_forceLinkDistance = 20,
-    d3_layout_forceLinkStrength = 1;
+    d3_layout_forceLinkStrength = 1,
+    d3_layout_forceChargeDistance2 = Infinity;
+
