@@ -2649,6 +2649,7 @@ d3 = function() {
           clip.point = pointRing;
           clip.lineStart = ringStart;
           clip.lineEnd = ringEnd;
+          intersections = true;
           segments = [];
           polygon = [];
           listener.polygonStart();
@@ -2660,7 +2661,7 @@ d3 = function() {
           segments = d3.merge(segments);
           if (segments.length) {
             d3_geo_clipPolygon(segments, d3_geo_clipSort, null, interpolate, listener);
-          } else if (polygonContains(polygon)) {
+          } else if (intersections && polygonContains(polygon)) {
             listener.lineStart();
             interpolate(null, null, 1, listener);
             listener.lineEnd();
@@ -2690,7 +2691,7 @@ d3 = function() {
         clip.point = point;
         line.lineEnd();
       }
-      var segments;
+      var segments, intersections;
       var buffer = d3_geo_clipBufferListener(), ringListener = clipLine(buffer), polygon, ring;
       function pointRing(λ, φ) {
         ringListener.point(λ, φ);
@@ -2714,6 +2715,7 @@ d3 = function() {
           listener.lineStart();
           while (++i < n) listener.point((point = segment[i])[0], point[1]);
           listener.lineEnd();
+          intersections = false;
           return;
         }
         if (n > 1 && clean & 2) ringSegments.push(ringSegments.pop().concat(ringSegments.shift()));
