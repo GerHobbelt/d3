@@ -12,3 +12,5 @@ import "string";
 import "transform";
 import "uninterpolate";
 import "zoom";
+import "floor";
+import "ceiling";
