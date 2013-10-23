@@ -12,14 +12,23 @@ function d3_uninterpolateClamp(a, b) {
   return function(x) { return Math.max(0, Math.min(1, (x - a) * b)); };
 }
 
-d3.uninterpolateFloor = d3_uninterpolateFloor;
+d3.uninterpolateSteppedFloor = d3_uninterpolateSteppedFloor;
 
-function d3_uninterpolateFloor(a, b) {
-  return function(x) { return a; };
-}
-
-d3.uninterpolateCeiling = d3.uninterpolateCeiling;
-
-function d3_uninterpolateCeiling(a, b) {
-  return function(x) { return b; };
+function d3_uninterpolateSteppedFloor(step) {
+  return function(a, b) {
+    b = b - (a = +a) ? 1 / (b - a) : 0;
+    return function(x) {
+      var extent = x - a;
+      if (extent >= 0) {
+        return (x - (extent % step) - a) * b;
+      } else {
+        var mod = extent % step;
+        if (mod) {
+          return (x - (step + extent % step)) * b;
+        } else {
+          return x * b;
+        }
+      }
+    }
+  }
 }
