@@ -8,6 +8,7 @@ LOCALE ?= en_US
 
 all: \
 	d3.v2.js \
+	d3amd.v2.js \
 	d3.v2.min.js \
 	component.json \
 	package.json
@@ -237,6 +238,13 @@ test: all
 d3%.js: Makefile
 	@rm -f $@
 	cat $(filter %.js,$^) | $(JS_BEAUTIFIER) > $@
+	@chmod a-w $@
+
+d3amd.v2.js:
+	@rm -f $@
+	@echo "define([], function(){ var d3;" >> $@
+	cat d3.v2.js >> $@
+	@echo "return d3;});" >> $@
 	@chmod a-w $@
 
 component.json: src/component.js
