@@ -305,7 +305,6 @@ d3.layout.force = function() {
 
   force.start = function() {
     var i,
-        j,
         n = nodes.length,
         m = links.length,
         w = size[0],
@@ -372,24 +371,13 @@ d3.layout.force = function() {
     }
     charge_abssum = j;
 
-    // initialize node position based on first neighbor
+    // inherit node position from first neighbor with defined position
+    // or if no such neighbors, initialize node position randomly
+    // initialize neighbors lazily to avoid overhead when not needed
     function position(dimension, size, i) {
-      var my_neighbors = neighbor(i),
-          j,
-          m = my_neighbors.length,
-          x;
-      for (j = 0; j < m; ++j) {
-        if (!isNaN(x = my_neighbors[j][dimension]))
-          return x;
-      }
-      return Math.random() * size;
-    }
-
-    // initialize neighbors lazily
-    function neighbor(i) {
+      var j;
       if (!neighbors) {
-        var j;
-        neighbors = [];
+        neighbors = new Array(n);
         for (j = 0; j < n; ++j) {
           neighbors[j] = [];
         }
@@ -399,7 +387,16 @@ d3.layout.force = function() {
           neighbors[o.target.index].push(o.source);
         }
       }
-      return neighbors[i];
+      var candidates = neighbors[i],
+          j,
+          m = candidates.length,
+          x;
+      for (j = 0; j < m; ++j) {
+        if (!isNaN(x = candidates[j][dimension])) {
+		  return x;
+		}
+	  }
+      return Math.random() * size;
     }
 
     return force.resume();
