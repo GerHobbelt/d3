@@ -1,6 +1,6 @@
 d3 = function() {
   var d3 = {
-    version: "3.3.2"
+    version: "3.3.3"
   };
   if (!Date.now) Date.now = function() {
     return +new Date();
@@ -1082,6 +1082,7 @@ d3 = function() {
   };
   var d3_mouse_bug44083 = typeof d3_window !== "undefined" && d3_window.navigator && /WebKit/.test(d3_window.navigator.userAgent) ? -1 : 0;
   function d3_mousePoint(container, e) {
+    if (e.changedTouches) e = e.changedTouches[0];
     var svg = container.ownerSVGElement || container;
     if (svg.createSVGPoint) {
       var point = svg.createSVGPoint();
@@ -1098,13 +1099,8 @@ d3 = function() {
         d3_mouse_bug44083 = !(ctm.f || ctm.e);
         svg.remove();
       }
-      if (d3_mouse_bug44083) {
-        point.x = e.pageX;
-        point.y = e.pageY;
-      } else {
-        point.x = e.clientX;
-        point.y = e.clientY;
-      }
+      if (d3_mouse_bug44083) point.x = e.pageX, point.y = e.pageY; else point.x = e.clientX, 
+      point.y = e.clientY;
       point = point.matrixTransform(container.getScreenCTM().inverse());
       return [ point.x, point.y ];
     }
@@ -8356,7 +8352,7 @@ d3 = function() {
       g.selectAll(".extent,.e>rect,.w>rect").attr("height", yExtent[1] - yExtent[0]);
     }
     function brushstart() {
-      var target = this, eventTarget = d3.select(d3.event.target), event_ = event.of(target, arguments), g = d3.select(target), resizing = eventTarget.datum(), resizingX = !/^(n|s)$/.test(resizing) && x, resizingY = !/^(e|w)$/.test(resizing) && y, dragging = eventTarget.classed("extent"), dragRestore = d3_event_dragSuppress(), center, origin = mouse(), offset;
+      var target = this, eventTarget = d3.select(d3.event.target), event_ = event.of(target, arguments), g = d3.select(target), resizing = eventTarget.datum(), resizingX = !/^(n|s)$/.test(resizing) && x, resizingY = !/^(e|w)$/.test(resizing) && y, dragging = eventTarget.classed("extent"), dragRestore = d3_event_dragSuppress(), center, origin = d3.mouse(target), offset;
       var w = d3.select(d3_window).on("keydown.brush", keydown).on("keyup.brush", keyup);
       if (d3.event.changedTouches) {
         w.on("touchmove.brush", brushmove).on("touchend.brush", brushend);
@@ -8380,10 +8376,6 @@ d3 = function() {
         type: "brushstart"
       });
       brushmove();
-      function mouse() {
-        var touches = d3.event.changedTouches;
-        return touches ? d3.touches(target, touches)[0] : d3.mouse(target);
-      }
       function keydown() {
         if (d3.event.keyCode == 32) {
           if (!dragging) {
@@ -8404,7 +8396,7 @@ d3 = function() {
         }
       }
       function brushmove() {
-        var point = mouse(), moved = false;
+        var point = d3.mouse(target), moved = false;
         if (offset) {
           point[0] += offset[0];
           point[1] += offset[1];
@@ -8758,13 +8750,13 @@ d3 = function() {
       }, i = d3_time_parse(d, template, string, 0);
       if (i != string.length) return null;
       if ("p" in d) d.H = d.H % 12 + d.p * 12;
-      var utcZone = d.Z != null && d3_date !== d3_date_utc, date = new (utcZone ? d3_date_utc : d3_date)();
+      var localZ = d.Z != null && d3_date !== d3_date_utc, date = new (localZ ? d3_date_utc : d3_date)();
       if ("j" in d) date.setFullYear(d.y, 0, d.j); else if ("w" in d && ("W" in d || "U" in d)) {
         date.setFullYear(d.y, 0, 1);
         date.setFullYear(d.y, 0, "W" in d ? (d.w + 6) % 7 + d.W * 7 - (date.getDay() + 5) % 7 : d.w + d.U * 7 - (date.getDay() + 6) % 7);
       } else date.setFullYear(d.y, d.m, d.d);
       date.setHours(d.H + Math.floor(d.Z / 100), d.M + d.Z % 100, d.S, d.L);
-      return utcZone ? new d3_date(+date) : date;
+      return localZ ? date._ : date;
     };
     format.toString = function() {
       return template;
