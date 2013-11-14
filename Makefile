@@ -1,5 +1,8 @@
 LOCALE ?= en_US
 
+UGLIFY = node_modules/.bin/uglifyjs
+SMASH = node_modules/.bin/smash
+
 GENERATED_FILES = \
 	d3.latest.js \
 	d3.js \
@@ -25,14 +28,14 @@ src/time/format-localized.js: bin/locale src/time/format-locale.js
 src/start.js: package.json bin/start
 	bin/start > $@
 
-d3.latest.js: $(shell node_modules/.bin/smash --list src/d3.js) package.json
+d3.latest.js: $(shell $(SMASH) --list src/d3.js) package.json
 	@rm -f $@
-	node_modules/.bin/smash src/d3.js > $@
+	$(SMASH) src/d3.js > $@
 	@chmod a-w $@
 
 d3.js: d3.latest.js
 	@rm -f $@
-	cat $< | node_modules/.bin/uglifyjs - -b indent-level=2 -o $@
+	cat $< | $(UGLIFY) - -b indent-level=2 -o $@
 	@chmod a-w $@
 
 d3.min.js: d3.js bin/uglify

@@ -2140,7 +2140,7 @@ d3 = function() {
     d3_timer_queueTail = t0;
     return time;
   }
-  var d3_format_decimalPoint = ".", d3_format_thousandsSeparator = ",", d3_format_grouping = [ 3, 3 ], d3_format_currencySymbol = "$";
+  var d3_format_decimalPoint = ".", d3_format_thousandsSeparator = "", d3_format_grouping = [ -1 ], d3_format_currencySymbol = null;
   var d3_formatPrefixes = [ "y", "z", "a", "f", "p", "n", "µ", "m", "", "k", "M", "G", "T", "P", "E", "Z", "Y" ].map(d3_formatPrefix);
   d3.formatPrefix = function(value, precision) {
     var i = 0;
@@ -2894,6 +2894,12 @@ d3 = function() {
     return (polarAngle < -ε || polarAngle < ε && d3_geo_areaRingSum < 0) ^ winding & 1;
   }
   var d3_geo_clipAntimeridian = d3_geo_clip(d3_true, d3_geo_clipAntimeridianLine, d3_geo_clipAntimeridianInterpolate, [ -π, -π / 2 ]);
+  d3_geo_clipAntimeridian.feature = function() {
+    return {
+      type: "LineString",
+      coordinates: [ [ 180, 90 ], [ 180, 0 ], [ 180, -90 ] ]
+    };
+  };
   function d3_geo_clipAntimeridianLine(listener) {
     var λ0 = NaN, φ0 = NaN, sλ0 = NaN, clean;
     return {
@@ -5956,6 +5962,7 @@ d3 = function() {
       }
       charge_abssum = j;
       function position(dimension, size, i) {
+        var j;
         if (!neighbors) {
           neighbors = new Array(n);
           for (j = 0; j < n; ++j) {
@@ -5967,15 +5974,12 @@ d3 = function() {
             neighbors[o.target.index].push(o.source);
           }
         }
-        var candidates = neighbors[i], 
-		    j, 
-			m = candidates.length, 
-			x;
+        var candidates = neighbors[i], j, m = candidates.length, x;
         for (j = 0; j < m; ++j) {
-		  if (!isNaN(x = candidates[j][dimension])) {
-		    return x;
-		  }
-		}
+          if (!isNaN(x = candidates[j][dimension])) {
+            return x;
+          }
+        }
         return Math.random() * size;
       }
       return force.resume();
@@ -7674,7 +7678,7 @@ d3 = function() {
     points), d3_svg_lineCardinalTangents([ points[points.length - 2] ].concat(points, [ points[1] ]), tension));
   }
   function d3_svg_lineCardinal(points, tension) {
-    return points.length < 3 ? d3_svg_lineLinear(points) : points[0] + d3_svg_lineHermite(points, d3_svg_lineCardinalTangents(points, tension));
+    return points.length < 3 ? d3_svg_lineLinear(points) : points[0] + d3_svg_lineCubicPolynomialSpline(points, d3_svg_lineCardinalTangents(points, tension));
   }
   function d3_svg_lineHermite(points, tangents) {
     if (tangents.length < 1 || points.length != tangents.length && points.length != tangents.length + 2) {
@@ -7700,6 +7704,36 @@ d3 = function() {
     if (quad) {
       var lp = points[pi];
       path += "Q" + (p[0] + t[0] * 2 / 3) + "," + (p[1] + t[1] * 2 / 3) + "," + lp[0] + "," + lp[1];
+    }
+    return path;
+  }
+  function d3_svg_lineCubicPolynomialSpline(points, tangents) {
+    if (tangents.length < 1 || points.length != tangents.length && points.length != tangents.length + 2) {
+      return d3_svg_lineLinear(points);
+    }
+    var quad = points.length != tangents.length, path = "", p0 = points[0], p = points[1], t0 = tangents[0], t = t0, pi = 0, dx = points[1][0] - points[0][0], tp, pp;
+    if (quad) {
+      path += "Q" + (p[0] - dx / 2) + "," + (p[1] - t0[1] / t0[0] * (dx / 2)) + "," + p[0] + "," + p[1];
+      p0 = points[1];
+      pi = 1;
+    }
+    if (tangents.length > 1) {
+      tp = tangents[0];
+      pp = points[pi];
+      pi++;
+      for (var i = 1; i < tangents.length; i++, pi++) {
+        p = points[pi];
+        t = tangents[i];
+        dx = p[0] - pp[0];
+        path += "C" + (pp[0] + dx / 3) + "," + (pp[1] + tp[1] / tp[0] * (dx / 3)) + "," + (p[0] - dx / 3) + "," + (p[1] - t[1] / t[0] * (dx / 3)) + "," + p[0] + "," + p[1];
+        pp = p;
+        tp = t;
+      }
+    }
+    if (quad) {
+      var lp = points[pi];
+      dx = lp[0] - p[0];
+      path += "Q" + (p[0] + dx / 2) + "," + (p[1] + t[1] / t[0] * (dx / 2)) + "," + lp[0] + "," + lp[1];
     }
     return path;
   }
@@ -7824,7 +7858,7 @@ d3 = function() {
     return tangents;
   }
   function d3_svg_lineMonotone(points) {
-    return points.length < 3 ? d3_svg_lineLinear(points) : points[0] + d3_svg_lineHermite(points, d3_svg_lineMonotoneTangents(points));
+    return points.length < 3 ? d3_svg_lineLinear(points) : points[0] + d3_svg_lineCubicPolynomialSpline(points, d3_svg_lineMonotoneTangents(points));
   }
   d3.svg.line.radial = function() {
     var line = d3_svg_line(d3_svg_lineRadial);
@@ -8868,7 +8902,7 @@ d3 = function() {
     }
   };
   var d3_time_prototype = Date.prototype;
-  var d3_time_formatDateTime = "%a %b %e %H:%M:%S %Y", d3_time_formatDate = "%m/%d/%y", d3_time_formatTime = "%H:%M:%S";
+  var d3_time_formatDateTime = "%a %d %b %Y %r %Z", d3_time_formatDate = "%m/%d/%Y", d3_time_formatTime = "%r";
   var d3_time_days = [ "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday" ], d3_time_dayAbbreviations = [ "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" ], d3_time_months = [ "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December" ], d3_time_monthAbbreviations = [ "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" ];
   function d3_time_interval(local, step, number) {
     function round(date) {
