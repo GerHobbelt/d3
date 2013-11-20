@@ -44,15 +44,18 @@ d3.svg.axis = function() {
           lineUpdate = tickUpdate.select("line"),
           text = tick.select("text").text(tickFormat),
           textEnter = tickEnter.select("text"),
-          textUpdate = tickUpdate.select("text");
+          textUpdate = tickUpdate.select("text"),
+          tickPaddingFunction = function(d, i) {
+          	return typeof tickPadding === 'function' ? tickPadding(d, i) : tickPadding;
+          };
 
       switch (orient) {
         case "bottom": {
           tickTransform = d3_svg_axisX;
           lineEnter.attr("y2", innerTickSize);
-          textEnter.attr("y", Math.max(innerTickSize, 0) + tickPadding);
+          textEnter.attr("y", function(d, i) { return Math.max(innerTickSize, 0) + tickPaddingFunction(d,i); });
           lineUpdate.attr("x2", 0).attr("y2", innerTickSize);
-          textUpdate.attr("x", 0).attr("y", Math.max(innerTickSize, 0) + tickPadding);
+          textUpdate.attr("x", 0).attr("y", function(d, i) { return Math.max(innerTickSize, 0) + tickPaddingFunction(d,i); });
           text.attr("dy", ".71em").style("text-anchor", "middle");
           pathUpdate.attr("d", "M" + range[0] + "," + outerTickSize + "V0H" + range[1] + "V" + outerTickSize);
           break;
@@ -60,9 +63,9 @@ d3.svg.axis = function() {
         case "top": {
           tickTransform = d3_svg_axisX;
           lineEnter.attr("y2", -innerTickSize);
-          textEnter.attr("y", -(Math.max(innerTickSize, 0) + tickPadding));
+          textEnter.attr("y", function(d, i) { return -(Math.max(innerTickSize, 0) + tickPaddingFunction(d,i)); });
           lineUpdate.attr("x2", 0).attr("y2", -innerTickSize);
-          textUpdate.attr("x", 0).attr("y", -(Math.max(innerTickSize, 0) + tickPadding));
+          textUpdate.attr("x", 0).attr("y", function(d, i) { return -(Math.max(innerTickSize, 0) + tickPaddingFunction(d,i)); });
           text.attr("dy", "0em").style("text-anchor", "middle");
           pathUpdate.attr("d", "M" + range[0] + "," + -outerTickSize + "V0H" + range[1] + "V" + -outerTickSize);
           break;
@@ -70,9 +73,9 @@ d3.svg.axis = function() {
         case "left": {
           tickTransform = d3_svg_axisY;
           lineEnter.attr("x2", -innerTickSize);
-          textEnter.attr("x", -(Math.max(innerTickSize, 0) + tickPadding));
+          textEnter.attr("x", function(d, i) { return -(Math.max(innerTickSize, 0) + tickPaddingFunction(d,i)); });
           lineUpdate.attr("x2", -innerTickSize).attr("y2", 0);
-          textUpdate.attr("x", -(Math.max(innerTickSize, 0) + tickPadding)).attr("y", 0);
+          textUpdate.attr("x", function(d, i) { return -(Math.max(innerTickSize, 0) + tickPaddingFunction(d,i)) ;}).attr("y", 0);
           text.attr("dy", ".32em").style("text-anchor", "end");
           pathUpdate.attr("d", "M" + -outerTickSize + "," + range[0] + "H0V" + range[1] + "H" + -outerTickSize);
           break;
@@ -80,9 +83,9 @@ d3.svg.axis = function() {
         case "right": {
           tickTransform = d3_svg_axisY;
           lineEnter.attr("x2", innerTickSize);
-          textEnter.attr("x", Math.max(innerTickSize, 0) + tickPadding);
+          textEnter.attr("x", function(d, i) { return Math.max(innerTickSize, 0) + tickPaddingFunction(d,i); });
           lineUpdate.attr("x2", innerTickSize).attr("y2", 0);
-          textUpdate.attr("x", Math.max(innerTickSize, 0) + tickPadding).attr("y", 0);
+          textUpdate.attr("x", function(d, i) { return Math.max(innerTickSize, 0) + tickPaddingFunction(d,i); }).attr("y", 0);
           text.attr("dy", ".32em").style("text-anchor", "start");
           pathUpdate.attr("d", "M" + outerTickSize + "," + range[0] + "H0V" + range[1] + "H" + outerTickSize);
           break;
@@ -160,7 +163,11 @@ d3.svg.axis = function() {
 
   axis.tickPadding = function(x) {
     if (!arguments.length) return tickPadding;
-    tickPadding = +x;
+    if (typeof x === 'function') {
+        tickPadding = x;
+    } else {
+    	tickPadding = +x;
+    }
     return axis;
   };
 
