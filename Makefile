@@ -28,7 +28,7 @@ src/time/format-localized.js: bin/locale src/time/format-locale.js
 src/start.js: package.json bin/start
 	bin/start > $@
 
-d3.latest.js: $(shell $(SMASH) --list src/d3.js) package.json
+d3.latest.js: $(shell $(SMASH) --list src/d3.js) package.json src/format/format-localized.js src/time/format-localized.js
 	@rm -f $@
 	$(SMASH) src/d3.js > $@
 	@chmod a-w $@
