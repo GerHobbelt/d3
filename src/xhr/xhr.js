@@ -18,7 +18,7 @@ function d3_xhrType(response) {
 
 function d3_xhr(url, mimeType, response, callback) {
   var xhr = {},
-      dispatch = d3.dispatch("progress", "load", "error"),
+      dispatch = d3.dispatch("beforesend", "progress", "load", "error"),
       headers = {},
       request = new XMLHttpRequest,
       responseType = null;
@@ -126,6 +126,7 @@ function d3_xhr(url, mimeType, response, callback) {
         callback(null, request);
       });
     }
+    dispatch.beforesend.call(xhr, request);
     request.send(data == null ? null : data);
     return xhr;
   };

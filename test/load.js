@@ -8,13 +8,17 @@ require("./XMLHttpRequest");
 module.exports = function() {
   var files = [].slice.call(arguments).map(function(d) { return "src/" + d; }),
       expression = "d3",
-      sandbox = {Date: Date}; // so we can use deepEqual in tests
+      sandbox = {console: console, Date: Date}; // so we can use deepEqual in tests
 
   files.unshift("src/start");
   files.push("src/end");
 
   function topic() {
-    smash.load(files, expression, sandbox, this.callback);
+    var callback = this.callback;
+    smash.load(files, expression, sandbox, function(error, result) {
+      if (error) console.trace(error.stack);
+      callback(error, result);
+    });
   }
 
   topic.expression = function(_) {

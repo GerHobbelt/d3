@@ -1,23 +1,24 @@
 import "../core/document";
+import "../core/vendor";
 
 var d3_timer_queueHead,
     d3_timer_queueTail,
     d3_timer_interval, // is an interval (0) or frame (1) active?
-    d3_timer_timeout; // is a timeout active?
+    d3_timer_timeout, // is a timeout active?
+    d3_timer_active, // active timer object
+    d3_timer_frame = (typeof d3_window === 'undefined' ? false :
+                         d3_window[d3_vendorSymbol(d3_window, "requestAnimationFrame")]) || 
+					 function(callback) { setTimeout(callback, 17); };
 
 // The timer will continue to fire until callback returns true.
 d3.timer = function(callback, delay, then) {
-  if (arguments.length < 3) {
-    if (arguments.length < 2) delay = 0;
-    else if (!isFinite(delay)) return;
-    then = Date.now();
-  }
-
-  var time = then + delay;
+  var n = arguments.length;
+  if (n < 2) delay = 0;
+  if (n < 3) then = Date.now();
 
   // Add the callback to the tail of the queue.
-  var timer = {callback: callback, time: time, next: null};
-  if (d3_timer_queueTail) d3_timer_queueTail.next = timer;
+  var time = then + delay, timer = {c: callback, t: time, f: false, n: null};
+  if (d3_timer_queueTail) d3_timer_queueTail.n = timer;
   else d3_timer_queueHead = timer;
   d3_timer_queueTail = timer;
 
@@ -50,11 +51,11 @@ d3.timer.flush = function() {
 };
 
 function d3_timer_mark() {
-  var now = Date.now(),
-      timer = d3_timer_queueHead;
-  while (timer) {
-    if (now >= timer.time) timer.flush = timer.callback(now - timer.time);
-    timer = timer.next;
+  var now = Date.now();
+  d3_timer_active = d3_timer_queueHead;
+  while (d3_timer_active) {
+    if (now >= d3_timer_active.t) d3_timer_active.f = d3_timer_active.c(now - d3_timer_active.t);
+    d3_timer_active = d3_timer_active.n;
   }
   return now;
 }
@@ -66,21 +67,14 @@ function d3_timer_sweep() {
       t1 = d3_timer_queueHead,
       time = Infinity;
   while (t1) {
-    if (t1.flush) {
-      t1 = t0 ? t0.next = t1.next : d3_timer_queueHead = t1.next;
+    if (t1.f) {
+      t1 = t0 ? t0.n = t1.n : d3_timer_queueHead = t1.n;
     } else {
-      if (t1.time < time) time = t1.time;
-      t1 = (t0 = t1).next;
+      if (t1.t < time) time = t1.t;
+      t1 = (t0 = t1).n;
     }
   }
   d3_timer_queueTail = t0;
   return time;
 }
 
-var d3_timer_frame = (typeof d3_window === 'undefined' ? false :
-       d3_window.requestAnimationFrame
-    || d3_window.webkitRequestAnimationFrame
-    || d3_window.mozRequestAnimationFrame
-    || d3_window.oRequestAnimationFrame
-    || d3_window.msRequestAnimationFrame)
-    || function(callback) { setTimeout(callback, 17); };

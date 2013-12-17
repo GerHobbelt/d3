@@ -6,7 +6,7 @@ var suite = vows.describe("d3.scale.sqrt");
 
 suite.addBatch({
   "sqrt": {
-    topic: load("scale/sqrt", "interpolate/hsl").document(), // beware instanceof d3_Color
+    topic: load("scale/sqrt", "interpolate/hsl"), // beware instanceof d3_Color
 
     "domain": {
       "defaults to [0, 1]": function(d3) {
@@ -169,6 +169,16 @@ suite.addBatch({
         assert.deepEqual(x.ticks(2).map(x.tickFormat(2)), [0, .5, 1]);
         assert.deepEqual(x.ticks(5).map(x.tickFormat(5)), [0, .2, .4, .6, .8, 1]);
         assert.deepEqual(x.ticks(10).map(x.tickFormat(10)), [0, .1, .2, .3, .4, .5, .6, .7, .8, .9, 1]);
+      }
+    },
+
+    "tickFormat": {
+      "if count is not specified, defaults to 10": function(d3) {
+        var x = d3.scale.sqrt();
+        assert.strictEqual(x.tickFormat()(Math.PI), "3.1");
+        assert.strictEqual(x.tickFormat(1)(Math.PI), "3");
+        assert.strictEqual(x.tickFormat(10)(Math.PI), "3.1");
+        assert.strictEqual(x.tickFormat(100)(Math.PI), "3.14");
       }
     },
 

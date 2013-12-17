@@ -6,7 +6,7 @@ var suite = vows.describe("d3.interpolate");
 
 suite.addBatch({
   "interpolate": {
-    topic: load("interpolate/interpolate").document(),
+    topic: load("interpolate/interpolate"),
 
     "when b is a number": {
       "interpolates numbers": function(d3) {
@@ -21,7 +21,7 @@ suite.addBatch({
 
     "when b is a color string": {
       "interpolates RGB values and returns a hexadecimal string": function(d3) {
-        assert.strictEqual(d3.interpolate("#ff0000", "#008000")(.4), "#993300");
+        assert.strictEqual(d3.interpolate("#ff0000", "#008000")(.4) + "", "#993300");
       },
       "interpolates named colors in RGB": function(d3) {
         assert.strictEqual(d3.interpolate("red", "green")(.4), "#993300");

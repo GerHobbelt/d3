@@ -6,7 +6,7 @@ var suite = vows.describe("d3.scale.linear");
 
 suite.addBatch({
   "linear": {
-    topic: load("scale/linear", "interpolate/hsl").document(), // beware instanceof d3_Color
+    topic: load("scale/linear", "interpolate/hsl"), // beware instanceof d3_Color
 
     "domain": {
       "defaults to [0, 1]": function(d3) {
@@ -193,6 +193,40 @@ suite.addBatch({
         assert.strictEqual(x.tickFormat(64)(x.ticks(64)[0]), "0.14");
         assert.strictEqual(x.tickFormat(128)(x.ticks(128)[0]), "0.13");
         assert.strictEqual(x.tickFormat(256)(x.ticks(256)[0]), "0.125");
+        var x = d3.scale.linear().domain([0.01, 0.09]);
+        assert.strictEqual(x.tickFormat(10,"g")(x.ticks(10)[0]), "0.01")
+        assert.strictEqual(x.tickFormat(20,"g")(x.ticks(20)[0]), "0.010")
+        assert.strictEqual(x.tickFormat(10,"r")(x.ticks(10)[0]), "0.01")
+        assert.strictEqual(x.tickFormat(20,"r")(x.ticks(20)[0]), "0.010")
+        assert.strictEqual(x.tickFormat(10,"e")(x.ticks(10)[0]), "1e-2")
+        assert.strictEqual(x.tickFormat(20,"e")(x.ticks(20)[0]), "1.0e-2")
+        assert.strictEqual(x.tickFormat(10,"%")(x.ticks(10)[0]), "1%")
+        assert.strictEqual(x.tickFormat(20,"%")(x.ticks(10)[0]), "1.0%")
+        assert.strictEqual(x.tickFormat(10,"p")(x.ticks(10)[0]), "1%")
+        assert.strictEqual(x.tickFormat(20,"p")(x.ticks(10)[0]), "1.0%")
+        var x = d3.scale.linear().domain([1000, 1001]);
+        assert.strictEqual(x.tickFormat(3)(x.ticks(3)[1]), "1,000.5");
+        assert.strictEqual(x.tickFormat(3,",g")(x.ticks(3)[1]), "1,000.5");
+        assert.strictEqual(x.tickFormat(3,"g")(x.ticks(3)[1]), "1000.5");
+        assert.strictEqual(x.tickFormat(3,"e")(x.ticks(3)[1]), "1.0005e+3");
+        assert.strictEqual(x.tickFormat(3,"s")(x.ticks(3)[1]), "1.0005k");
+      }
+    },
+
+    "tickFormat": {
+      "applies automatic precision when not explicitly specified": function(d3) {
+        var x = d3.scale.linear();
+        assert.strictEqual(x.tickFormat(10, "f")(Math.PI), "3.1")
+        assert.strictEqual(x.tickFormat(100, "f")(Math.PI), "3.14");
+        assert.strictEqual(x.tickFormat(100, "$f")(Math.PI), "$3.14");
+        assert.strictEqual(x.domain([0, 100]).tickFormat(100, "%")(Math.PI), "314%");
+      },
+      "if count is not specified, defaults to 10": function(d3) {
+        var x = d3.scale.linear();
+        assert.strictEqual(x.tickFormat()(Math.PI), "3.1");
+        assert.strictEqual(x.tickFormat(1)(Math.PI), "3");
+        assert.strictEqual(x.tickFormat(10)(Math.PI), "3.1");
+        assert.strictEqual(x.tickFormat(100)(Math.PI), "3.14");
       }
     },
 
@@ -220,6 +254,14 @@ suite.addBatch({
         assert.deepEqual(x.domain(), [1, 1, 2, 3, 11]);
         var x = d3.scale.linear().domain([123.1, 1, 2, 3, -.9]).nice();
         assert.deepEqual(x.domain(), [130, 1, 2, 3, -10]);
+      },
+      "accepts a tick count to control nicing step": function(d3) {
+        var x = d3.scale.linear().domain([12, 87]).nice(5);
+        assert.deepEqual(x.domain(), [0, 100]);
+        var x = d3.scale.linear().domain([12, 87]).nice(10);
+        assert.deepEqual(x.domain(), [10, 90]);
+        var x = d3.scale.linear().domain([12, 87]).nice(100);
+        assert.deepEqual(x.domain(), [12, 87]);
       }
     },
 

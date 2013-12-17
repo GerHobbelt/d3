@@ -1,3 +1,4 @@
+import "../math/trigonometry";
 import "../scale/linear";
 import "../scale/scale";
 import "../selection/selection";

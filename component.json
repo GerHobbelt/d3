@@ -1,9 +1,22 @@
 {
   "name": "d3",
-  "version": "3.1.10",
+  "repo": "mbostock/d3",
+  "description": "A small, free JavaScript library for manipulating documents based on data.",
+  "keywords": [
+    "dom",
+    "w3c",
+    "visualization",
+    "svg",
+    "animation",
+    "canvas"
+  ],
+  "version": "3.3.12",
   "main": "index-browserify.js",
   "scripts": [
-    "index-browserify.js",
-    "d3.js"
-  ]
+    "d3.js",
+    "index-browserify.js"
+  ],
+  "dependencies": {},
+  "development": {},
+  "license": "BSD"
 }

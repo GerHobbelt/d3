@@ -65,6 +65,8 @@ suite.addBatch({
       assert.strictEqual(f(-42), "-4.2e+1");
       assert.strictEqual(f(-4200000), "-4.2e+6");
       assert.strictEqual(f(-42000000), "-4.2e+7");
+      assert.strictEqual(format(".0e")(42), "4e+1")
+      assert.strictEqual(format(".3e")(42), "4.200e+1")
     },
     "can output SI prefix notation": function(format) {
       var f = format("s");
@@ -98,6 +100,31 @@ suite.addBatch({
       assert.strictEqual(f(999.5), "999.5");
       assert.strictEqual(f(999500), "999.5k");
       assert.strictEqual(f(.009995), "9.995m");
+    },
+    "can output a currency": function(format) {
+      var f = format("$");
+      assert.strictEqual(f(0), "$0");
+      assert.strictEqual(f(.042), "$0.042");
+      assert.strictEqual(f(.42), "$0.42");
+      assert.strictEqual(f(4.2), "$4.2");
+      assert.strictEqual(f(-.042), "-$0.042");
+      assert.strictEqual(f(-.42), "-$0.42");
+      assert.strictEqual(f(-4.2), "-$4.2");
+    },
+    "can output a currency with comma-grouping and sign": function(format) {
+      var f = format("+$,.2f");
+      assert.strictEqual(f(0), "+$0.00");
+      assert.strictEqual(f(0.429), "+$0.43");
+      assert.strictEqual(f(-0.429), "-$0.43");
+      assert.strictEqual(f(-1), "-$1.00");
+      assert.strictEqual(f(1e4), "+$10,000.00");
+    },
+    "can output a currency with si-prefix notation": function(format) {
+      var f = format("$.2s");
+      assert.strictEqual(f(0), "$0.0");
+      assert.strictEqual(f(2.5e5), "$250k");
+      assert.strictEqual(f(-2.5e8), "-$250M");
+      assert.strictEqual(f(2.5e11), "$250G");
     },
     "can output a percentage": function(format) {
       var f = format("%");

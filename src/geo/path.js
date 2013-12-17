@@ -10,6 +10,7 @@ import "path-bounds";
 import "path-buffer";
 import "path-centroid";
 import "path-context";
+import "path-distance";
 import "projection";
 import "resample";
 import "stream";
@@ -54,6 +55,12 @@ d3.geo.path = function() {
     return [[d3_geo_pathBoundsX0, d3_geo_pathBoundsY0], [d3_geo_pathBoundsX1, d3_geo_pathBoundsY1]];
   };
 
+  path.distance = function(object) {
+    d3_geo_pathDistanceSum = 0;
+    d3.geo.stream(object, projectStream(d3_geo_pathDistance));
+    return d3_geo_pathDistanceSum;
+  };
+
   path.projection = function(_) {
     if (!arguments.length) return projection;
     projectStream = (projection = _) ? _.stream || d3_geo_pathProjectStream(_) : d3_identity;
@@ -82,16 +89,6 @@ d3.geo.path = function() {
 };
 
 function d3_geo_pathProjectStream(project) {
-  var resample = d3_geo_resample(function(λ, φ) { return project([λ * d3_degrees, φ * d3_degrees]); });
-  return function(stream) {
-    stream = resample(stream);
-    return {
-      point: function(λ, φ) { stream.point(λ * d3_radians, φ * d3_radians); },
-      sphere: function() { stream.sphere(); },
-      lineStart: function() { stream.lineStart(); },
-      lineEnd: function() { stream.lineEnd(); },
-      polygonStart: function() { stream.polygonStart(); },
-      polygonEnd: function() { stream.polygonEnd(); }
-    };
-  };
+  var resample = d3_geo_resample(function(x, y) { return project([x * d3_degrees, y * d3_degrees]); });
+  return function(stream) { return d3_geo_projectionRadians(resample(stream)); };
 }

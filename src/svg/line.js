@@ -2,11 +2,14 @@ import "../arrays/map";
 import "../core/functor";
 import "../core/identity";
 import "../core/true";
+import "../geom/point";
+import "../math/abs";
+import "../math/trigonometry";
 import "svg";
 
 function d3_svg_line(projection) {
-  var x = d3_svg_lineX,
-      y = d3_svg_lineY,
+  var x = d3_geom_pointX,
+      y = d3_geom_pointY,
       defined = d3_true,
       interpolate = d3_svg_lineLinear,
       interpolateKey = interpolate.key,
@@ -76,16 +79,6 @@ function d3_svg_line(projection) {
 d3.svg.line = function() {
   return d3_svg_line(d3_identity);
 };
-
-// The default `x` property, which references d[0].
-function d3_svg_lineX(d) {
-  return d[0];
-}
-
-// The default `y` property, which references d[1].
-function d3_svg_lineY(d) {
-  return d[1];
-}
 
 // The various interpolators supported by the `line` class.
 var d3_svg_lineInterpolators = d3.map({
@@ -270,6 +263,38 @@ function d3_svg_lineCubicPolynomialSpline(points, tangents) {
   return path;
 }
 
+// Cubic Polynomial spline construction; generates "C" commands.
+function d3_svg_lineCubicPolynomialSpline(points, tangents) {
+  if (tangents.length < 1 || points.length != tangents.length && points.length != tangents.length + 2) {
+    return d3_svg_lineLinear(points);
+  }
+  var quad = points.length != tangents.length, path = "", p0 = points[0], p = points[1], t0 = tangents[0], t = t0, pi = 0, dx = points[1][0] - points[0][0], tp, pp;
+  if (quad) {
+    path += "Q" + (p[0] - dx / 2) + "," + (p[1] - t0[1] / t0[0] * (dx / 2)) + "," + p[0] + "," + p[1];
+    p0 = points[1];
+    pi = 1;
+  }
+  if (tangents.length > 1) {
+    tp = tangents[0];
+    pp = points[pi];
+    pi++;
+    for (var i = 1; i < tangents.length; i++, pi++) {
+      p = points[pi];
+      t = tangents[i];
+      dx = p[0] - pp[0];
+      path += "C" + (pp[0] + dx / 3) + "," + (pp[1] + tp[1] / tp[0] * (dx / 3)) + "," + (p[0] - dx / 3) + "," + (p[1] - t[1] / t[0] * (dx / 3)) + "," + p[0] + "," + p[1];
+      pp = p;
+      tp = t;
+    }
+  }
+  if (quad) {
+    var lp = points[pi];
+    dx = lp[0] - p[0];
+    path += "Q" + (p[0] + dx / 2) + "," + (p[1] + t[1] / t[0] * (dx / 2)) + "," + lp[0] + "," + lp[1];
+  }
+  return path;
+}
+
 // Generates tangents for a cardinal spline.
 function d3_svg_lineCardinalTangents(points, tension) {
   var tangents = [],
@@ -298,20 +323,16 @@ function d3_svg_lineBasis(points) {
       y0 = pi[1],
       px = [x0, x0, x0, (pi = points[1])[0]],
       py = [y0, y0, y0, pi[1]],
-      path = [x0, ",", y0];
-  d3_svg_lineBasisBezier(path, px, py);
-  while (++i < n) {
+      path = [x0, ",", y0, "L", d3_svg_lineDot4(d3_svg_lineBasisBezier3, px), ",", d3_svg_lineDot4(d3_svg_lineBasisBezier3, py)];
+  points.push(points[n - 1]);
+  while (++i <= n) {
     pi = points[i];
     px.shift(); px.push(pi[0]);
     py.shift(); py.push(pi[1]);
     d3_svg_lineBasisBezier(path, px, py);
   }
-  i = -1;
-  while (++i < 2) {
-    px.shift(); px.push(pi[0]);
-    py.shift(); py.push(pi[1]);
-    d3_svg_lineBasisBezier(path, px, py);
-  }
+  points.pop();
+  path.push("L", pi);
   return path.join("");
 }
 
@@ -456,9 +477,15 @@ function d3_svg_lineMonotoneTangents(points) {
     // mk = m{k + 1} = 0 as the spline connecting these points must be flat to
     // preserve monotonicity. Ignore step 4 and 5 for those k.
 
-    if (Math.abs(d) < 1e-6) {
+    if (abs(d) < ε) {
       m[i] = m[i + 1] = 0;
     } else {
+      if (d * m[i] < 0) {
+        m[i] = 0;
+      }
+      if (d * m[i + 1] < 0) {
+        m[i + 1] = 0;
+      }
       // 4. Let ak = mk / dk and bk = m{k + 1} / dk.
       a = m[i] / d;
       b = m[i + 1] / d;
