@@ -3582,10 +3582,33 @@ d3 = function() {
     }
     return stream;
   }
-  d3.geo.distance = function(a, b) {
-    var Δλ = (b[0] - a[0]) * d3_radians, φ0 = a[1] * d3_radians, φ1 = b[1] * d3_radians, sinΔλ = Math.sin(Δλ), cosΔλ = Math.cos(Δλ), sinφ0 = Math.sin(φ0), cosφ0 = Math.cos(φ0), sinφ1 = Math.sin(φ1), cosφ1 = Math.cos(φ1), t;
-    return Math.atan2(Math.sqrt((t = cosφ1 * sinΔλ) * t + (t = cosφ0 * sinφ1 - sinφ0 * cosφ1 * cosΔλ) * t), sinφ0 * sinφ1 + cosφ0 * cosφ1 * cosΔλ);
+  var d3_geo_pathDistanceSum, d3_geo_pathDistancePolygon, d3_geo_pathDistance = {
+    point: d3_noop,
+    lineStart: d3_geo_pathDistanceLineStart,
+    lineEnd: d3_noop,
+    polygonStart: function() {
+      d3_geo_pathDistancePolygon = true;
+    },
+    polygonEnd: function() {
+      d3_geo_pathDistancePolygon = false;
+    }
   };
+  function d3_geo_pathDistanceLineStart() {
+    var x00, y00, x0, y0;
+    d3_geo_pathDistance.point = function(x, y) {
+      d3_geo_pathDistance.point = nextPoint;
+      x00 = x0 = x, y00 = y0 = y;
+    };
+    d3_geo_pathDistance.lineEnd = function() {
+      if (d3_geo_pathDistancePolygon) nextPoint(x00, y00);
+      d3_geo_pathDistance.point = d3_geo_pathDistance.lineEnd = d3_noop;
+    };
+    function nextPoint(x, y) {
+      var dx = x - x0, dy = y - y0;
+      d3_geo_pathDistanceSum += Math.sqrt(dx * dx + dy * dy);
+      x0 = x, y0 = y;
+    }
+  }
   function d3_geo_resample(project) {
     var δ2 = .5, cosMinDistance = Math.cos(30 * d3_radians), maxDepth = 16;
     function resample(stream) {
@@ -3689,7 +3712,6 @@ d3 = function() {
       d3.geo.stream(object, projectStream(d3_geo_pathBounds));
       return [ [ d3_geo_pathBoundsX0, d3_geo_pathBoundsY0 ], [ d3_geo_pathBoundsX1, d3_geo_pathBoundsY1 ] ];
     };
-    var d3_geo_pathDistanceSum;
     path.distance = function(object) {
       d3_geo_pathDistanceSum = 0;
       d3.geo.stream(object, projectStream(d3_geo_pathDistance));
@@ -3964,6 +3986,10 @@ d3 = function() {
     var angle = d3_acos(-a[1]);
     return ((-a[2] < 0 ? -angle : angle) + 2 * Math.PI - ε) % (2 * Math.PI);
   }
+  d3.geo.distance = function(a, b) {
+    var Δλ = (b[0] - a[0]) * d3_radians, φ0 = a[1] * d3_radians, φ1 = b[1] * d3_radians, sinΔλ = Math.sin(Δλ), cosΔλ = Math.cos(Δλ), sinφ0 = Math.sin(φ0), cosφ0 = Math.cos(φ0), sinφ1 = Math.sin(φ1), cosφ1 = Math.cos(φ1), t;
+    return Math.atan2(Math.sqrt((t = cosφ1 * sinΔλ) * t + (t = cosφ0 * sinφ1 - sinφ0 * cosφ1 * cosΔλ) * t), sinφ0 * sinφ1 + cosφ0 * cosφ1 * cosΔλ);
+  };
   d3.geo.graticule = function() {
     var x1, x0, X1, X0, y1, y0, Y1, Y0, dx = 10, dy = dx, DX = 90, DY = 360, x, y, X, Y, precision = 2.5;
     function graticule() {
