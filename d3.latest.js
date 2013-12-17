@@ -2786,7 +2786,7 @@ var d3_timer_queueHead,
     d3_timer_timeout, // is a timeout active?
     d3_timer_active, // active timer object
     d3_timer_frame = (typeof d3_window === 'undefined' ? false :
-                         d3_window[d3_vendorSymbol(d3_window, "requestAnimationFrame")]) || 
+                         d3_window[d3_vendorSymbol(d3_window, "requestAnimationFrame")]) ||
 					 function(callback) { setTimeout(callback, 17); };
 
 // The timer will continue to fire until callback returns true.
@@ -7743,7 +7743,7 @@ d3.layout.force = function() {
             dn = 1 / Math.max(epsilon, l),
             k = quad.charge * dn,
             th2;
-			
+
 		if (has_theta2_f) {
 			// when this is a FUNCTION it calculates theta, NOT theta�!
 			th2 = theta2_f.call(this, node, i, quad, l, x1, x2, k);
