@@ -10,7 +10,7 @@ import "path-bounds";
 import "path-buffer";
 import "path-centroid";
 import "path-context";
-import "path-distance";
+import "distance";
 import "projection";
 import "resample";
 import "stream";
@@ -55,6 +55,8 @@ d3.geo.path = function() {
     return [[d3_geo_pathBoundsX0, d3_geo_pathBoundsY0], [d3_geo_pathBoundsX1, d3_geo_pathBoundsY1]];
   };
 
+  var d3_geo_pathDistanceSum;
+  
   path.distance = function(object) {
     d3_geo_pathDistanceSum = 0;
     d3.geo.stream(object, projectStream(d3_geo_pathDistance));
