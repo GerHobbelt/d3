@@ -320,7 +320,7 @@ d3.layout.force = function() {
   };
 
   force.start = function() {
-    var i,
+    var i, j,
         n = nodes.length,
         m = links.length,
         w = size[0],

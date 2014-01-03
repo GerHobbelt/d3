@@ -1,5 +1,5 @@
 d3 = (function(){
-  var d3 = {version: "3.3.9"}; // semver
+  var d3 = {version: "3.3.12"}; // semver
 if (!Date.now) Date.now = function() {
   return +new Date();
 };
@@ -333,12 +333,17 @@ d3_class(d3_Map, {
     });
     return entries;
   },
+  size: function() {
+    var size = 0;
+    for (var key in this) if (key.charCodeAt(0) === d3_map_prefixCode) ++size;
+    return size;
+  },
+  empty: function() {
+    for (var key in this) if (key.charCodeAt(0) === d3_map_prefixCode) return false;
+    return true;
+  },
   forEach: function(f) {
-    for (var key in this) {
-      if (key.charCodeAt(0) === d3_map_prefixCode) {
-        f.call(this, key.substring(1), this[key]);
-      }
-    }
+    for (var key in this) if (key.charCodeAt(0) === d3_map_prefixCode) f.call(this, key.substring(1), this[key]);
   }
 });
 
@@ -473,12 +478,17 @@ d3_class(d3_Set, {
     });
     return values;
   },
+  size: function() {
+    var size = 0;
+    for (var value in this) if (value.charCodeAt(0) === d3_map_prefixCode) ++size;
+    return size;
+  },
+  empty: function() {
+    for (var value in this) if (value.charCodeAt(0) === d3_map_prefixCode) return false;
+    return true;
+  },
   forEach: function(f) {
-    for (var value in this) {
-      if (value.charCodeAt(0) === d3_map_prefixCode) {
-        f.call(this, value.substring(1));
-      }
-    }
+    for (var value in this) if (value.charCodeAt(0) === d3_map_prefixCode) f.call(this, value.substring(1));
   }
 });
 d3.behavior = {};
@@ -830,7 +840,7 @@ d3_selectionPrototype.classed = function(name, value) {
     // probably doesn't support it on SVG elements (which can be animated).
     if (typeof name === "string") {
       var node = this.node(),
-          n = (name = name.trim().split(/^|\s+/g)).length,
+          n = (name = d3_selection_classes(name)).length,
           i = -1;
       if (value = node.classList) {
         while (++i < n) if (!value.contains(name[i])) return false;
@@ -855,9 +865,13 @@ function d3_selection_classedRe(name) {
   return new RegExp("(?:^|\\s+)" + d3.requote(name) + "(?:\\s+|$)", "g");
 }
 
+function d3_selection_classes(name) {
+  return name.trim().split(/^|\s+/);
+}
+
 // Multiple class names are allowed (e.g., "foo bar").
 function d3_selection_classed(name, value) {
-  name = name.trim().split(/\s+/).map(d3_selection_classedName);
+  name = d3_selection_classes(name).map(d3_selection_classedName);
   var n = name.length;
 
   function classedConstant() {
@@ -1170,7 +1184,7 @@ d3_selectionPrototype.filter = function(filter) {
     subgroups.push(subgroup = []);
     subgroup.parentNode = (group = this[j]).parentNode;
     for (var i = 0, n = group.length; i < n; i++) {
-      if ((node = group[i]) && filter.call(node, node.__data__, i)) {
+      if ((node = group[i]) && filter.call(node, node.__data__, i, j)) {
         subgroup.push(node);
       }
     }
@@ -2643,7 +2657,7 @@ d3.dsv = function(delimiter, mimeType) {
 
   function dsv(url, row, callback) {
     if (arguments.length < 3) callback = row, row = null;
-    var xhr = d3.xhr(url, mimeType, callback);
+    var xhr = d3_xhr(url, mimeType, row == null ? response : typedResponse(row), callback);
 
     xhr.row = function(_) {
       return arguments.length
@@ -2651,7 +2665,7 @@ d3.dsv = function(delimiter, mimeType) {
           : row;
     };
 
-    return xhr.row(row);
+    return xhr;
   }
 
   function response(request) {
@@ -2786,7 +2800,7 @@ var d3_timer_queueHead,
     d3_timer_timeout, // is a timeout active?
     d3_timer_active, // active timer object
     d3_timer_frame = (typeof d3_window === 'undefined' ? false :
-                         d3_window[d3_vendorSymbol(d3_window, "requestAnimationFrame")]) ||
+                         d3_window[d3_vendorSymbol(d3_window, "requestAnimationFrame")]) || 
 					 function(callback) { setTimeout(callback, 17); };
 
 // The timer will continue to fire until callback returns true.
@@ -2858,9 +2872,9 @@ function d3_timer_sweep() {
 }
 
 var d3_format_decimalPoint = ".",
-    d3_format_thousandsSeparator = "",
-    d3_format_grouping = [-1],
-    d3_format_currencySymbol = null;
+    d3_format_thousandsSeparator = ",",
+    d3_format_grouping = [3, 3],
+    d3_format_currencySymbol = "$";
 
 
 var d3_formatPrefixes = ["y","z","a","f","p","n","µ","m","","k","M","G","T","P","E","Z","Y"].map(d3_formatPrefix);
@@ -3920,7 +3934,7 @@ function d3_geo_clipAntimeridianLine(listener) {
         listener.lineEnd();
         listener.lineStart();
         listener.point(sλ1, φ0);
-        listener.point( λ1, φ0);
+        listener.point(λ1, φ0);
         clean = 0;
       } else if (sλ0 !== sλ1 && dλ >= π) { // line crosses antimeridian
         // handle degeneracies
@@ -4840,6 +4854,33 @@ function d3_geo_pathContext(context) {
 
   return stream;
 }
+  var d3_geo_pathDistanceSum, d3_geo_pathDistancePolygon, d3_geo_pathDistance = {
+    point: d3_noop,
+    lineStart: d3_geo_pathDistanceLineStart,
+    lineEnd: d3_noop,
+    polygonStart: function() {
+      d3_geo_pathDistancePolygon = true;
+    },
+    polygonEnd: function() {
+      d3_geo_pathDistancePolygon = false;
+    }
+  };
+  function d3_geo_pathDistanceLineStart() {
+    var x00, y00, x0, y0;
+    d3_geo_pathDistance.point = function(x, y) {
+      d3_geo_pathDistance.point = nextPoint;
+      x00 = x0 = x, y00 = y0 = y;
+    };
+    d3_geo_pathDistance.lineEnd = function() {
+      if (d3_geo_pathDistancePolygon) nextPoint(x00, y00);
+      d3_geo_pathDistance.point = d3_geo_pathDistance.lineEnd = d3_noop;
+    };
+    function nextPoint(x, y) {
+      var dx = x - x0, dy = y - y0;
+      d3_geo_pathDistanceSum += Math.sqrt(dx * dx + dy * dy);
+      x0 = x, y0 = y;
+    }
+  }
 
 function d3_geo_resample(project) {
   var δ2 = .5, // precision, px²
@@ -4921,7 +4962,7 @@ function d3_geo_resample(project) {
           c = c0 + c1,
           m = Math.sqrt(a * a + b * b + c * c),
           φ2 = Math.asin(c /= m),
-          λ2 = abs(abs(c) - 1) < ε ? (λ0 + λ1) / 2 : Math.atan2(b, a),
+          λ2 = abs(abs(c) - 1) < ε || abs(λ0 - λ1) < ε ? (λ0 + λ1) / 2 : Math.atan2(b, a),
           p = project(λ2, φ2),
           x2 = p[0],
           y2 = p[1],
@@ -4985,6 +5026,12 @@ d3.geo.path = function() {
     d3_geo_pathBoundsX1 = d3_geo_pathBoundsY1 = -(d3_geo_pathBoundsX0 = d3_geo_pathBoundsY0 = Infinity);
     d3.geo.stream(object, projectStream(d3_geo_pathBounds));
     return [[d3_geo_pathBoundsX0, d3_geo_pathBoundsY0], [d3_geo_pathBoundsX1, d3_geo_pathBoundsY1]];
+  };
+
+  path.distance = function(object) {
+    d3_geo_pathDistanceSum = 0;
+    d3.geo.stream(object, projectStream(d3_geo_pathDistance));
+    return d3_geo_pathDistanceSum;
   };
 
   path.projection = function(_) {
@@ -5728,22 +5775,31 @@ var d3_geo_stereographic = d3_geo_azimuthal(
 }).raw = d3_geo_stereographic;
 
 function d3_geo_transverseMercator(λ, φ) {
-  var B = Math.cos(φ) * Math.sin(λ);
-  return [
-    Math.log((1 + B) / (1 - B)) / 2,
-    Math.atan2(Math.tan(φ), Math.cos(λ))
-  ];
+  return [Math.log(Math.tan(π / 4 + φ / 2)), -λ];
 }
 
 d3_geo_transverseMercator.invert = function(x, y) {
-  return [
-    Math.atan2(d3_sinh(x), Math.cos(y)),
-    d3_asin(Math.sin(y) / d3_cosh(x))
-  ];
+  return [-y, 2 * Math.atan(Math.exp(x)) - halfπ];
 };
 
 (d3.geo.transverseMercator = function() {
-  return d3_geo_mercatorProjection(d3_geo_transverseMercator);
+  var projection = d3_geo_mercatorProjection(d3_geo_transverseMercator),
+      center = projection.center,
+      rotate = projection.rotate;
+
+  projection.center = function(_) {
+    return _
+        ? center([-_[1], _[0]])
+        : ((_ = center()), [-_[1], _[0]]);
+  };
+
+  projection.rotate = function(_) {
+    return _
+        ? rotate([_[0], _[1], _.length > 2 ? _[2] + 90 : 90])
+        : ((_ = rotate()), [_[0], _[1], _[2] - 90]);
+  };
+
+  return projection.rotate([0, 0]);
 }).raw = d3_geo_transverseMercator;
 d3.geom = {};
 function d3_geom_pointX(d) {
@@ -7743,7 +7799,7 @@ d3.layout.force = function() {
             dn = 1 / Math.max(epsilon, l),
             k = quad.charge * dn,
             th2;
-
+			
 		if (has_theta2_f) {
 			// when this is a FUNCTION it calculates theta, NOT theta�!
 			th2 = theta2_f.call(this, node, i, quad, l, x1, x2, k);
@@ -7995,7 +8051,7 @@ d3.layout.force = function() {
   };
 
   force.start = function() {
-    var i,
+    var i, j,
         n = nodes.length,
         m = links.length,
         w = size[0],
@@ -9585,10 +9641,16 @@ d3.random = {
       return Math.exp(random());
     };
   },
+  bates: function(m) {
+    var random = d3.random.irwinHall(m);
+    return function() {
+      return random() / m;
+    };
+  },
   irwinHall: function(m) {
     return function() {
       for (var s = 0, j = 0; j < m; j++) s += Math.random();
-      return s / m;
+      return s;
     };
   }
 };
@@ -10637,6 +10699,38 @@ function d3_svg_lineCubicPolynomialSpline(points, tangents) {
   return path;
 }
 
+// Cubic Polynomial spline construction; generates "C" commands.
+function d3_svg_lineCubicPolynomialSpline(points, tangents) {
+  if (tangents.length < 1 || points.length != tangents.length && points.length != tangents.length + 2) {
+    return d3_svg_lineLinear(points);
+  }
+  var quad = points.length != tangents.length, path = "", p0 = points[0], p = points[1], t0 = tangents[0], t = t0, pi = 0, dx = points[1][0] - points[0][0], tp, pp;
+  if (quad) {
+    path += "Q" + (p[0] - dx / 2) + "," + (p[1] - t0[1] / t0[0] * (dx / 2)) + "," + p[0] + "," + p[1];
+    p0 = points[1];
+    pi = 1;
+  }
+  if (tangents.length > 1) {
+    tp = tangents[0];
+    pp = points[pi];
+    pi++;
+    for (var i = 1; i < tangents.length; i++, pi++) {
+      p = points[pi];
+      t = tangents[i];
+      dx = p[0] - pp[0];
+      path += "C" + (pp[0] + dx / 3) + "," + (pp[1] + tp[1] / tp[0] * (dx / 3)) + "," + (p[0] - dx / 3) + "," + (p[1] - t[1] / t[0] * (dx / 3)) + "," + p[0] + "," + p[1];
+      pp = p;
+      tp = t;
+    }
+  }
+  if (quad) {
+    var lp = points[pi];
+    dx = lp[0] - p[0];
+    path += "Q" + (p[0] + dx / 2) + "," + (p[1] + t[1] / t[0] * (dx / 2)) + "," + lp[0] + "," + lp[1];
+  }
+  return path;
+}
+
 // Generates tangents for a cardinal spline.
 function d3_svg_lineCardinalTangents(points, tension) {
   var tangents = [],
@@ -10822,6 +10916,12 @@ function d3_svg_lineMonotoneTangents(points) {
     if (abs(d) < ε) {
       m[i] = m[i + 1] = 0;
     } else {
+      if (d * m[i] < 0) {
+        m[i] = 0;
+      }
+      if (d * m[i + 1] < 0) {
+        m[i + 1] = 0;
+      }
       // 4. Let ak = mk / dk and bk = m{k + 1} / dk.
       a = m[i] / d;
       b = m[i + 1] / d;
@@ -11341,7 +11441,7 @@ d3_transitionPrototype.filter = function(filter) {
   for (var j = 0, m = this.length; j < m; j++) {
     subgroups.push(subgroup = []);
     for (var group = this[j], i = 0, n = group.length; i < n; i++) {
-      if ((node = group[i]) && filter.call(node, node.__data__, i)) {
+      if ((node = group[i]) && filter.call(node, node.__data__, i, j)) {
         subgroup.push(node);
       }
     }
@@ -11705,24 +11805,22 @@ d3.svg.axis = function() {
         }
       }
 
-      // For ordinal scales:
-      // - any entering ticks are undefined in the old scale
-      // - any exiting ticks are undefined in the new scale
-      // Therefore, we only need to transition updating ticks.
+      // If either the new or old scale is ordinal,
+      // entering ticks are undefined in the old scale,
+      // and so can fade-in in the new scale’s position.
+      // Exiting ticks are likewise undefined in the new scale,
+      // and so can fade-out in the old scale’s position.
       if (scale1.rangeBand) {
-        var dx = scale1.rangeBand() / 2, x = function(d) { return scale1(d) + dx; };
-        tickEnter.call(tickTransform, x);
-        tickUpdate.call(tickTransform, x);
-      }
-
-      // For quantitative scales:
-      // - enter new ticks from the old scale
-      // - exit old ticks to the new scale
-      else {
-        tickEnter.call(tickTransform, scale0);
-        tickUpdate.call(tickTransform, scale1);
+        var x = scale1, dx = x.rangeBand() / 2;
+        scale0 = scale1 = function(d) { return x(d) + dx; };
+      } else if (scale0.rangeBand) {
+        scale0 = scale1;
+      } else {
         tickExit.call(tickTransform, scale1);
       }
+
+      tickEnter.call(tickTransform, scale0);
+      tickUpdate.call(tickTransform, scale1);
     });
   }
 
