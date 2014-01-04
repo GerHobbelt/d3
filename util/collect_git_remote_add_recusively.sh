@@ -10,6 +10,6 @@ pushd $(dirname $0)                                                             
 # go to root of project or 'git submodule foreach' won't run
 cd ..
 
-git submodule foreach git remote -v | gawk -f util/collect_git_remote_add_recusively.awk > util/register_git_remotes_recursive.sh
+git submodule foreach --recursive git remote -v | gawk -f util/collect_git_remote_add_recusively.awk > util/register_git_remotes_recursive.sh
 
 popd                                                                                                    2> /dev/null  > /dev/null

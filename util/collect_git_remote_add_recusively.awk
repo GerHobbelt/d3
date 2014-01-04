@@ -13,6 +13,8 @@ BEGIN {
 	printf("\n");
 	printf("pushd $(dirname $0)                                                             2> /dev/null   > /dev/null\n");
 	printf("cd ..\n");
+    printf("\n");
+    printf("mode=\"d\"\n");
 	printf("\n");
 	printf("getopts \":fqh\" opt\n");
 	printf("#echo opt+arg = \"$opt$OPTARG\"\n");
@@ -23,6 +25,7 @@ BEGIN {
 	printf("    shift\n");
 	printf("  done\n");
 	printf("  #echo args: $@\n");
+    printf("  mode=\"f\"\n");
 	printf("\n");
 	printf("  git submodule sync\n");
 	printf("  git submodule update --init\n");
@@ -41,6 +44,7 @@ BEGIN {
 	printf("    shift\n");
 	printf("  done\n");
 	printf("  #echo args: $@\n");
+    printf("  mode=\"q\"\n");
 	printf("  ;;\n");
 	printf("\n");
 	printf("* )\n");
@@ -97,6 +101,9 @@ BEGIN {
 	printf("                submodule=$path\n");
 	printf("            fi\n");
 	printf("            pushd $path                                                         2> /dev/null   > /dev/null\n");
+    printf("            if test \"$mode\" = \"f\" ; then\n");
+    printf("                git remote rm $name\n");
+    printf("            fi\n");
 	printf("            git remote add $name $repo\n");
 	printf("            popd                                                                2> /dev/null   > /dev/null\n");
 	printf("        fi\n");
@@ -129,7 +136,12 @@ BEGIN {
 	{
 		next;
 	}
-	stmts[++idx] = sprintf("register_remote %-60s  %-40s %-80s $# $@", submodule_path, $1, $2);
+    name = $1;
+    uri = $2;
+    # make sure all remotes use 'public' URIs:
+    sub(/git@github\.com:/, "git://github.com/", uri);
+    sub(/git:\/\/github\.com\//, "git@github.com:", uri);
+    stmts[++idx] = sprintf("register_remote %-60s  %-40s %-80s $# $@", submodule_path, name, uri);
 	#printf("# id %d: %s\n", idx, stmts[idx]);
 	next;
 }

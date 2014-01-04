@@ -6,43 +6,109 @@
 pushd $(dirname $0)                                                                                     2> /dev/null  > /dev/null
 
 cd ..
+
+
+
+getopts ":Fhl" opt
+#echo opt+arg = "$opt$OPTARG"
+case "$opt$OPTARG" in
+"F" )
+  echo "--- checkout to branch or master with RESET + FORCE ---"
+  mode="F"
+  for (( i=OPTIND; i > 1; i-- )) do
+    shift
+  done
+  #echo args: $@
+  ;;
+
+"h" )
+  mode="?"
+  cat <<EOT
+$0 [-F] [-l]
+
+checkout git submodules to the preconfigured branch (master / other).
+
+-F       : apply 'git reset --hard' and 'git checkout --force' to each submodule
+
+-l       : list the submodules which will be checked out to a non-'master' branch
+
+EOT
+  exit
+  ;;
+
+"l" )
+  mode="?"
+  cat <<EOT
+
+These submodules have been preconfigured to checkout to non-master branches:
+
+EOT
+  ;;
+
+* )
+  echo "--- checkout git submodules to master / branch ---"
+  mode="R"
+  ;;
+esac
+
+
+
+
 #git submodule foreach --recursive git checkout master
 #
 # instead, use the shell to loop through the submodules so we can give any checkout errors the birdy!
-for f in $( git submodule foreach --recursive --quiet pwd ) ; do
-    echo submodule: $f
-    pushd $f                                                                                            2> /dev/null  > /dev/null
-    git checkout master
-    popd                                                                                                2> /dev/null  > /dev/null
-done
+if test "$mode" != "?" ; then
+    for f in $( git submodule foreach --recursive --quiet pwd ) ; do
+        pushd $f                                                                                            2> /dev/null  > /dev/null
+        case "$mode" in
+F )
+            echo "submodule: $f (master, FORCED)"
+            git reset --hard
+            git checkout master --force
+            git reset --hard
+      ;;
+
+"?" )
+            ;;
+
+R )
+            echo "submodule: $f (master)"
+            git checkout master
+            ;;
+        esac
+        popd                                                                                                2> /dev/null  > /dev/null
+    done
+fi
 
 # args: lib localname remote
 function checkout_branch {
-    echo submodule: $1, branch: $2
-    pushd $1                                                                                            2> /dev/null  > /dev/null
-    git branch --track $2 $3                                                                            2> /dev/null
-    git checkout $2
-    popd                                                                                                2> /dev/null  > /dev/null
+    pushd $1                                                                                                2> /dev/null  > /dev/null
+    case "$mode" in
+F )
+        echo "submodule: $1, branch: $2 (FORCED)"
+        git branch --track $2 $3                                                                            2> /dev/null
+        git reset --hard
+        git checkout $2 $4 --force
+        git reset --hard
+  ;;
+
+"?" )
+        if test "$2" != "master"; then
+            echo "submodule: $1"
+            echo "                                         branch: $2"
+        fi
+        ;;
+
+R )
+        echo "submodule: $1, branch: $2"
+        git branch --track $2 $3                                                                            2> /dev/null
+        git checkout $2 $4
+        ;;
+    esac
+    popd                                                                                                    2> /dev/null  > /dev/null
 }
 
-checkout_branch lib/backbone                        gh-pages origin/gh-pages
-checkout_branch lib/backbone-fundamentals-book      gh-pages origin/gh-pages
-checkout_branch lib/Bootstrap-Form-Builder          gh-pages origin/gh-pages
-checkout_branch lib/crossfilter                     gh-pages origin/gh-pages
 checkout_branch lib/d3                              all_scales_have_subticks origin/all_scales_have_subticks
-checkout_branch lib/dropin-require                  gh-pages origin/gh-pages
-checkout_branch lib/elFinder                        2.x origin/2.x
-checkout_branch lib/iscroll                         v5 origin/v5
-checkout_branch lib/jasmine/pages                   gh-pages origin/gh-pages
-checkout_branch lib/jquery-dirtyforms/lib/facebox   cssified origin/cssified
-checkout_branch lib/jquery-facebox                  cssified origin/cssified
-checkout_branch lib/jquery-form-accordion           gh-pages origin/gh-pages
-checkout_branch lib/json3/vendor/spec               gh-pages origin/gh-pages
-checkout_branch lib/spin                            gh-pages origin/gh-pages
-checkout_branch php/lib/PHPExcel                    develop origin/develop
-checkout_branch util/javascriptlint                 working-rev origin/working-rev
-checkout_branch util/jison/gh-pages                 gh-pages origin/gh-pages
-checkout_branch util/jsbeautifier                   gh-pages origin/gh-pages
 
 
 popd                                                                                                    2> /dev/null  > /dev/null
