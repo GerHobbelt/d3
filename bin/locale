@@ -8,7 +8,7 @@ var fs = require("fs"),
     quotedRe = /"([^"]*?)"/g,
     data = [];
 
-if (0) {
+if (01) {
   process.stdin.resume();
   process.stdin.setEncoding("utf8");
   process.stdin.on("data", function(chunk) { data.push(chunk); });
@@ -16,12 +16,56 @@ if (0) {
 } else {
   var locale = "LC_NUMERIC\n\
 decimal_point=\".\"\n\
-thousands_sep=\"\"\n\
-grouping=-1\n\
+thousands_sep=\",\"\n\
+grouping=3;3\n\
 numeric-decimal-point-wc=46\n\
-numeric-thousands-sep-wc=0\n\
-numeric-codeset=\"ANSI_X3.4-1968\"\n\
-\n\
+numeric-thousands-sep-wc=44\n\
+numeric-codeset=\"UTF-8\"\n\
+LC_MONETARY\n\
+int_curr_symbol=\"USD \"\n\
+currency_symbol=\"$\"\n\
+mon_decimal_point=\".\"\n\
+mon_thousands_sep=\",\"\n\
+mon_grouping=3;3\n\
+positive_sign=\"\"\n\
+negative_sign=\"-\"\n\
+int_frac_digits=2\n\
+frac_digits=2\n\
+p_cs_precedes=1\n\
+p_sep_by_space=0\n\
+n_cs_precedes=1\n\
+n_sep_by_space=0\n\
+p_sign_posn=1\n\
+n_sign_posn=1\n\
+int_p_cs_precedes=1\n\
+int_p_sep_by_space=1\n\
+int_n_cs_precedes=1\n\
+int_n_sep_by_space=1\n\
+int_p_sign_posn=1\n\
+int_n_sign_posn=1\n\
+duo_int_curr_symbol=\"USD \"\n\
+duo_currency_symbol=\"$\"\n\
+duo_int_frac_digits=2\n\
+duo_frac_digits=2\n\
+duo_p_cs_precedes=1\n\
+duo_p_sep_by_space=0\n\
+duo_n_cs_precedes=1\n\
+duo_n_sep_by_space=0\n\
+duo_int_p_cs_precedes=1\n\
+duo_int_p_sep_by_space=1\n\
+duo_int_n_cs_precedes=1\n\
+duo_int_n_sep_by_space=1\n\
+duo_p_sign_posn=1\n\
+duo_n_sign_posn=1\n\
+duo_int_p_sign_posn=1\n\
+duo_int_n_sign_posn=1\n\
+uno_valid_from=10101\n\
+uno_valid_to=99991231\n\
+duo_valid_from=10101\n\
+duo_valid_to=99991231\n\
+monetary-decimal-point-wc=46\n\
+monetary-thousands-sep-wc=44\n\
+monetary-codeset=\"UTF-8\"\n\
 LC_TIME\n\
 abday=\"Sun;Mon;Tue;Wed;Thu;Fri;Sat\"\n\
 day=\"Sunday;Monday;Tuesday;Wednesday;Thursday;Friday;Saturday\"\n\
@@ -65,7 +109,7 @@ function write() {
 
   puts(fs.readFileSync(process.argv[2], "utf8").replace(/\{([a-z_]+)\}/g, function(d, k) {
     d = formats[k];
-    return k === "grouping"
+    return k.match("grouping")
         ? d === "127" || d === "0" ? null : "[" + d.map(Number).join(", ") + "]"
         : d == null ? null : d.length > 1 ? "[" + d.map(quote).join(", ") + "]" : quote(d[0]);
   }));

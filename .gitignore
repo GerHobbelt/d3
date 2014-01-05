@@ -9,4 +9,5 @@ _site
 # NodeJS/NPM crud
 node_modules
 npm-debug.log
+npm-install
 
