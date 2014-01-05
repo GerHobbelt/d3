@@ -1,5 +1,5 @@
 d3 = (function(){
-  var d3 = {version: "3.3.12"}; // semver
+  var d3 = {version: "3.3.13"}; // semver
 if (!Date.now) Date.now = function() {
   return +new Date();
 };
@@ -51,7 +51,7 @@ d3.min = function(array, f) {
       n = array.length,
       a,
       b;
-  if (arguments.length === 1) {
+  if (typeof f !== 'function') {
     while (++i < n && !((a = array[i]) != null && a <= a)) a = undefined;
     while (++i < n) if ((b = array[i]) != null && a > b) a = b;
   } else {
@@ -65,7 +65,7 @@ d3.max = function(array, f) {
       n = array.length,
       a,
       b;
-  if (arguments.length === 1) {
+  if (typeof f !== 'function') {
     while (++i < n && !((a = array[i]) != null && a <= a)) a = undefined;
     while (++i < n) if ((b = array[i]) != null && b > a) a = b;
   } else {
@@ -293,7 +293,9 @@ d3.map = function(object) {
   return map;
 };
 
-function d3_Map() {}
+function d3_Map() {
+  this._size = 0;
+}
 
 d3_class(d3_Map, {
   has: function(key) {
@@ -303,11 +305,19 @@ d3_class(d3_Map, {
     return this[d3_map_prefix + key];
   },
   set: function(key, value) {
+    if (!this.has(key)) this._size++;
     return this[d3_map_prefix + key] = value;
   },
   remove: function(key) {
     key = d3_map_prefix + key;
+    if (key in this) this._size--;
     return key in this && delete this[key];
+  },
+  size: function() {
+    return this._size;
+  },
+  empty: function() {
+    return this._size === 0;
   },
   keys: function() {
     var keys = [];
@@ -457,19 +467,29 @@ d3.set = function(array) {
   return set;
 };
 
-function d3_Set() {}
+function d3_Set() {
+  this._size = 0;
+}
 
 d3_class(d3_Set, {
   has: function(value) {
     return d3_map_prefix + value in this;
   },
   add: function(value) {
+    if (!this.has(value)) this._size++;
     this[d3_map_prefix + value] = true;
     return value;
   },
   remove: function(value) {
     value = d3_map_prefix + value;
+    if (value in this) this._size--;
     return value in this && delete this[value];
+  },
+  size: function() {
+    return this._size;
+  },
+  empty: function() {
+    return this._size === 0;
   },
   values: function() {
     var values = [];
@@ -1627,6 +1647,7 @@ var π = Math.PI,
     halfπ = π / 2,
     ε = 1e-6,
     ε2 = ε * ε,
+    πε = π - ε,
     d3_radians = π / 180,
     d3_degrees = 180 / π;
 
@@ -2800,7 +2821,7 @@ var d3_timer_queueHead,
     d3_timer_timeout, // is a timeout active?
     d3_timer_active, // active timer object
     d3_timer_frame = (typeof d3_window === 'undefined' ? false :
-                         d3_window[d3_vendorSymbol(d3_window, "requestAnimationFrame")]) || 
+                         d3_window[d3_vendorSymbol(d3_window, "requestAnimationFrame")]) ||
 					 function(callback) { setTimeout(callback, 17); };
 
 // The timer will continue to fire until callback returns true.
@@ -2810,8 +2831,8 @@ d3.timer = function(callback, delay, then) {
   if (n < 3) then = Date.now();
 
   // Add the callback to the tail of the queue.
-  var time = then + delay, timer = {c: callback, t: time, f: false, n: null};
-  if (d3_timer_queueTail) d3_timer_queueTail.n = timer;
+  var time = then + delay, timer = {callback: callback, time: time, flush: false, next: null};
+  if (d3_timer_queueTail) d3_timer_queueTail.next = timer;
   else d3_timer_queueHead = timer;
   d3_timer_queueTail = timer;
 
@@ -2847,8 +2868,8 @@ function d3_timer_mark() {
   var now = Date.now();
   d3_timer_active = d3_timer_queueHead;
   while (d3_timer_active) {
-    if (now >= d3_timer_active.t) d3_timer_active.f = d3_timer_active.c(now - d3_timer_active.t);
-    d3_timer_active = d3_timer_active.n;
+    if (now >= d3_timer_active.time) d3_timer_active.flush = d3_timer_active.callback(now - d3_timer_active.time);
+    d3_timer_active = d3_timer_active.next;
   }
   return now;
 }
@@ -2860,11 +2881,11 @@ function d3_timer_sweep() {
       t1 = d3_timer_queueHead,
       time = Infinity;
   while (t1) {
-    if (t1.f) {
-      t1 = t0 ? t0.n = t1.n : d3_timer_queueHead = t1.n;
+    if (t1.flush) {
+      t1 = t0 ? t0.next = t1.next : d3_timer_queueHead = t1.next;
     } else {
-      if (t1.t < time) time = t1.t;
-      t1 = (t0 = t1).n;
+      if (t1.time < time) time = t1.time;
+      t1 = (t0 = t1).next;
     }
   }
   d3_timer_queueTail = t0;
@@ -3590,82 +3611,139 @@ function d3_true() {
   return true;
 }
 
-// General spherical polygon clipping algorithm: takes a polygon, cuts it into
-// visible line segments and rejoins the segments by interpolating along the
-// clip edge.
-function d3_geo_clipPolygon(segments, compare, clipStartInside, interpolate, listener) {
+// General spherical polygon clipping algorithm.
+// Given a polygon that has been cut into visible line segments, rejoins the
+// segments by interpolating along the clip edge where necessary.
+function d3_geo_clipPolygon(segments, compare, clipStartInside, ringInRing, interpolate, listener) {
   var subject = [],
-      clip = [];
+      clip = [],
+      rings = [],
+      n = segments.length;
 
-  segments.forEach(function(segment) {
-    if ((n = segment.length - 1) <= 0) return;
-    var n, p0 = segment[0], p1 = segment[n];
+  for (var i = 0; i < n; ++i) {
+    var segment = segments[i];
+
+    if ((m = segment.length - 1) <= 0) continue;
+
+    var m, p0 = segment[0], p1 = segment[m];
 
     // If the first and last points of a segment are coincident, then treat as
     // a closed ring.
-    // TODO if all rings are closed, then the winding order of the exterior
-    // ring should be checked.
     if (d3_geo_sphericalEqual(p0, p1)) {
-      listener.lineStart();
-      for (var i = 0; i < n; ++i) listener.point((p0 = segment[i])[0], p0[1]);
-      listener.lineEnd();
-      return;
+      rings.push(segment);
+      continue;
     }
 
     var a = new d3_geo_clipPolygonIntersection(p0, segment, null, true),
         b = new d3_geo_clipPolygonIntersection(p0, null, a, false);
-    a.o = b;
+    a.other = b;
     subject.push(a);
     clip.push(b);
     a = new d3_geo_clipPolygonIntersection(p1, segment, null, false);
     b = new d3_geo_clipPolygonIntersection(p1, null, a, true);
-    a.o = b;
+    a.other = b;
     subject.push(a);
     clip.push(b);
-  });
-  clip.sort(compare);
-  d3_geo_clipPolygonLinkCircular(subject);
-  d3_geo_clipPolygonLinkCircular(clip);
-  if (!subject.length) return;
-
-  for (var i = 0, entry = clipStartInside, n = clip.length; i < n; ++i) {
-    clip[i].e = entry = !entry;
   }
 
-  var start = subject[0],
-      points,
-      point;
-  while (1) {
-    // Find first unvisited intersection.
-    var current = start,
-        isSubject = true;
-    while (current.v) if ((current = current.n) === start) return;
-    points = current.z;
-    listener.lineStart();
-    do {
-      current.v = current.o.v = true;
-      if (current.e) {
-        if (isSubject) {
-          for (var i = 0, n = points.length; i < n; ++i) listener.point((point = points[i])[0], point[1]);
+  // If there are any segments to be joined…
+  if (subject.length) {
+
+    clip.sort(compare);
+    d3_geo_clipPolygonLinkCircular(subject);
+    d3_geo_clipPolygonLinkCircular(clip);
+
+    // Mark intersection points as alternating between entering and exiting.
+    for (var i = 0, entry = clipStartInside, n = clip.length; i < n; ++i) {
+      clip[i].entry = entry = !entry;
+    }
+
+    var start = subject[0],
+        listener_ = listener,
+        point;
+
+    // If there are closed rings, then buffer the rejoined segments so they can
+    // be output with the correct interior rings later.
+    if (rings.length) listener = d3_geo_clipBufferListener();
+
+    while (1) {
+      // Find first unvisited intersection.
+      var current = start,
+          isSubject = true;
+      while (current.visited) if ((current = current.next) === start) break;
+      if (current.visited) break;
+      listener.polygonStart();
+      listener.lineStart();
+      do {
+        current.visited = current.other.visited = true;
+        if (current.entry) {
+          if (isSubject) {
+            for (var i = 0, points = current.points, n = points.length; i < n; ++i) {
+              listener.point((point = points[i])[0], point[1]);
+            }
+          } else {
+            interpolate(current.point, current.next.point, 1, listener);
+          }
+          current = current.next;
         } else {
-          interpolate(current.x, current.n.x, 1, listener);
+          if (isSubject) {
+            for (var points = current.points, i = points.length; --i >= 0;) {
+              listener.point((point = points[i])[0], point[1]);
+            }
+          } else {
+            interpolate(current.point, current.prev.point, -1, listener);
+          }
+          current = current.prev;
         }
-        current = current.n;
-      } else {
-        if (isSubject) {
-          points = current.p.z;
-          for (var i = points.length - 1; i >= 0; --i) listener.point((point = points[i])[0], point[1]);
-        } else {
-          interpolate(current.x, current.p.x, -1, listener);
+        current = current.other;
+        isSubject = !isSubject;
+      } while (!current.visited);
+      listener.lineEnd();
+      listener.polygonEnd();
+    }
+
+    if (n = rings.length) {
+      var exteriors = listener.buffer();
+      listener = listener_;
+      for (var j = 0, m = exteriors.length; j < m; ++j) {
+        var exterior = exteriors[j];
+        listener.polygonStart();
+        d3_geo_clipPolygonStreamRing(exterior, listener);
+        for (var i = 0; i < n; ++i) {
+          var ring = rings[i];
+          if (ring && ringInRing(ring, exterior)) {
+            d3_geo_clipPolygonStreamRing(ring, listener);
+            rings[i] = null;
+          }
         }
-        current = current.p;
+        listener.polygonEnd();
       }
-      current = current.o;
-      points = current.z;
-      isSubject = !isSubject;
-    } while (!current.v);
-    listener.lineEnd();
+    }
   }
+
+  // Otherwise, there are no intersections.
+  else if ((n = rings.length) || clipStartInside) {
+    listener.polygonStart();
+    // If the clip polygon is inside the subject polygon, then the clip polygon
+    // becomes the exterior.
+    if (clipStartInside) {
+      listener.lineStart();
+      interpolate(null, null, 1, listener);
+      listener.lineEnd();
+    }
+    for (var i = 0; i < n; ++i) {
+      d3_geo_clipPolygonStreamRing(rings[i], listener);
+    }
+    listener.polygonEnd();
+  }
+}
+
+function d3_geo_clipPolygonStreamRing(ring, listener) {
+  listener.lineStart();
+  for (var i = 0, n = ring.length - 1, p; i < n; ++i) {
+    listener.point((p = ring[i])[0], p[1]);
+  }
+  listener.lineEnd();
 }
 
 function d3_geo_clipPolygonLinkCircular(array) {
@@ -3675,21 +3753,21 @@ function d3_geo_clipPolygonLinkCircular(array) {
       a = array[0],
       b;
   while (++i < n) {
-    a.n = b = array[i];
-    b.p = a;
+    a.next = b = array[i];
+    b.prev = a;
     a = b;
   }
-  a.n = b = array[0];
-  b.p = a;
+  a.next = b = array[0];
+  b.prev = a;
 }
 
 function d3_geo_clipPolygonIntersection(point, points, other, entry) {
-  this.x = point;
-  this.z = points;
-  this.o = other; // another intersection
-  this.e = entry; // is an entry?
-  this.v = false; // visited
-  this.n = this.p = null; // next & previous
+  this.point = point;
+  this.points = points;
+  this.other = other;
+  this.entry = entry;
+  this.visited = false;
+  this.next = this.prev = null;
 }
 
 function d3_geo_clip(pointVisible, clipLine, interpolate, clipStart) {
@@ -3707,23 +3785,14 @@ function d3_geo_clip(pointVisible, clipLine, interpolate, clipStart) {
         clip.lineEnd = ringEnd;
         segments = [];
         polygon = [];
-        listener.polygonStart();
       },
       polygonEnd: function() {
         clip.point = point;
         clip.lineStart = lineStart;
         clip.lineEnd = lineEnd;
 
-        segments = d3.merge(segments);
-        var clipStartInside = d3_geo_pointInPolygon(rotatedClipStart, polygon);
-        if (segments.length) {
-          d3_geo_clipPolygon(segments, d3_geo_clipSort, clipStartInside, interpolate, listener);
-        } else if (clipStartInside) {
-          listener.lineStart();
-          interpolate(null, null, 1, listener);
-          listener.lineEnd();
-        }
-        listener.polygonEnd();
+        d3_geo_clipPolygon(d3.merge(segments), d3_geo_clipSort, d3_geo_pointInPolygon(rotatedClipStart, polygon), d3_geo_clipRingInRing, interpolate, listener);
+
         segments = polygon = null;
       },
       sphere: function() {
@@ -3770,7 +3839,6 @@ function d3_geo_clip(pointVisible, clipLine, interpolate, clipStart) {
 
       var clean = ringListener.clean(),
           ringSegments = buffer.buffer(),
-          segment,
           n = ringSegments.length;
 
       ring.pop();
@@ -3778,18 +3846,6 @@ function d3_geo_clip(pointVisible, clipLine, interpolate, clipStart) {
       ring = null;
 
       if (!n) return;
-
-      // No intersections.
-      if (clean & 1) {
-        segment = ringSegments[0];
-        var n = segment.length - 1,
-            i = -1,
-            point;
-        listener.lineStart();
-        while (++i < n) listener.point((point = segment[i])[0], point[1]);
-        listener.lineEnd();
-        return;
-      }
 
       // Rejoin connected segments.
       // TODO reuse bufferListener.rejoin()?
@@ -3813,6 +3869,8 @@ function d3_geo_clipBufferListener() {
     lineStart: function() { lines.push(line = []); },
     point: function(λ, φ) { line.push([λ, φ]); },
     lineEnd: d3_noop,
+    polygonStart: d3_noop,
+    polygonEnd: d3_noop,
     buffer: function() {
       var buffer = lines;
       lines = [];
@@ -3828,8 +3886,14 @@ function d3_geo_clipBufferListener() {
 // Intersection points are sorted along the clip edge. For both antimeridian
 // cutting and circle clipping, the same comparison is used.
 function d3_geo_clipSort(a, b) {
-  return ((a = a.x)[0] < 0 ? a[1] - halfπ - ε : halfπ - a[1])
-       - ((b = b.x)[0] < 0 ? b[1] - halfπ - ε : halfπ - b[1]);
+  return ((a = a.point)[0] < 0 ? a[1] - halfπ - ε : halfπ - a[1])
+       - ((b = b.point)[0] < 0 ? b[1] - halfπ - ε : halfπ - b[1]);
+}
+
+function d3_geo_clipRingInRing(a, b) {
+  return a.length < b.length
+      ? d3_geo_pointInPolygon(b[0], [a])
+      : d3_geo_pointInPolygon(a[0], [b]);
 }
 
 function d3_geo_pointInPolygon(point, polygon) {
@@ -3926,7 +3990,7 @@ function d3_geo_clipAntimeridianLine(listener) {
       clean = 1;
     },
     point: function(λ1, φ1) {
-      var sλ1 = λ1 > 0 ? π : -π,
+      var sλ1 = λ1 > 0 ? π : -πε,
           dλ = abs(λ1 - λ0);
       if (abs(dλ - π) < ε) { // line crosses a pole
         listener.point(λ0, φ0 = (φ0 + φ1) / 2 > 0 ? halfπ : -halfπ);
@@ -3974,21 +4038,27 @@ function d3_geo_clipAntimeridianInterpolate(from, to, direction, listener) {
   var φ;
   if (from == null) {
     φ = direction * halfπ;
-    listener.point(-π,  φ);
-    listener.point( 0,  φ);
-    listener.point( π,  φ);
-    listener.point( π,  0);
-    listener.point( π, -φ);
-    listener.point( 0, -φ);
-    listener.point(-π, -φ);
-    listener.point(-π,  0);
-    listener.point(-π,  φ);
+    listener.point(-πε,  φ);
+    listener.point(  0,  φ);
+    listener.point(  π,  φ);
+    listener.point(  π,  0);
+    listener.point(  π, -φ);
+    listener.point(  0, -φ);
+    listener.point(-πε, -φ);
+    listener.point(-πε,  0);
+    listener.point(-πε,  φ);
   } else if (abs(from[0] - to[0]) > ε) {
-    var s = from[0] < to[0] ? π : -π;
-    φ = direction * s / 2;
-    listener.point(-s, φ);
-    listener.point( 0, φ);
-    listener.point( s, φ);
+    if (from[0] < to[0]) {
+      φ = direction * π / 2;
+      listener.point(-πε, φ);
+      listener.point(  0, φ);
+      listener.point(  π, φ);
+    } else {
+      φ = direction * -π / 2;
+      listener.point(  π, φ);
+      listener.point(  0, φ);
+      listener.point(-πε, φ);
+    }
   } else {
     listener.point(to[0], to[1]);
   }
@@ -4273,28 +4343,16 @@ function d3_geo_clipExtent(x0, y0, x1, y1) {
         clean = true;
       },
       polygonEnd: function() {
-        listener = listener_;
-        segments = d3.merge(segments);
-        var clipStartInside = insidePolygon([x0, y1]),
-            inside = clean && clipStartInside,
-            visible = segments.length;
-        if (inside || visible) {
-          listener.polygonStart();
-          if (inside) {
-            listener.lineStart();
-            interpolate(null, null, 1, listener);
-            listener.lineEnd();
-          }
-          if (visible) {
-            d3_geo_clipPolygon(segments, compare, clipStartInside, interpolate, listener);
-          }
-          listener.polygonEnd();
-        }
+        d3_geo_clipPolygon(d3.merge(segments), compare, pointInPolygon([x0, y1], polygon), ringInRing, interpolate, listener = listener_);
         segments = polygon = ring = null;
       }
     };
 
-    function insidePolygon(p) {
+    function ringInRing(a, b) {
+      return pointInPolygon(a[0], [b]);
+    }
+
+    function pointInPolygon(p, polygon) {
       var wn = 0, // the winding number counter
           n = polygon.length,
           y = p[1];
@@ -4409,7 +4467,7 @@ function d3_geo_clipExtent(x0, y0, x1, y1) {
   }
 
   function compare(a, b) {
-    return comparePoints(a.x, b.x);
+    return comparePoints(a.point, b.point);
   }
 
   function comparePoints(a, b) {
@@ -5234,7 +5292,7 @@ d3.geo.rotation = function(rotate) {
 };
 
 function d3_geo_identityRotation(λ, φ) {
-  return [λ > π ? λ - τ : λ < -π ? λ + τ : λ, φ];
+  return [λ > π ? λ - τ : λ < -πε ? λ + τ : λ, φ];
 }
 
 d3_geo_identityRotation.invert = d3_geo_equirectangular;
@@ -5249,7 +5307,7 @@ function d3_geo_rotation(δλ, δφ, δγ) {
 
 function d3_geo_forwardRotationλ(δλ) {
   return function(λ, φ) {
-    return λ += δλ, [λ > π ? λ - τ : λ < -π ? λ + τ : λ, φ];
+    return λ += δλ, [λ > π ? λ - τ : λ < -πε ? λ + τ : λ, φ];
   };
 }
 
@@ -7205,7 +7263,7 @@ d3.interpolate = d3_interpolate;
 
 function d3_interpolate(a, b) {
   var i = d3.interpolators.length, f;
-  // lib/_/d3.latest.js:1103: WARNING - If this if/for/while really shouldn't have a body, use {}
+  // JSLint/JSHint WARNING - If this if/for/while really shouldn't have a body, use {}
   while (--i >= 0 && !(f = d3.interpolators[i](a, b))) {
     ;
   }
@@ -7531,14 +7589,51 @@ function d3_interpolateTransform(a, b) {
     return s.join("");
   };
 }
+d3.uninterpolateNumber = d3_uninterpolateNumber;
+
 function d3_uninterpolateNumber(a, b) {
   b = b - (a = +a) ? 1 / (b - a) : 0;
   return function(x) { return (x - a) * b; };
 }
 
+d3.uninterpolateClamp = d3_uninterpolateClamp;
+
 function d3_uninterpolateClamp(a, b) {
   b = b - (a = +a) ? 1 / (b - a) : 0;
   return function(x) { return Math.max(0, Math.min(1, (x - a) * b)); };
+}
+
+d3.uninterpolateSteppedFloor = d3_uninterpolateSteppedFloor;
+
+function d3_uninterpolateSteppedFloor(step) {
+  return function(a, b) {
+    b = b - (a = +a) ? 1 / (b - a) : 0;
+    return function(x) {
+      var extent = x - a;
+      if (extent >= 0) {
+        return (x - (extent % step) - a) * b;
+      } else {
+        var mod = extent % step;
+        if (mod) {
+          return (x - (step + extent % step)) * b;
+        } else {
+          return x * b;
+        }
+      }
+    }
+  }
+}
+
+d3.interpolateFloor = d3_interpolateFloor;
+
+function d3_interpolateFloor(a, b) {
+  return function(t) { return a; };
+}
+
+d3.interpolateCeiling = d3_interpolateCeiling;
+
+function d3_interpolateCeiling(a, b) {
+  return function(t) { return b; };
 }
 d3.layout = {};
 
@@ -7766,6 +7861,7 @@ d3.layout.force = function() {
       links = [],
       distances,
       strengths,
+      neighbors,
       epsilon = 0.1, // minimal distance-squared for which the approximation holds; any smaller distance is assumed to be this large to prevent instable approximations
       charges,
       charge_abssum = -1, // negative value signals the need to recalculate this one
@@ -7779,7 +7875,8 @@ d3.layout.force = function() {
       charge = -30,
       chargeDistance2 = d3_layout_forceChargeDistance2,
       gravity = .1,
-      theta2 = .64;
+      theta2 = .64,
+      repulsor = false;
 
   setup_model_parameter_functors();
 
@@ -7930,6 +8027,9 @@ d3.layout.force = function() {
         }
       }
     }
+    if (typeof repulsor === "function") {
+      repulsor.call(this, q, charges, distances, strengths);
+    }
 
     // position verlet integration
     if (typeof friction === "function") {
@@ -7971,6 +8071,11 @@ d3.layout.force = function() {
     if (!arguments.length) return links;
     links = x;
     return force;
+  };
+
+  force.neighbors = function() {
+    neighbor(0);
+    return neighbors;
   };
 
   force.size = function(x) {
@@ -8020,6 +8125,12 @@ d3.layout.force = function() {
     return force;
   };
 
+  force.repulsor = function(x) {
+    if (!arguments.length) return repulsor;
+    repulsor = typeof x === "function" ? x : false;
+    return force;
+  };
+
   force.theta = function(x) {
     if (!arguments.length) {
 	  if (has_theta2_f) {
@@ -8056,7 +8167,6 @@ d3.layout.force = function() {
         m = links.length,
         w = size[0],
         h = size[1],
-        neighbors,
         o;
 
     for (i = 0; i < n; ++i) {
@@ -8122,32 +8232,43 @@ d3.layout.force = function() {
     // or if no such neighbors, initialize node position randomly
     // initialize neighbors lazily to avoid overhead when not needed
     function position(dimension, size, i) {
-      var j;
-      if (!neighbors) {
-        neighbors = new Array(n);
-        for (j = 0; j < n; ++j) {
-          neighbors[j] = [];
-        }
-        for (j = 0; j < m; ++j) {
-          var o = links[j];
-          neighbors[o.source.index].push(o.target);
-          neighbors[o.target.index].push(o.source);
-        }
-      }
-      var candidates = neighbors[i],
+      var candidates = neighbor(i),
           j,
-          m = candidates.length,
+          m = candidates.outlinks.length,
           x;
       for (j = 0; j < m; ++j) {
-        if (!isNaN(x = candidates[j][dimension])) {
-		  return x;
-		}
-	  }
+        if (!isNaN(x = candidates.outlinks[j].target[dimension]))
+          return x;
+      }
+      m = candidates.inlinks.length;
+      for (j = 0; j < m; ++j) {
+        if (!isNaN(x = candidates.inlinks[j].source[dimension]))
+          return x;
+      }
       return Math.random() * size;
     }
 
     return force.resume();
   };
+
+  // initialize neighbors lazily
+  function neighbor(i) {
+    if (!neighbors) {
+      var j,
+          n = nodes.length,
+          m = links.length;
+      neighbors = [];
+      for (j = 0; j < n; ++j) {
+        neighbors[j] = { inlinks: [], outlinks: [] };
+      }
+      for (j = 0; j < m; ++j) {
+        var o = links[j];
+        neighbors[o.source.index].outlinks.push(o);
+        neighbors[o.target.index].inlinks.push(o);
+      }
+    }
+    return neighbors[i];
+  }
 
   force.resume = function() {
     return force.alpha(.1);
@@ -8541,7 +8662,9 @@ d3.layout.stack = function() {
     for (j = 0; j < m; ++j) {
       out.call(stack, series[0][j], o = offsets[j], points[0][j][1]);
       for (i = 1; i < n; ++i) {
-        out.call(stack, series[i][j], o += points[i - 1][j][1], points[i][j][1]);
+        if (series[i][j] !== undefined) {
+          out.call(stack, series[i][j], o += points[i - 1][j][1], points[i][j][1]);
+        }
       }
     }
 
@@ -9724,16 +9847,15 @@ function d3_scale_polylinear(domain, range, uninterpolate, interpolate) {
 }
 
 d3.scale.linear = function() {
-  return d3_scale_linear([0, 1], [0, 1], d3_interpolate, false);
+  return d3_scale_linear([0, 1], [0, 1], d3_uninterpolateNumber, d3_interpolate);
 };
 
-function d3_scale_linear(domain, range, interpolate, clamp) {
+function d3_scale_linear(domain, range, uninterpolate, interpolate) {
   var output,
       input;
 
   function rescale() {
-    var linear = Math.min(domain.length, range.length) > 2 ? d3_scale_polylinear : d3_scale_bilinear,
-        uninterpolate = clamp ? d3_uninterpolateClamp : d3_uninterpolateNumber;
+    var linear = Math.min(domain.length, range.length) > 2 ? d3_scale_polylinear : d3_scale_bilinear;
     output = linear(domain, range, uninterpolate, interpolate);
     input = linear(range, domain, uninterpolate, d3_interpolate);
     return scale;
@@ -9754,6 +9876,25 @@ function d3_scale_linear(domain, range, interpolate, clamp) {
     return rescale();
   };
 
+  scale.domainClamp = function(x) {
+    return scale.domain(x).uninterploate(d3_uninterpolateClamp);
+  };
+
+  scale.clamp = function(x) {
+    if (!arguments.length) return uninterpolate === d3_uninterpolateClamp;
+    if (x) {
+      interpolate = d3_uninterpolateClamp;
+    } else {
+      interpolate = d3_uninterpolateNumber;
+    }
+  };
+
+  scale.uninterpolate = function(x) {
+    if (!arguments.length) return uninterpolate;
+    uninterpolate = x;
+    return rescale();
+  };
+
   scale.range = function(x) {
     if (!arguments.length) return range;
     range = x;
@@ -9764,20 +9905,14 @@ function d3_scale_linear(domain, range, interpolate, clamp) {
     return scale.range(x).interpolate(d3_interpolateRound);
   };
 
-  scale.clamp = function(x) {
-    if (!arguments.length) return clamp;
-    clamp = x;
-    return rescale();
-  };
-
   scale.interpolate = function(x) {
     if (!arguments.length) return interpolate;
     interpolate = x;
     return rescale();
   };
 
-  scale.ticks = function(m) {
-    return d3_scale_linearTicks(domain, m);
+  scale.ticks = function(m, subdiv_count) {
+    return d3_scale_linearTicks(domain, m, subdiv_count);
   };
 
   scale.tickFormat = function(m, format) {
@@ -9797,32 +9932,44 @@ function d3_scale_linear(domain, range, interpolate, clamp) {
 }
 
 function d3_scale_linearRebind(scale, linear) {
-  return d3.rebind(scale, linear, "range", "rangeRound", "interpolate", "clamp");
+  return d3.rebind(scale, linear, "range", "rangeRound", "uninterpolate", "interpolate", "clamp");
 }
 
 function d3_scale_linearNice(domain, m) {
   return d3_scale_nice(domain, d3_scale_niceStep(d3_scale_linearTickRange(domain, m)[2]));
 }
 
-function d3_scale_linearTickRange(domain, m) {
-  if (m == null) m = 10;
+function d3_scale_linearTickRange(domain, m, subdiv_count) {
+  m = m || 10;
+  subdiv_count = subdiv_count || 1;  
 
   var extent = d3_scaleExtent(domain),
       span = extent[1] - extent[0],
-      step, err;
+      step,
+      err,
+      substep;
 
   // Prevent errors and otherwise odd behaviour by providing a sane extent, even when the domain carries zero or one(1) data point only:
   if (span == 0 || !extent.every(isFinite)) {
-    extent[2] = 1;
-    return extent;
+    step = 1;
+    err = 1;
+  } else {
+    step = Math.pow(10, Math.floor(Math.log(span / m) / Math.LN10));
+    err = m / span * step;
   }
-  step = Math.pow(10, Math.floor(Math.log(span / m) / Math.LN10));
-  err = m / span * step;
 
   // Filter ticks to get closer to the desired count.
   if (err <= .15) step *= 10;
   else if (err <= .35) step *= 5;
   else if (err <= .75) step *= 2;
+  substep = step * subdiv_count;
+
+  // Set extent for the subticks + store the true extent for further use by the caller:
+  extent[3] = extent[0];
+  extent[4] = extent[1];
+  extent[5] = Math.ceil(extent[0] / substep) * substep;
+  extent[6] = Math.floor(extent[1] / substep) * substep + substep * .5; // inclusive
+  extent[7] = substep;
 
   // Round start and stop values to step interval.
   extent[0] = Math.ceil(extent[0] / step) * step;
@@ -9831,8 +9978,48 @@ function d3_scale_linearTickRange(domain, m) {
   return extent;
 }
 
-function d3_scale_linearTicks(domain, m) {
-  return d3.range.apply(d3, d3_scale_linearTickRange(domain, m));
+function d3_scale_linearTicks(domain, m, subdiv_count) {
+  var extent = d3_scale_linearTickRange(domain, m, subdiv_count);
+
+  // backwards compatible behaviour: when subdiv_count is undefined (or zero/falsey), a simple array of tick values is produced:
+  if (!subdiv_count) {
+    //subdiv_count = 1;
+    return d3.range.apply(d3, extent);
+  }
+
+  // d3.range but now producing a series of tick objects
+  var start = extent[0] - extent[2], stop = extent[6], step = extent[7], left_edge = extent[3];
+  if (!isFinite((stop - start) / step)) throw new Error("infinite range");
+  var range = [],
+      k = d3_range_integerScale(Math.abs(step)),
+      i = -1,
+      j;
+  start *= k, stop *= k, step *= k, left_edge *= k;
+  if (step < 0) {
+    while ((j = start + step * ++i) > left_edge)
+      ;
+    for ( ; j > stop; j = start + step * ++i) {
+      range.push({
+        value: j / k,
+        subindex: i % subdiv_count,
+        majorindex: (i / subdiv_count) | 0       // fastest way to turn a float into an integer across browsers: http://jsperf.com/math-floor-vs-math-round-vs-parseint/18
+      });
+    }
+  } else {
+    while ((j = start + step * ++i) < left_edge)
+      ;
+    for ( ; j < stop; j = start + step * ++i) {
+      range.push({
+        value: j / k,
+        subindex: i % subdiv_count,
+        majorindex: (i / subdiv_count) | 0       // fastest way to turn a float into an integer across browsers: http://jsperf.com/math-floor-vs-math-round-vs-parseint/18
+      });
+    }
+  }
+  return {
+    range: range,
+    submodulus: subdiv_count
+  };
 }
 
 function d3_scale_linearTickFormat(domain, m, format) {
@@ -9905,7 +10092,7 @@ function d3_scale_log(linear, base, positive, domain) {
     return scale;
   };
 
-  scale.ticks = function() {
+  scale.ticks = function(m, subdiv_count) {
     var extent = d3_scaleExtent(domain),
         ticks = [],
         u = extent[0],
@@ -9948,7 +10135,15 @@ function d3_scale_log(linear, base, positive, domain) {
 }
 
 var d3_scale_logFormat = d3.format(".0E"),
-    d3_scale_logNiceNegative = {floor: function(x) { return -Math.ceil(-x); }, ceil: function(x) { return -Math.floor(-x); }};
+    d3_scale_logNiceNegative = {
+        floor: function(x) { 
+            return -Math.ceil(-x); 
+        }, 
+        ceil: function(x) { 
+            return -Math.floor(-x); 
+        }
+    };
+    
 
 d3.scale.pow = function() {
   return d3_scale_pow(d3.scale.linear(), 1, [0, 1]);
@@ -9972,8 +10167,8 @@ function d3_scale_pow(linear, exponent, domain) {
     return scale;
   };
 
-  scale.ticks = function(m) {
-    return d3_scale_linearTicks(domain, m);
+  scale.ticks = function(m, subdiv_count) {
+    return d3_scale_linearTicks(domain, m, subdiv_count);
   };
 
   scale.tickFormat = function(m, format) {
@@ -10188,7 +10383,7 @@ function d3_scale_quantile(domain, range) {
     return thresholds;
   };
 
-  scale.ticks = function(m) {
+  scale.ticks = function(m, subdiv_count) {
     return thresholds;
   };
 
@@ -10237,11 +10432,11 @@ function d3_scale_quantize(x0, x1, range) {
     return rescale();
   };
 
-  scale.ticks = function(m) {
+  scale.ticks = function(m, subdiv_count) {
     if (i <= 0) return [];
     // produce nice tick values (erase the long decimal tails due to floating point calc inaccuracy),
     // x1 is not inclusive
-    return d3.range(x0, x1 - 0.5 / kx, 1.0 / kx).map(function(x, i) {
+    return d3.range(x0, x1, kx * (x1 - x0)).map(function(x, i) {
       // heuristic: round to 3 extra digits to remove FP calc inaccuracy
       var p = d3_format_precision(x, 4);
       var v = d3.round(x, p);
@@ -10277,6 +10472,28 @@ function d3_scale_threshold(domain, range) {
     if (x <= x) return range[d3.bisect(domain, x)];
   }
 
+  scale.invert = function(y) {
+    if (Number(range[0]) === NaN) {
+      for (var i = 0; i < range.length; ++i) {
+        if (range[i] === y) {
+          return domain[i];
+        }
+      }
+      return NaN;
+    } else {
+      var i0 = d3.bisect(range, y);
+      var i1 = i0 + 1;
+      if (i1 < domain.length) {
+        var delta = (y - range[i0]) / (range[i1] - range[i0]);
+        return domain[i0] + delta * (domain[i1] - domain[i0]);
+      } else if (i0 > 0) {
+        return domain[i0] + delta * (domain[i0 - 1] - domain[i0]);
+      } else {
+        return domain[i0] + delta;
+      }
+    }
+  };
+
   scale.domain = function(_) {
     if (!arguments.length) return domain;
     domain = _;
@@ -10294,7 +10511,7 @@ function d3_scale_threshold(domain, range) {
     return [domain[y - 1], domain[y]];
   };
 
-  scale.ticks = function(m) {
+  scale.ticks = function(m, subdiv_count) {
     var l = Math.min(domain.length, range.length - 1);
     if (l > 0) {
       var t = [], i;
@@ -10331,8 +10548,8 @@ function d3_scale_identity(domain) {
     return identity;
   };
 
-  identity.ticks = function(m) {
-    return d3_scale_linearTicks(domain, m);
+  identity.ticks = function(m, subdiv_count) {
+    return d3_scale_linearTicks(domain, m, subdiv_count);
   };
 
   identity.tickFormat = function(m, format) {
@@ -11674,9 +11891,9 @@ function d3_transitionNode(node, i, id, inherit) {
           timer = d3_timer_active,
           tweened = [];
 
-      timer.t = delay + time;
+      timer.time = delay + time;
       if (delay <= elapsed) return start(elapsed - delay);
-      timer.c = start;
+      timer.callback = start;
 
       function start(elapsed) {
         if (lock.active > id) return stop();
@@ -11690,7 +11907,7 @@ function d3_transitionNode(node, i, id, inherit) {
         });
 
         d3.timer(function() { // defer to end of current frame
-          timer.c = tick(elapsed || 1) ? d3_true : tick;
+          timer.callback = tick(elapsed || 1) ? d3_true : tick;
           return 1;
         }, 0, time);
       }
@@ -11724,104 +11941,355 @@ function d3_transitionNode(node, i, id, inherit) {
 d3.svg.axis = function() {
   var scale = d3.scale.linear(),
       orient = d3_svg_axisDefaultOrient,
-      innerTickSize = 6,
-      outerTickSize = 6,
+      tickMajorSize = 6,
+      tickMinorSize = 6,
+      tickEndSize = 6,
       tickPadding = 3,
       tickArguments_ = [10],
       tickValues = null,
-      tickFormat_;
+      tickFormat_ = null,
+      tickFormatExtended_ = null,
+      tickLabelPosition_ = null,
+      tickFilter = 2,
+      tickSubdivide = 0,
+      tickSize_f,
+      tickEndSize_f,
+      tickPadding_f;
+
+  reinit_ticksizes();
+
+  function reinit_ticksizes() {
+    var mult = +1;
+    var major, minor, end;
+    switch (orient) {
+    case "top":
+    case "left":
+      mult = -1;
+      break;
+    }
+    if (typeof tickMajorSize === "function" && typeof tickMinorSize === "function") {
+      tickSize_f = function(d, i) {
+        if (d.subindex) {
+          return mult * tickMinorSize(d, i);
+        } else {
+          return mult * tickMajorSize(d, i);
+        }
+      };
+    } else if (typeof tickMajorSize === "function" && typeof tickMinorSize !== "function") {
+      minor = mult * tickMinorSize;
+      tickSize_f = function(d, i) {
+        if (d.subindex) {
+          return minor;
+        } else {
+          return mult * tickMajorSize(d, i);
+        }
+      };
+    } else if (typeof tickMajorSize !== "function" && typeof tickMinorSize === "function") {
+      major = mult * tickMajorSize;
+      tickSize_f = function(d, i) {
+        if (d.subindex) {
+          return mult * tickMinorSize(d, i);
+        } else {
+          return major;
+        }
+      };
+    } else { // if (typeof tickMajorSize !== "function" && typeof tickMinorSize !== "function")
+      major = mult * tickMajorSize;
+      minor = mult * tickMinorSize;
+      tickSize_f = function(d, i) {
+        if (d.subindex) {
+          return minor;
+        } else {
+          return major;
+        }
+      };
+    }
+
+    if (typeof tickEndSize === "function") {
+      tickEndSize_f = function(d, i) {
+        return mult * tickEndSize(d, i);
+      };
+    } else {
+      end = mult * tickEndSize;
+      tickEndSize_f = function(d, i) {
+        return end;
+      };
+    }
+
+    if (typeof tickPadding === "function") {
+      tickPadding_f = tickPadding;
+    } else {
+      tickPadding_f = function(d, i) {
+        return tickPadding;
+      };
+    }
+  }
 
   function axis(g) {
-    g.each(function() {
-      var g = d3.select(this);
+    // Ticks (+ optional subticks), or domain values for ordinal scales.
+    var ticks = (tickValues == null ?
+                 scale.ticks ?
+                  ((ticks = scale.ticks.apply(scale, tickArguments_, tickSubdivide)) && ticks.range) ?
+                   ticks :
+                   ticks.map(d3_svg_axisMapTicks) :
+                  { range: scale.domain().map(d3_svg_axisMapTicks), submodulus: 0 } :
+                 tickValues.range ?
+                  tickValues :
+                  { range: tickValues.map(d3_svg_axisMapTicks), submodulus: 0 }),
+        tickFormat = (tickFormat_ == null ? (scale.tickFormat ? scale.tickFormat.apply(scale, tickArguments_) : d3.format(".f")) : tickFormat_);
 
-      // Stash a snapshot of the new scale, and retrieve the old snapshot.
-      var scale0 = this.__chart__ || scale,
-          scale1 = this.__chart__ = scale.copy();
+    // Filter which ticks will make it into the display. Ticks which are too closely bunched together
+    // should be removed/reduced for a more aesthetic display.
+    // The difference between 'major' and 'minor' ticks, in the end, is which ones will be printed with
+    // a label (value) next to them: only 'major' ticks will have a value text attached.
+    //
+    // Another difference, though a minor one, is that 'minor' ticks have an implied 'importance',
+    // which is implicit in the .subindex value: for example, a tick at the half-way position
+    // (i.e. at a 0.5 'position', hence with .subindex == submodulo/2) MAY be displayed more prominently
+    // than, say, the first subtick in a set of ten (hence at 'position' 0.1, i.e. .subindex == submodulo/10).
+    // The .subindex value in conjuction with the submodulo value is used to help the axis component plot
+    // aesthetic looking axes with, for example, classical inch or centimeter/millimeter ticks.)
+    // More advanced uses of this 'tick' info is also possible: the end result is determined by the combined
+    // effort of the tickFilter and the axis renderer section. Very sophisticated or alternative renderings
+    // are possible by using the preprocessed (filtered) tick data in your own custom axis rendering code:
+    // this option is at your disposal when the axis function is invoked without a NULL instead of an SVG group
+    // in 'g'.
+    //
+    // Note that the filter can 'reduce' a 'major' tick (tick.subindex == 0) to a 'minor' one by
+    // setting its .subindex value to a non-zero value. To ensure that other logic, which inspects the
+    // 'importance' of a subtick, will continue to work a 'reduced' major-tick should receive a
+    // .subindex = submodulo value: this value cannot be assigned by other means (scale.ticks()) and
+    // at the same time signifies the high 'importance' of the new 'sub'tick.
+    //
+    // Furthermore, to ensure that tick/axis animation is smooth and provides a correct progression
+    // from major-to-minor and vice versa, we render all ticks from a single selection batch, where
+    // we identify 'minor' ticks by simply looking at their non-zero .subindex value.
+    var arr = ticks.range,
+        d,
+        i;
 
-      // Ticks, or domain values for ordinal scales.
-      var ticks = tickValues == null ? (scale1.ticks ? scale1.ticks.apply(scale1, tickArguments_) : scale1.domain()) : tickValues,
-          tickFormat = tickFormat_ == null ? (scale1.tickFormat ? scale1.tickFormat.apply(scale1, tickArguments_) : d3_identity) : tickFormat_,
-          tick = g.selectAll(".tick").data(ticks, scale1),
-          tickEnter = tick.enter().insert("g", ".domain").attr("class", "tick").style("opacity", ε),
-          tickExit = d3.transition(tick.exit()).style("opacity", ε).remove(),
-          tickUpdate = d3.transition(tick).style("opacity", 1),
-          tickTransform;
+    var range = d3_scaleRange(scale);
 
-      // Domain.
-      var range = d3_scaleRange(scale1),
-          path = g.selectAll(".domain").data([0]),
-          pathUpdate = (path.enter().append("path").attr("class", "domain"), d3.transition(path));
-
-      tickEnter.append("line");
-      tickEnter.append("text");
-
-      var lineEnter = tickEnter.select("line"),
-          lineUpdate = tickUpdate.select("line"),
-          text = tick.select("text").text(tickFormat),
-          textEnter = tickEnter.select("text"),
-          textUpdate = tickUpdate.select("text");
-
-      switch (orient) {
-        case "bottom": {
-          tickTransform = d3_svg_axisX;
-          lineEnter.attr("y2", innerTickSize);
-          textEnter.attr("y", Math.max(innerTickSize, 0) + tickPadding);
-          lineUpdate.attr("x2", 0).attr("y2", innerTickSize);
-          textUpdate.attr("x", 0).attr("y", Math.max(innerTickSize, 0) + tickPadding);
-          text.attr("dy", ".71em").style("text-anchor", "middle");
-          pathUpdate.attr("d", "M" + range[0] + "," + outerTickSize + "V0H" + range[1] + "V" + outerTickSize);
-          break;
-        }
-        case "top": {
-          tickTransform = d3_svg_axisX;
-          lineEnter.attr("y2", -innerTickSize);
-          textEnter.attr("y", -(Math.max(innerTickSize, 0) + tickPadding));
-          lineUpdate.attr("x2", 0).attr("y2", -innerTickSize);
-          textUpdate.attr("x", 0).attr("y", -(Math.max(innerTickSize, 0) + tickPadding));
-          text.attr("dy", "0em").style("text-anchor", "middle");
-          pathUpdate.attr("d", "M" + range[0] + "," + -outerTickSize + "V0H" + range[1] + "V" + -outerTickSize);
-          break;
-        }
-        case "left": {
-          tickTransform = d3_svg_axisY;
-          lineEnter.attr("x2", -innerTickSize);
-          textEnter.attr("x", -(Math.max(innerTickSize, 0) + tickPadding));
-          lineUpdate.attr("x2", -innerTickSize).attr("y2", 0);
-          textUpdate.attr("x", -(Math.max(innerTickSize, 0) + tickPadding)).attr("y", 0);
-          text.attr("dy", ".32em").style("text-anchor", "end");
-          pathUpdate.attr("d", "M" + -outerTickSize + "," + range[0] + "H0V" + range[1] + "H" + -outerTickSize);
-          break;
-        }
-        case "right": {
-          tickTransform = d3_svg_axisY;
-          lineEnter.attr("x2", innerTickSize);
-          textEnter.attr("x", Math.max(innerTickSize, 0) + tickPadding);
-          lineUpdate.attr("x2", innerTickSize).attr("y2", 0);
-          textUpdate.attr("x", Math.max(innerTickSize, 0) + tickPadding).attr("y", 0);
-          text.attr("dy", ".32em").style("text-anchor", "start");
-          pathUpdate.attr("d", "M" + outerTickSize + "," + range[0] + "H0V" + range[1] + "H" + outerTickSize);
-          break;
-        }
-      }
-
-      // If either the new or old scale is ordinal,
-      // entering ticks are undefined in the old scale,
-      // and so can fade-in in the new scale’s position.
-      // Exiting ticks are likewise undefined in the new scale,
-      // and so can fade-out in the old scale’s position.
-      if (scale1.rangeBand) {
-        var x = scale1, dx = x.rangeBand() / 2;
-        scale0 = scale1 = function(d) { return x(d) + dx; };
-      } else if (scale0.rangeBand) {
-        scale0 = scale1;
+    // The tickFilter can be either a function or a value: when the user specified a function, then the
+    // tick filtering will be performed in bulk in the user-specified function. This is useful for advanced
+    // axis renderings.
+    if (typeof tickFilter === "function") {
+      // We pass all available context info to the tickFilter as it may use / modify this info on the fly.
+      //
+      // For example, we pass the tickFormat function as this MASY be used to calculate the size of the
+      // 'major' tick labels, which in turn would assist in determining which 'major' ticks would actually
+      // receive a label...
+      var context = tickFilter({
+        ticks: ticks,                            // Object { ticks: Array of Tick Objects, submodulo: Number }
+        range: range                             // array[2]
+      }, {
+        // the read-only context components:
+        scale: scale,                            // d3.scale
+        orient: orient,                          // String
+        tickSize: tickSize_f,                    // functor(d, i)
+        tickEndSize: tickEndSize_f,              // functor(d, i)
+        tickPadding: tickPadding_f,              // functor(d, i)
+        tickLabelPosition: tickLabelPosition_,   // functor(d, i)
+        tickFormat: tickFormat,                  // functor(d)
+        tickFormatExtended: tickFormatExtended_  // functor(d, i)
+      }) || {};
+      ticks = (context.ticks || ticks);
+      range = (context.range || range);
+    } else {
+      // When the tickFilter is a number or an array, than this is the minimum required spacing between individual
+      // major and minor ticks. This information is used by the default tick filter to produce a aesthetic
+      // set of major and minor ticks.
+      var min_spacing;
+      if (!Array.isArray(tickFilter) || !tickFilter.length) {
+        min_spacing = [ (Number(tickFilter) || 2), (Number(tickFilter) || 2) ];
       } else {
-        tickExit.call(tickTransform, scale1);
+        min_spacing = tickFilter;
+        if (!min_spacing[1]) {
+          min_spacing[1] = (min_spacing[0] || 2);
+        }
       }
+      for (i = 0; i < arr.length; i++) {
+        d = arr[i];
+        if (!d.subindex) {
+        }
+      }
+    }
 
-      tickEnter.call(tickTransform, scale0);
-      tickUpdate.call(tickTransform, scale1);
-    });
+    if (g) {
+      g.each(function() {
+        var g = d3.select(this);
+        // Draw the ticks.
+        //
+        // Note that `tickEnter` is a D3 selection while `tickExit` and `tickUpdate` are D3 transitions.
+        var tick = g.selectAll(".tick").data(ticks, function(d, i) {
+              return String(d.value);
+            }),
+            tickEnter = tick.enter().insert("g", "path").attr("class", function(d, i) {
+              return d.subindex ? "tick minor" : "tick major";
+            }).style("opacity", 1e-6),
+            tickExit = d3.transition(tick.exit()).style("opacity", 1e-6).remove(),
+            tickUpdate = d3.transition(tick).attr("class", function(d, i) {
+              return d.subindex ? "tick minor" : "tick major";
+            }).style("opacity", 1),
+            tickTransform;
+
+        // Domain.
+        var path = g.selectAll(".domain").data([0]);
+        path.enter().append("path").attr("class", "domain");
+        var pathUpdate = d3.transition(path);
+
+        // Stash a snapshot of the new scale, and retrieve the old snapshot.
+        var scale1 = scale.copy(),
+            scale0 = this.__chart__ || scale1;
+        this.__chart__ = scale1;
+
+        // Draw the new major and minor ticks
+        tickEnter.append("line").attr("class", "tick-line");
+        tickEnter.filter(function(d, i) {
+          return !d.subindex;
+        }).append("text").attr("class", "tick-text");
+
+        // Update the existing major and minor ticks ...
+        var lineEnter = tickEnter.select("line.tick-line"),
+            lineUpdate = tickUpdate.select("line.tick-line"),
+            textEnter = tickEnter.select("text.tick-text");
+
+        // ... and since we MAY reduce / promote ticks for major to minor and vice versa, we need to account for those changes as well:
+        //
+        // First we make sure that RIGHT NOW the 'promoted' elements have an (empty) <text> element, while
+        // ensuring these promoted elements are very easily recognizable through .filter().
+        ticks.filter(function(d, i) {
+          return !d.subindex;
+        }).each(function(d, i) {
+          var node = d3.select(this);
+          if (node.select("text.tick-text").empty()) {
+            d.is_promoted = true;
+            node.append("text").attr("class", "tick-text").style("opacity", 1e-6);
+          } else {
+            d.is_promoted = false;
+          }
+        });
+
+        // Then we extract the promote / demote (Enter/Exit) subsets from the current 'updated' ticks selection
+        // and set the new label text for all the major nodes, no matter whether new or promoted.
+        //
+        // As we've made sure above that the 'promoted' ticks already have an (empty) <text> DOM node RIGHT NOW, we
+        // can be certain that the `text` selection constructed below will indeed contain ALL major ticks.
+        var textUpdate = tickUpdate.select("text.tick-text"),
+            textUpdateEnter = textUpdate.filter(function(d, i) {
+              return !d.subindex && d.is_promoted;
+            }),
+            textUpdateExit = textUpdate.filter(function(d, i) {
+              return d.subindex;
+            }),
+            text = tick.selectAll("text.tick-text").text(function(d, i) {
+              if (tickFormatExtended_ == null) {
+                return tickFormat(d.value);
+              } else {
+                return tickFormatExtended_(d, i);
+              }
+            });
+
+        textUpdate = textUpdate.filter(function(d, i) {
+          return !d.subindex;
+        });
+
+        // Apply the promote / demote major-minor tick transitions now:
+        //d3.transition(textUpdateExit).style("opacity", 1e-6).remove();
+        textUpdateExit.style("opacity", 1e-6).remove();
+        textUpdateEnter.style("opacity", 1);
+
+        // And render the axis with ticks and all:
+        var labelPos_f = (tickLabelPosition_ == null ?
+          orient == "bottom" ?
+            function (d, i) {
+              d3.select(this).attr("dy", ".71em").style("text-anchor", "middle");
+            } : orient == "top" ?
+            function (d, i) {
+              d3.select(this).attr("dy", "0em").style("text-anchor", "middle");
+            } :
+            function (d, i) {
+              d3.select(this).attr("dy", ".32em").style("text-anchor", function(d, i) {
+                var l = tickSize_f(d, i);
+                return l < 0 ? "end" : "start";
+              });
+            } : tickLabelPosition_);
+
+        switch (orient) {
+        case "bottom":
+        case "top":
+          tickTransform = d3_svg_axisX;
+          lineEnter.attr("x2", 0).attr("y2", tickSize_f);
+          textEnter.attr("x", 0).attr("y", function(d, i) {
+            var l = tickSize_f(d, i);
+            return l < 0 ? l - tickPadding_f(d, i) : l + tickPadding_f(d, i);
+          }).each(labelPos_f);
+          textUpdateEnter.attr("x", 0).attr("y", function(d, i) {
+            var l = tickSize_f(d, i);
+            return l < 0 ? l - tickPadding_f(d, i) : l + tickPadding_f(d, i);
+          }).each(labelPos_f);
+          lineUpdate.attr("x2", 0).attr("y2", tickSize_f);
+          textUpdate.attr("x", 0).attr("y", function (d, i) {
+            var l = tickSize_f(d, i);
+            return l < 0 ? l - tickPadding_f(d, i) : l + tickPadding_f(d, i);
+          }).each(labelPos_f);
+          pathUpdate.attr("d", "M" + range[0] + "," + tickEndSize_f(range, 0) + "V0H" + range[1] + "V" + tickEndSize_f(range, 1));
+          break;
+
+        case "left":
+        case "right":
+          tickTransform = d3_svg_axisY;
+          lineEnter.attr("y2", 0).attr("x2", tickSize_f);
+          textEnter.attr("y", 0).attr("x", function(d, i) {
+            var l = tickSize_f(d, i);
+            return l < 0 ? l - tickPadding_f(d, i) : l + tickPadding_f(d, i);
+          }).each(labelPos_f);
+          textUpdateEnter.attr("y", 0).attr("x", function(d, i) {
+            var l = tickSize_f(d, i);
+            return l < 0 ? l - tickPadding_f(d, i) : l + tickPadding_f(d, i);
+          }).each(labelPos_f);
+          lineUpdate.attr("y2", 0).attr("x2", tickSize_f);
+          textUpdate.attr("y", 0).attr("x", function(d, i) {
+            var l = tickSize_f(d, i);
+            return l < 0 ? l - tickPadding_f(d, i) : l + tickPadding_f(d, i);
+          }).each(labelPos_f);
+          pathUpdate.attr("d", "M" + -tickEndSize_f(range, 0) + "," + range[0] + "H0V" + range[1] + "H" + -tickEndSize_f(range, 1));
+          break;
+        }
+
+        // If either the new or old scale is ordinal,
+        // entering ticks are undefined in the old scale,
+        // and so can fade-in in the new scale’s position.
+        // Exiting ticks are likewise undefined in the new scale,
+        // and so can fade-out in the old scale’s position.
+        if (scale1.rangeBand) {
+          var x = scale1, dx = x.rangeBand() / 2;
+          scale0 = scale1 = function(d) { return x(d) + dx; };
+        } else if (scale0.rangeBand) {
+          scale0 = scale1;
+        } else {
+          tickExit.call(tickTransform, scale1);
+        }
+
+        tickEnter.call(tickTransform, scale0);
+        tickUpdate.call(tickTransform, scale1);
+      });
+      return false;
+    } else {
+      // when using d3.axis other than in a d3.selection.call(...); produce the ticks, etc. for custom work:
+      return {
+        ticks: ticks,                            // Object { ticks: Array of Tick Objects, submodulo: Number } where each Tick Object: { value: domainvalue, subindex: Number, majorindex: Number }
+        range: range,                            // array[2]
+        scale: scale,                            // d3.scale
+            orient: orient,                          // String
+        tickSize: tickSize_f,                    // functor(d, i)
+        tickEndSize: tickEndSize_f,              // functor(d, i)
+        tickPadding: tickPadding_f,              // functor(d, i)
+        tickLabelPosition: tickLabelPosition_,   // functor(d, i)
+        tickFormat: tickFormat,                  // functor(d)
+        tickFormatExtended: tickFormatExtended_  // functor(d, i)
+      };
+    }
   }
 
   axis.scale = function(x) {
@@ -11848,40 +12316,56 @@ d3.svg.axis = function() {
     return axis;
   };
 
-  axis.tickFormat = function(x) {
+  // f: expects null or a d3.format() compatible function
+  axis.tickFormat = function(f) {
     if (!arguments.length) return tickFormat_;
-    tickFormat_ = x;
+    tickFormat_ = (typeof f === "function" ? f : null);
     return axis;
   };
 
-  axis.tickSize = function(x) {
+  axis.tickFormatEx = function(f) {
+    if (!arguments.length) return tickFormatExtended_;
+    tickFormatExtended_ = (typeof f === "function" ? f : null);
+    return axis;
+  };
+
+  axis.tickLabelPosition = function(f) {
+    if (!arguments.length) return tickLabelPosition_;
+    tickLabelPosition_ = (typeof f === "function" ? f : null);
+    return axis;
+  };
+
+  axis.tickSize = function(major, minor /*, end */) {
     var n = arguments.length;
-    if (!n) return innerTickSize;
-    innerTickSize = +x;
-    outerTickSize = +arguments[n - 1];
-    return axis;
-  };
-
-  axis.innerTickSize = function(x) {
-    if (!arguments.length) return innerTickSize;
-    innerTickSize = +x;
-    return axis;
-  };
-
-  axis.outerTickSize = function(x) {
-    if (!arguments.length) return outerTickSize;
-    outerTickSize = +x;
+    if (!n) return [tickMajorSize, tickMinorSize, tickEndSize];
+    tickMajorSize = major;
+    tickMinorSize = (n > 1 ? minor : tickMajorSize);
+    tickEndSize = arguments[n - 1];
+    reinit_ticksizes();
     return axis;
   };
 
   axis.tickPadding = function(x) {
     if (!arguments.length) return tickPadding;
-    tickPadding = +x;
+    if (typeof x === 'function') {
+      tickPadding = x;
+    } else {
+      tickPadding = +x;
+    }
+    reinit_ticksizes();
     return axis;
   };
 
-  axis.tickSubdivide = function() {
-    return arguments.length && axis;
+  axis.tickSubdivide = function(x) {
+    if (!arguments.length) return tickSubdivide;
+    tickSubdivide = +x;
+    return axis;
+  };
+
+  axis.tickFilter = function(x) {
+    if (!arguments.length) return tickFilter;
+    tickFilter = (x || 2);
+    return axis;
   };
 
   return axis;
@@ -11891,11 +12375,23 @@ var d3_svg_axisDefaultOrient = "bottom",
     d3_svg_axisOrients = {top: 1, right: 1, bottom: 1, left: 1};
 
 function d3_svg_axisX(selection, x) {
-  selection.attr("transform", function(d) { return "translate(" + x(d) + ",0)"; });
+  selection.attr("transform", function(d) {
+    return "translate(" + x(d.value) + ",0)";
+  });
 }
 
 function d3_svg_axisY(selection, y) {
-  selection.attr("transform", function(d) { return "translate(0," + y(d) + ")"; });
+  selection.attr("transform", function(d) {
+    return "translate(0," + y(d.value) + ")";
+  });
+}
+
+function d3_svg_axisMapTicks(v, i, ticks) {
+  return {
+    value: v,
+    subindex: 0,
+    majorindex: i
+  };
 }
 
 d3.svg.brush = function() {
@@ -12451,6 +12947,7 @@ d3_time.years.utc = d3_time.year.utc.range;
 d3_time.day = d3_time_interval(function(date) {
   var day = new d3_date(2000, 0);
   day.setFullYear(date.getFullYear(), date.getMonth(), date.getDate());
+  day.setHours(0, 0, 0, 0);
   return day;
 }, function(date, offset) {
   date.setDate(date.getDate() + offset);
@@ -13071,7 +13568,9 @@ d3_time.scale = function() {
 var d3_time_scaleMilliseconds = {
   range: function(start, stop, step) {
     return d3.range(+start, +stop, step).map(d3_time_scaleDate);
-  }
+  },
+  floor: d3_identity,
+  ceil: d3_identity
 };
 
 var d3_time_scaleUTCMethods = d3_time_scaleLocalMethods.map(function(m) {

@@ -40,7 +40,7 @@ d3 = function() {
   };
   d3.min = function(array, f) {
     var i = -1, n = array.length, a, b;
-    if (arguments.length === 1) {
+    if (typeof f !== "function") {
       while (++i < n && !((a = array[i]) != null && a <= a)) a = undefined;
       while (++i < n) if ((b = array[i]) != null && a > b) a = b;
     } else {
@@ -51,7 +51,7 @@ d3 = function() {
   };
   d3.max = function(array, f) {
     var i = -1, n = array.length, a, b;
-    if (arguments.length === 1) {
+    if (typeof f !== "function") {
       while (++i < n && !((a = array[i]) != null && a <= a)) a = undefined;
       while (++i < n) if ((b = array[i]) != null && b > a) a = b;
     } else {
@@ -2123,6 +2123,7 @@ d3 = function() {
     var time = then + delay, timer = {
       callback: callback,
       time: time,
+      flush: false,
       next: null
     };
     if (d3_timer_queueTail) d3_timer_queueTail.next = timer; else d3_timer_queueHead = timer;
@@ -5834,7 +5835,7 @@ d3 = function() {
     return chord;
   };
   d3.layout.force = function() {
-    var force = {}, event = d3.dispatch("start", "tick", "end"), size = [ 1, 1 ], drag, alpha, interval, nodes = [], links = [], distances, strengths, epsilon = .1, charges, charge_abssum = -1, gravity_f, theta2_f, has_theta2_f = false, friction = .9, linkDistance = d3_layout_forceLinkDistance, linkStrength = d3_layout_forceLinkStrength, charge = -30, chargeDistance2 = d3_layout_forceChargeDistance2, gravity = .1, theta2 = .64;
+    var force = {}, event = d3.dispatch("start", "tick", "end"), size = [ 1, 1 ], drag, alpha, interval, nodes = [], links = [], distances, strengths, neighbors, epsilon = .1, charges, charge_abssum = -1, gravity_f, theta2_f, has_theta2_f = false, friction = .9, linkDistance = d3_layout_forceLinkDistance, linkStrength = d3_layout_forceLinkStrength, charge = -30, chargeDistance2 = d3_layout_forceChargeDistance2, gravity = .1, theta2 = .64, repulsor = false;
     setup_model_parameter_functors();
     function setup_model_parameter_functors() {
       gravity_f = d3_functor(gravity);
@@ -5928,6 +5929,9 @@ d3 = function() {
           }
         }
       }
+      if (typeof repulsor === "function") {
+        repulsor.call(this, q, charges, distances, strengths);
+      }
       if (typeof friction === "function") {
         for (i = 0; i < n; ++i) {
           o = nodes[i];
@@ -5969,6 +5973,10 @@ d3 = function() {
       links = x;
       return force;
     };
+    force.neighbors = function() {
+      neighbor(0);
+      return neighbors;
+    };
     force.size = function(x) {
       if (!arguments.length) return size;
       size = x;
@@ -6007,6 +6015,11 @@ d3 = function() {
       setup_model_parameter_functors();
       return force;
     };
+    force.repulsor = function(x) {
+      if (!arguments.length) return repulsor;
+      repulsor = typeof x === "function" ? x : false;
+      return force;
+    };
     force.theta = function(x) {
       if (!arguments.length) {
         if (has_theta2_f) {
@@ -6034,7 +6047,7 @@ d3 = function() {
       return force;
     };
     force.start = function() {
-      var i, j, n = nodes.length, m = links.length, w = size[0], h = size[1], neighbors, o;
+      var i, j, n = nodes.length, m = links.length, w = size[0], h = size[1], o;
       for (i = 0; i < n; ++i) {
         (o = nodes[i]).index = i;
         o.weight = 0;
@@ -6088,28 +6101,36 @@ d3 = function() {
       }
       charge_abssum = j;
       function position(dimension, size, i) {
-        var j;
-        if (!neighbors) {
-          neighbors = new Array(n);
-          for (j = 0; j < n; ++j) {
-            neighbors[j] = [];
-          }
-          for (j = 0; j < m; ++j) {
-            var o = links[j];
-            neighbors[o.source.index].push(o.target);
-            neighbors[o.target.index].push(o.source);
-          }
-        }
-        var candidates = neighbors[i], j, m = candidates.length, x;
+        var candidates = neighbor(i), j, m = candidates.outlinks.length, x;
         for (j = 0; j < m; ++j) {
-          if (!isNaN(x = candidates[j][dimension])) {
-            return x;
-          }
+          if (!isNaN(x = candidates.outlinks[j].target[dimension])) return x;
+        }
+        m = candidates.inlinks.length;
+        for (j = 0; j < m; ++j) {
+          if (!isNaN(x = candidates.inlinks[j].source[dimension])) return x;
         }
         return Math.random() * size;
       }
       return force.resume();
     };
+    function neighbor(i) {
+      if (!neighbors) {
+        var j, n = nodes.length, m = links.length;
+        neighbors = [];
+        for (j = 0; j < n; ++j) {
+          neighbors[j] = {
+            inlinks: [],
+            outlinks: []
+          };
+        }
+        for (j = 0; j < m; ++j) {
+          var o = links[j];
+          neighbors[o.source.index].outlinks.push(o);
+          neighbors[o.target.index].inlinks.push(o);
+        }
+      }
+      return neighbors[i];
+    }
     force.resume = function() {
       return force.alpha(.1);
     };
@@ -6358,7 +6379,9 @@ d3 = function() {
       for (j = 0; j < m; ++j) {
         out.call(stack, series[0][j], o = offsets[j], points[0][j][1]);
         for (i = 1; i < n; ++i) {
-          out.call(stack, series[i][j], o += points[i - 1][j][1], points[i][j][1]);
+          if (series[i][j] !== undefined) {
+            out.call(stack, series[i][j], o += points[i - 1][j][1], points[i][j][1]);
+          }
         }
       }
       return data;
@@ -7254,8 +7277,8 @@ d3 = function() {
       interpolate = x;
       return rescale();
     };
-    scale.ticks = function(m) {
-      return d3_scale_linearTicks(domain, m);
+    scale.ticks = function(m, subdiv_count) {
+      return d3_scale_linearTicks(domain, m, subdiv_count);
     };
     scale.tickFormat = function(m, format) {
       return d3_scale_linearTickFormat(domain, m, format);
@@ -7275,23 +7298,61 @@ d3 = function() {
   function d3_scale_linearNice(domain, m) {
     return d3_scale_nice(domain, d3_scale_niceStep(d3_scale_linearTickRange(domain, m)[2]));
   }
-  function d3_scale_linearTickRange(domain, m) {
-    if (m == null) m = 10;
-    var extent = d3_scaleExtent(domain), span = extent[1] - extent[0], step, err;
+  function d3_scale_linearTickRange(domain, m, subdiv_count) {
+    m = m || 10;
+    subdiv_count = subdiv_count || 1;
+    var extent = d3_scaleExtent(domain), span = extent[1] - extent[0], step, err, substep;
     if (span == 0 || !extent.every(isFinite)) {
-      extent[2] = 1;
-      return extent;
+      step = 1;
+      err = 1;
+    } else {
+      step = Math.pow(10, Math.floor(Math.log(span / m) / Math.LN10));
+      err = m / span * step;
     }
-    step = Math.pow(10, Math.floor(Math.log(span / m) / Math.LN10));
-    err = m / span * step;
     if (err <= .15) step *= 10; else if (err <= .35) step *= 5; else if (err <= .75) step *= 2;
+    substep = step * subdiv_count;
+    extent[3] = extent[0];
+    extent[4] = extent[1];
+    extent[5] = Math.ceil(extent[0] / substep) * substep;
+    extent[6] = Math.floor(extent[1] / substep) * substep + substep * .5;
+    extent[7] = substep;
     extent[0] = Math.ceil(extent[0] / step) * step;
     extent[1] = Math.floor(extent[1] / step) * step + step * .5;
     extent[2] = step;
     return extent;
   }
-  function d3_scale_linearTicks(domain, m) {
-    return d3.range.apply(d3, d3_scale_linearTickRange(domain, m));
+  function d3_scale_linearTicks(domain, m, subdiv_count) {
+    var extent = d3_scale_linearTickRange(domain, m, subdiv_count);
+    if (!subdiv_count) {
+      return d3.range.apply(d3, extent);
+    }
+    var start = extent[0] - extent[2], stop = extent[6], step = extent[7], left_edge = extent[3];
+    if (!isFinite((stop - start) / step)) throw new Error("infinite range");
+    var range = [], k = d3_range_integerScale(Math.abs(step)), i = -1, j;
+    start *= k, stop *= k, step *= k, left_edge *= k;
+    if (step < 0) {
+      while ((j = start + step * ++i) > left_edge) ;
+      for (;j > stop; j = start + step * ++i) {
+        range.push({
+          value: j / k,
+          subindex: i % subdiv_count,
+          majorindex: i / subdiv_count | 0
+        });
+      }
+    } else {
+      while ((j = start + step * ++i) < left_edge) ;
+      for (;j < stop; j = start + step * ++i) {
+        range.push({
+          value: j / k,
+          subindex: i % subdiv_count,
+          majorindex: i / subdiv_count | 0
+        });
+      }
+    }
+    return {
+      range: range,
+      submodulus: subdiv_count
+    };
   }
   function d3_scale_linearTickFormat(domain, m, format) {
     var range = d3_scale_linearTickRange(domain, m);
@@ -7347,7 +7408,7 @@ d3 = function() {
       domain = niced.map(pow);
       return scale;
     };
-    scale.ticks = function() {
+    scale.ticks = function(m, subdiv_count) {
       var extent = d3_scaleExtent(domain), ticks = [], u = extent[0], v = extent[1], i = Math.floor(log(u)), j = Math.ceil(log(v)), n = base % 1 ? 2 : base;
       if (isFinite(j - i)) {
         if (positive) {
@@ -7401,8 +7462,8 @@ d3 = function() {
       linear.domain((domain = x.map(Number)).map(powp));
       return scale;
     };
-    scale.ticks = function(m) {
-      return d3_scale_linearTicks(domain, m);
+    scale.ticks = function(m, subdiv_count) {
+      return d3_scale_linearTicks(domain, m, subdiv_count);
     };
     scale.tickFormat = function(m, format) {
       return d3_scale_linearTickFormat(domain, m, format);
@@ -7557,7 +7618,7 @@ d3 = function() {
     scale.quantiles = function() {
       return thresholds;
     };
-    scale.ticks = function(m) {
+    scale.ticks = function(m, subdiv_count) {
       return thresholds;
     };
     scale.invertExtent = function(y) {
@@ -7593,9 +7654,9 @@ d3 = function() {
       range = x;
       return rescale();
     };
-    scale.ticks = function(m) {
+    scale.ticks = function(m, subdiv_count) {
       if (i <= 0) return [];
-      return d3.range(x0, x1 - .5 / kx, 1 / kx).map(function(x, i) {
+      return d3.range(x0, x1, kx * (x1 - x0)).map(function(x, i) {
         var p = d3_format_precision(x, 4);
         var v = d3.round(x, p);
         return v;
@@ -7621,6 +7682,27 @@ d3 = function() {
     function scale(x) {
       if (x <= x) return range[d3.bisect(domain, x)];
     }
+    scale.invert = function(y) {
+      if (Number(range[0]) === NaN) {
+        for (var i = 0; i < range.length; ++i) {
+          if (range[i] === y) {
+            return domain[i];
+          }
+        }
+        return NaN;
+      } else {
+        var i0 = d3.bisect(range, y);
+        var i1 = i0 + 1;
+        if (i1 < domain.length) {
+          var delta = (y - range[i0]) / (range[i1] - range[i0]);
+          return domain[i0] + delta * (domain[i1] - domain[i0]);
+        } else if (i0 > 0) {
+          return domain[i0] + delta * (domain[i0 - 1] - domain[i0]);
+        } else {
+          return domain[i0] + delta;
+        }
+      }
+    };
     scale.domain = function(_) {
       if (!arguments.length) return domain;
       domain = _;
@@ -7635,7 +7717,7 @@ d3 = function() {
       y = range.indexOf(y);
       return [ domain[y - 1], domain[y] ];
     };
-    scale.ticks = function(m) {
+    scale.ticks = function(m, subdiv_count) {
       var l = Math.min(domain.length, range.length - 1);
       if (l > 0) {
         var t = [], i;
@@ -7666,8 +7748,8 @@ d3 = function() {
       domain = x.map(identity);
       return identity;
     };
-    identity.ticks = function(m) {
-      return d3_scale_linearTicks(domain, m);
+    identity.ticks = function(m, subdiv_count) {
+      return d3_scale_linearTicks(domain, m, subdiv_count);
     };
     identity.tickFormat = function(m, format) {
       return d3_scale_linearTickFormat(domain, m, format);
@@ -8581,79 +8663,239 @@ d3 = function() {
     }
   }
   d3.svg.axis = function() {
-    var scale = d3.scale.linear(), orient = d3_svg_axisDefaultOrient, innerTickSize = 6, outerTickSize = 6, tickPadding = 3, tickArguments_ = [ 10 ], tickValues = null, tickFormat_;
+    var scale = d3.scale.linear(), orient = d3_svg_axisDefaultOrient, tickMajorSize = 6, tickMinorSize = 6, tickEndSize = 6, tickPadding = 3, tickArguments_ = [ 10 ], tickValues = null, tickFormat_ = null, tickFormatExtended_ = null, tickLabelPosition_ = null, tickFilter = 2, tickSubdivide = 0, tickSize_f, tickEndSize_f, tickPadding_f;
+    reinit_ticksizes();
+    function reinit_ticksizes() {
+      var mult = +1;
+      var major, minor, end;
+      switch (orient) {
+       case "top":
+       case "left":
+        mult = -1;
+        break;
+      }
+      if (typeof tickMajorSize === "function" && typeof tickMinorSize === "function") {
+        tickSize_f = function(d, i) {
+          if (d.subindex) {
+            return mult * tickMinorSize(d, i);
+          } else {
+            return mult * tickMajorSize(d, i);
+          }
+        };
+      } else if (typeof tickMajorSize === "function" && typeof tickMinorSize !== "function") {
+        minor = mult * tickMinorSize;
+        tickSize_f = function(d, i) {
+          if (d.subindex) {
+            return minor;
+          } else {
+            return mult * tickMajorSize(d, i);
+          }
+        };
+      } else if (typeof tickMajorSize !== "function" && typeof tickMinorSize === "function") {
+        major = mult * tickMajorSize;
+        tickSize_f = function(d, i) {
+          if (d.subindex) {
+            return mult * tickMinorSize(d, i);
+          } else {
+            return major;
+          }
+        };
+      } else {
+        major = mult * tickMajorSize;
+        minor = mult * tickMinorSize;
+        tickSize_f = function(d, i) {
+          if (d.subindex) {
+            return minor;
+          } else {
+            return major;
+          }
+        };
+      }
+      if (typeof tickEndSize === "function") {
+        tickEndSize_f = function(d, i) {
+          return mult * tickEndSize(d, i);
+        };
+      } else {
+        end = mult * tickEndSize;
+        tickEndSize_f = function(d, i) {
+          return end;
+        };
+      }
+      if (typeof tickPadding === "function") {
+        tickPadding_f = tickPadding;
+      } else {
+        tickPadding_f = function(d, i) {
+          return tickPadding;
+        };
+      }
+    }
     function axis(g) {
-      g.each(function() {
-        var g = d3.select(this);
-        var scale0 = this.__chart__ || scale, scale1 = this.__chart__ = scale.copy();
-        var ticks = tickValues == null ? scale1.ticks ? scale1.ticks.apply(scale1, tickArguments_) : scale1.domain() : tickValues, tickFormat = tickFormat_ == null ? scale1.tickFormat ? scale1.tickFormat.apply(scale1, tickArguments_) : d3_identity : tickFormat_, tick = g.selectAll(".tick").data(ticks, scale1), tickEnter = tick.enter().insert("g", ".domain").attr("class", "tick").style("opacity", ε), tickExit = d3.transition(tick.exit()).style("opacity", ε).remove(), tickUpdate = d3.transition(tick).style("opacity", 1), tickTransform;
-        var range = d3_scaleRange(scale1), path = g.selectAll(".domain").data([ 0 ]), pathUpdate = (path.enter().append("path").attr("class", "domain"), 
-        d3.transition(path));
-        tickEnter.append("line");
-        tickEnter.append("text");
-        var lineEnter = tickEnter.select("line"), lineUpdate = tickUpdate.select("line"), text = tick.select("text").text(tickFormat), textEnter = tickEnter.select("text"), textUpdate = tickUpdate.select("text");
-        switch (orient) {
-         case "bottom":
-          {
-            tickTransform = d3_svg_axisX;
-            lineEnter.attr("y2", innerTickSize);
-            textEnter.attr("y", Math.max(innerTickSize, 0) + tickPadding);
-            lineUpdate.attr("x2", 0).attr("y2", innerTickSize);
-            textUpdate.attr("x", 0).attr("y", Math.max(innerTickSize, 0) + tickPadding);
-            text.attr("dy", ".71em").style("text-anchor", "middle");
-            pathUpdate.attr("d", "M" + range[0] + "," + outerTickSize + "V0H" + range[1] + "V" + outerTickSize);
-            break;
-          }
-
-         case "top":
-          {
-            tickTransform = d3_svg_axisX;
-            lineEnter.attr("y2", -innerTickSize);
-            textEnter.attr("y", -(Math.max(innerTickSize, 0) + tickPadding));
-            lineUpdate.attr("x2", 0).attr("y2", -innerTickSize);
-            textUpdate.attr("x", 0).attr("y", -(Math.max(innerTickSize, 0) + tickPadding));
-            text.attr("dy", "0em").style("text-anchor", "middle");
-            pathUpdate.attr("d", "M" + range[0] + "," + -outerTickSize + "V0H" + range[1] + "V" + -outerTickSize);
-            break;
-          }
-
-         case "left":
-          {
-            tickTransform = d3_svg_axisY;
-            lineEnter.attr("x2", -innerTickSize);
-            textEnter.attr("x", -(Math.max(innerTickSize, 0) + tickPadding));
-            lineUpdate.attr("x2", -innerTickSize).attr("y2", 0);
-            textUpdate.attr("x", -(Math.max(innerTickSize, 0) + tickPadding)).attr("y", 0);
-            text.attr("dy", ".32em").style("text-anchor", "end");
-            pathUpdate.attr("d", "M" + -outerTickSize + "," + range[0] + "H0V" + range[1] + "H" + -outerTickSize);
-            break;
-          }
-
-         case "right":
-          {
-            tickTransform = d3_svg_axisY;
-            lineEnter.attr("x2", innerTickSize);
-            textEnter.attr("x", Math.max(innerTickSize, 0) + tickPadding);
-            lineUpdate.attr("x2", innerTickSize).attr("y2", 0);
-            textUpdate.attr("x", Math.max(innerTickSize, 0) + tickPadding).attr("y", 0);
-            text.attr("dy", ".32em").style("text-anchor", "start");
-            pathUpdate.attr("d", "M" + outerTickSize + "," + range[0] + "H0V" + range[1] + "H" + outerTickSize);
-            break;
-          }
-        }
-        if (scale1.rangeBand) {
-          var x = scale1, dx = x.rangeBand() / 2;
-          scale0 = scale1 = function(d) {
-            return x(d) + dx;
-          };
-        } else if (scale0.rangeBand) {
-          scale0 = scale1;
+      var ticks = tickValues == null ? scale.ticks ? (ticks = scale.ticks.apply(scale, tickArguments_, tickSubdivide)) && ticks.range ? ticks : ticks.map(d3_svg_axisMapTicks) : {
+        range: scale.domain().map(d3_svg_axisMapTicks),
+        submodulus: 0
+      } : tickValues.range ? tickValues : {
+        range: tickValues.map(d3_svg_axisMapTicks),
+        submodulus: 0
+      }, tickFormat = tickFormat_ == null ? scale.tickFormat ? scale.tickFormat.apply(scale, tickArguments_) : d3.format(".f") : tickFormat_;
+      var arr = ticks.range, d, i;
+      var range = d3_scaleRange(scale);
+      if (typeof tickFilter === "function") {
+        var context = tickFilter({
+          ticks: ticks,
+          range: range
+        }, {
+          scale: scale,
+          orient: orient,
+          tickSize: tickSize_f,
+          tickEndSize: tickEndSize_f,
+          tickPadding: tickPadding_f,
+          tickLabelPosition: tickLabelPosition_,
+          tickFormat: tickFormat,
+          tickFormatExtended: tickFormatExtended_
+        }) || {};
+        ticks = context.ticks || ticks;
+        range = context.range || range;
+      } else {
+        var min_spacing;
+        if (!Array.isArray(tickFilter) || !tickFilter.length) {
+          min_spacing = [ Number(tickFilter) || 2, Number(tickFilter) || 2 ];
         } else {
-          tickExit.call(tickTransform, scale1);
+          min_spacing = tickFilter;
+          if (!min_spacing[1]) {
+            min_spacing[1] = min_spacing[0] || 2;
+          }
         }
-        tickEnter.call(tickTransform, scale0);
-        tickUpdate.call(tickTransform, scale1);
-      });
+        for (i = 0; i < arr.length; i++) {
+          d = arr[i];
+          if (!d.subindex) {}
+        }
+      }
+      if (g) {
+        g.each(function() {
+          var g = d3.select(this);
+          var tick = g.selectAll(".tick").data(ticks, function(d, i) {
+            return String(d.value);
+          }), tickEnter = tick.enter().insert("g", "path").attr("class", function(d, i) {
+            return d.subindex ? "tick minor" : "tick major";
+          }).style("opacity", 1e-6), tickExit = d3.transition(tick.exit()).style("opacity", 1e-6).remove(), tickUpdate = d3.transition(tick).attr("class", function(d, i) {
+            return d.subindex ? "tick minor" : "tick major";
+          }).style("opacity", 1), tickTransform;
+          var path = g.selectAll(".domain").data([ 0 ]);
+          path.enter().append("path").attr("class", "domain");
+          var pathUpdate = d3.transition(path);
+          var scale1 = scale.copy(), scale0 = this.__chart__ || scale1;
+          this.__chart__ = scale1;
+          tickEnter.append("line").attr("class", "tick-line");
+          tickEnter.filter(function(d, i) {
+            return !d.subindex;
+          }).append("text").attr("class", "tick-text");
+          var lineEnter = tickEnter.select("line.tick-line"), lineUpdate = tickUpdate.select("line.tick-line"), textEnter = tickEnter.select("text.tick-text");
+          ticks.filter(function(d, i) {
+            return !d.subindex;
+          }).each(function(d, i) {
+            var node = d3.select(this);
+            if (node.select("text.tick-text").empty()) {
+              d.is_promoted = true;
+              node.append("text").attr("class", "tick-text").style("opacity", 1e-6);
+            } else {
+              d.is_promoted = false;
+            }
+          });
+          var textUpdate = tickUpdate.select("text.tick-text"), textUpdateEnter = textUpdate.filter(function(d, i) {
+            return !d.subindex && d.is_promoted;
+          }), textUpdateExit = textUpdate.filter(function(d, i) {
+            return d.subindex;
+          }), text = tick.selectAll("text.tick-text").text(function(d, i) {
+            if (tickFormatExtended_ == null) {
+              return tickFormat(d.value);
+            } else {
+              return tickFormatExtended_(d, i);
+            }
+          });
+          textUpdate = textUpdate.filter(function(d, i) {
+            return !d.subindex;
+          });
+          textUpdateExit.style("opacity", 1e-6).remove();
+          textUpdateEnter.style("opacity", 1);
+          var labelPos_f = tickLabelPosition_ == null ? orient == "bottom" ? function(d, i) {
+            d3.select(this).attr("dy", ".71em").style("text-anchor", "middle");
+          } : orient == "top" ? function(d, i) {
+            d3.select(this).attr("dy", "0em").style("text-anchor", "middle");
+          } : function(d, i) {
+            d3.select(this).attr("dy", ".32em").style("text-anchor", function(d, i) {
+              var l = tickSize_f(d, i);
+              return l < 0 ? "end" : "start";
+            });
+          } : tickLabelPosition_;
+          switch (orient) {
+           case "bottom":
+           case "top":
+            tickTransform = d3_svg_axisX;
+            lineEnter.attr("x2", 0).attr("y2", tickSize_f);
+            textEnter.attr("x", 0).attr("y", function(d, i) {
+              var l = tickSize_f(d, i);
+              return l < 0 ? l - tickPadding_f(d, i) : l + tickPadding_f(d, i);
+            }).each(labelPos_f);
+            textUpdateEnter.attr("x", 0).attr("y", function(d, i) {
+              var l = tickSize_f(d, i);
+              return l < 0 ? l - tickPadding_f(d, i) : l + tickPadding_f(d, i);
+            }).each(labelPos_f);
+            lineUpdate.attr("x2", 0).attr("y2", tickSize_f);
+            textUpdate.attr("x", 0).attr("y", function(d, i) {
+              var l = tickSize_f(d, i);
+              return l < 0 ? l - tickPadding_f(d, i) : l + tickPadding_f(d, i);
+            }).each(labelPos_f);
+            pathUpdate.attr("d", "M" + range[0] + "," + tickEndSize_f(range, 0) + "V0H" + range[1] + "V" + tickEndSize_f(range, 1));
+            break;
+
+           case "left":
+           case "right":
+            tickTransform = d3_svg_axisY;
+            lineEnter.attr("y2", 0).attr("x2", tickSize_f);
+            textEnter.attr("y", 0).attr("x", function(d, i) {
+              var l = tickSize_f(d, i);
+              return l < 0 ? l - tickPadding_f(d, i) : l + tickPadding_f(d, i);
+            }).each(labelPos_f);
+            textUpdateEnter.attr("y", 0).attr("x", function(d, i) {
+              var l = tickSize_f(d, i);
+              return l < 0 ? l - tickPadding_f(d, i) : l + tickPadding_f(d, i);
+            }).each(labelPos_f);
+            lineUpdate.attr("y2", 0).attr("x2", tickSize_f);
+            textUpdate.attr("y", 0).attr("x", function(d, i) {
+              var l = tickSize_f(d, i);
+              return l < 0 ? l - tickPadding_f(d, i) : l + tickPadding_f(d, i);
+            }).each(labelPos_f);
+            pathUpdate.attr("d", "M" + -tickEndSize_f(range, 0) + "," + range[0] + "H0V" + range[1] + "H" + -tickEndSize_f(range, 1));
+            break;
+          }
+          if (scale1.rangeBand) {
+            var x = scale1, dx = x.rangeBand() / 2;
+            scale0 = scale1 = function(d) {
+              return x(d) + dx;
+            };
+          } else if (scale0.rangeBand) {
+            scale0 = scale1;
+          } else {
+            tickExit.call(tickTransform, scale1);
+          }
+          tickEnter.call(tickTransform, scale0);
+          tickUpdate.call(tickTransform, scale1);
+        });
+        return false;
+      } else {
+        return {
+          ticks: ticks,
+          range: range,
+          scale: scale,
+          orient: orient,
+          tickSize: tickSize_f,
+          tickEndSize: tickEndSize_f,
+          tickPadding: tickPadding_f,
+          tickLabelPosition: tickLabelPosition_,
+          tickFormat: tickFormat,
+          tickFormatExtended: tickFormatExtended_
+        };
+      }
     }
     axis.scale = function(x) {
       if (!arguments.length) return scale;
@@ -8675,35 +8917,49 @@ d3 = function() {
       tickValues = x;
       return axis;
     };
-    axis.tickFormat = function(x) {
+    axis.tickFormat = function(f) {
       if (!arguments.length) return tickFormat_;
-      tickFormat_ = x;
+      tickFormat_ = typeof f === "function" ? f : null;
       return axis;
     };
-    axis.tickSize = function(x) {
+    axis.tickFormatEx = function(f) {
+      if (!arguments.length) return tickFormatExtended_;
+      tickFormatExtended_ = typeof f === "function" ? f : null;
+      return axis;
+    };
+    axis.tickLabelPosition = function(f) {
+      if (!arguments.length) return tickLabelPosition_;
+      tickLabelPosition_ = typeof f === "function" ? f : null;
+      return axis;
+    };
+    axis.tickSize = function(major, minor) {
       var n = arguments.length;
-      if (!n) return innerTickSize;
-      innerTickSize = +x;
-      outerTickSize = +arguments[n - 1];
-      return axis;
-    };
-    axis.innerTickSize = function(x) {
-      if (!arguments.length) return innerTickSize;
-      innerTickSize = +x;
-      return axis;
-    };
-    axis.outerTickSize = function(x) {
-      if (!arguments.length) return outerTickSize;
-      outerTickSize = +x;
+      if (!n) return [ tickMajorSize, tickMinorSize, tickEndSize ];
+      tickMajorSize = major;
+      tickMinorSize = n > 1 ? minor : tickMajorSize;
+      tickEndSize = arguments[n - 1];
+      reinit_ticksizes();
       return axis;
     };
     axis.tickPadding = function(x) {
       if (!arguments.length) return tickPadding;
-      tickPadding = +x;
+      if (typeof x === "function") {
+        tickPadding = x;
+      } else {
+        tickPadding = +x;
+      }
+      reinit_ticksizes();
       return axis;
     };
-    axis.tickSubdivide = function() {
-      return arguments.length && axis;
+    axis.tickSubdivide = function(x) {
+      if (!arguments.length) return tickSubdivide;
+      tickSubdivide = +x;
+      return axis;
+    };
+    axis.tickFilter = function(x) {
+      if (!arguments.length) return tickFilter;
+      tickFilter = x || 2;
+      return axis;
     };
     return axis;
   };
@@ -8715,13 +8971,20 @@ d3 = function() {
   };
   function d3_svg_axisX(selection, x) {
     selection.attr("transform", function(d) {
-      return "translate(" + x(d) + ",0)";
+      return "translate(" + x(d.value) + ",0)";
     });
   }
   function d3_svg_axisY(selection, y) {
     selection.attr("transform", function(d) {
-      return "translate(0," + y(d) + ")";
+      return "translate(0," + y(d.value) + ")";
     });
+  }
+  function d3_svg_axisMapTicks(v, i, ticks) {
+    return {
+      value: v,
+      subindex: 0,
+      majorindex: i
+    };
   }
   d3.svg.brush = function() {
     var event = d3_eventDispatch(brush, "brushstart", "brush", "brushend"), x = null, y = null, xExtent = [ 0, 0 ], yExtent = [ 0, 0 ], xExtentDomain, yExtentDomain, xClamp = true, yClamp = true, resizes = d3_svg_brushResizes[0];
@@ -9158,6 +9421,7 @@ d3 = function() {
   d3_time.day = d3_time_interval(function(date) {
     var day = new d3_date(2e3, 0);
     day.setFullYear(date.getFullYear(), date.getMonth(), date.getDate());
+    day.setHours(0, 0, 0, 0);
     return day;
   }, function(date, offset) {
     date.setDate(date.getDate() + offset);
