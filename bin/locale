@@ -8,13 +8,16 @@ var fs = require("fs"),
     quotedRe = /"([^"]*?)"/g,
     data = [];
 
-if (01) {
-  process.stdin.resume();
-  process.stdin.setEncoding("utf8");
-  process.stdin.on("data", function(chunk) { data.push(chunk); });
-  process.stdin.on("end", write);
-} else {
-  var locale = "LC_NUMERIC\n\
+process.stdin.resume();
+process.stdin.setEncoding("utf8");
+process.stdin.on("data", function(chunk) { data.push(chunk); });
+process.stdin.on("end", safe_write);
+
+function safe_write() {
+  // check if the loaded data is non-empty:
+  data = data.join("\n").split("\n");
+
+  var fallback_locale = "LC_NUMERIC\n\
 decimal_point=\".\"\n\
 thousands_sep=\",\"\n\
 grouping=3;3\n\
@@ -94,11 +97,11 @@ timezone=\"\"\n\
 date_fmt=\"%a %b %e %H:%M:%S %Z %Y\"\n\
 time-codeset=\"UTF-8\"\n\
 ";
-  data = locale.split("\n");
-  write();
+
+  write(fallback_locale);
 }
 
-function write() {
+function write(fallback_locale_data) {
   data.join("\n").split(/\n/g).forEach(function(line) {
     var i = line.match(kvRe);
     if (i && (i = i.index)) {
@@ -107,10 +110,20 @@ function write() {
     }
   });
 
+  fallback_locale_data.split(/\n/g).forEach(function(line) {
+    var i = line.match(kvRe);
+    if (i && (i = i.index)) {
+      var value = line.substring(i + 1).replace(quotedRe, "$1").split(valueRe);
+      if (formats[line.substring(0, i)] == null) {
+        formats[line.substring(0, i)] = value;
+      }
+    }
+  });
+
   puts(fs.readFileSync(process.argv[2], "utf8").replace(/\{([a-z_]+)\}/g, function(d, k) {
     d = formats[k];
     return k.match("grouping")
-        ? d === "127" || d === "0" ? null : "[" + d.map(Number).join(", ") + "]"
+        ? d === "127" || d === "0" ? null : d == null ? null : "[" + d.map(Number).join(", ") + "]"
         : d == null ? null : d.length > 1 ? "[" + d.map(quote).join(", ") + "]" : quote(d[0]);
   }));
 }
