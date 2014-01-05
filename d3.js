@@ -5613,16 +5613,49 @@ d3 = function() {
       return s.join("");
     };
   }
+  d3.uninterpolateNumber = d3_uninterpolateNumber;
   function d3_uninterpolateNumber(a, b) {
     b = b - (a = +a) ? 1 / (b - a) : 0;
     return function(x) {
       return (x - a) * b;
     };
   }
+  d3.uninterpolateClamp = d3_uninterpolateClamp;
   function d3_uninterpolateClamp(a, b) {
     b = b - (a = +a) ? 1 / (b - a) : 0;
     return function(x) {
       return Math.max(0, Math.min(1, (x - a) * b));
+    };
+  }
+  d3.uninterpolateSteppedFloor = d3_uninterpolateSteppedFloor;
+  function d3_uninterpolateSteppedFloor(step) {
+    return function(a, b) {
+      b = b - (a = +a) ? 1 / (b - a) : 0;
+      return function(x) {
+        var extent = x - a;
+        if (extent >= 0) {
+          return (x - extent % step - a) * b;
+        } else {
+          var mod = extent % step;
+          if (mod) {
+            return (x - (step + extent % step)) * b;
+          } else {
+            return x * b;
+          }
+        }
+      };
+    };
+  }
+  d3.interpolateFloor = d3_interpolateFloor;
+  function d3_interpolateFloor(a, b) {
+    return function(t) {
+      return a;
+    };
+  }
+  d3.interpolateCeiling = d3_interpolateCeiling;
+  function d3_interpolateCeiling(a, b) {
+    return function(t) {
+      return b;
     };
   }
   d3.layout = {};
@@ -7150,12 +7183,12 @@ d3 = function() {
     };
   }
   d3.scale.linear = function() {
-    return d3_scale_linear([ 0, 1 ], [ 0, 1 ], d3_interpolate, false);
+    return d3_scale_linear([ 0, 1 ], [ 0, 1 ], d3_uninterpolateNumber, d3_interpolate);
   };
-  function d3_scale_linear(domain, range, interpolate, clamp) {
+  function d3_scale_linear(domain, range, uninterpolate, interpolate) {
     var output, input;
     function rescale() {
-      var linear = Math.min(domain.length, range.length) > 2 ? d3_scale_polylinear : d3_scale_bilinear, uninterpolate = clamp ? d3_uninterpolateClamp : d3_uninterpolateNumber;
+      var linear = Math.min(domain.length, range.length) > 2 ? d3_scale_polylinear : d3_scale_bilinear;
       output = linear(domain, range, uninterpolate, interpolate);
       input = linear(range, domain, uninterpolate, d3_interpolate);
       return scale;
@@ -7171,6 +7204,22 @@ d3 = function() {
       domain = x.map(Number);
       return rescale();
     };
+    scale.domainClamp = function(x) {
+      return scale.domain(x).uninterploate(d3_uninterpolateClamp);
+    };
+    scale.clamp = function(x) {
+      if (!arguments.length) return uninterpolate === d3_uninterpolateClamp;
+      if (x) {
+        interpolate = d3_uninterpolateClamp;
+      } else {
+        interpolate = d3_uninterpolateNumber;
+      }
+    };
+    scale.uninterpolate = function(x) {
+      if (!arguments.length) return uninterpolate;
+      uninterpolate = x;
+      return rescale();
+    };
     scale.range = function(x) {
       if (!arguments.length) return range;
       range = x;
@@ -7178,11 +7227,6 @@ d3 = function() {
     };
     scale.rangeRound = function(x) {
       return scale.range(x).interpolate(d3_interpolateRound);
-    };
-    scale.clamp = function(x) {
-      if (!arguments.length) return clamp;
-      clamp = x;
-      return rescale();
     };
     scale.interpolate = function(x) {
       if (!arguments.length) return interpolate;
@@ -7205,7 +7249,7 @@ d3 = function() {
     return rescale();
   }
   function d3_scale_linearRebind(scale, linear) {
-    return d3.rebind(scale, linear, "range", "rangeRound", "interpolate", "clamp");
+    return d3.rebind(scale, linear, "range", "rangeRound", "uninterpolate", "interpolate", "clamp");
   }
   function d3_scale_linearNice(domain, m) {
     return d3_scale_nice(domain, d3_scale_niceStep(d3_scale_linearTickRange(domain, m)[2]));

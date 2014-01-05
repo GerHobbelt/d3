@@ -10,16 +10,15 @@ import "polylinear";
 import "scale";
 
 d3.scale.linear = function() {
-  return d3_scale_linear([0, 1], [0, 1], d3_interpolate, false);
+  return d3_scale_linear([0, 1], [0, 1], d3_uninterpolateNumber, d3_interpolate);
 };
 
-function d3_scale_linear(domain, range, interpolate, clamp) {
+function d3_scale_linear(domain, range, uninterpolate, interpolate) {
   var output,
       input;
 
   function rescale() {
-    var linear = Math.min(domain.length, range.length) > 2 ? d3_scale_polylinear : d3_scale_bilinear,
-        uninterpolate = clamp ? d3_uninterpolateClamp : d3_uninterpolateNumber;
+    var linear = Math.min(domain.length, range.length) > 2 ? d3_scale_polylinear : d3_scale_bilinear;
     output = linear(domain, range, uninterpolate, interpolate);
     input = linear(range, domain, uninterpolate, d3_interpolate);
     return scale;
@@ -40,6 +39,25 @@ function d3_scale_linear(domain, range, interpolate, clamp) {
     return rescale();
   };
 
+  scale.domainClamp = function(x) {
+    return scale.domain(x).uninterploate(d3_uninterpolateClamp);
+  };
+
+  scale.clamp = function(x) {
+    if (!arguments.length) return uninterpolate === d3_uninterpolateClamp;
+    if (x) {
+      interpolate = d3_uninterpolateClamp;
+    } else {
+      interpolate = d3_uninterpolateNumber;
+    }
+  };
+
+  scale.uninterpolate = function(x) {
+    if (!arguments.length) return uninterpolate;
+    uninterpolate = x;
+    return rescale();
+  };
+
   scale.range = function(x) {
     if (!arguments.length) return range;
     range = x;
@@ -48,12 +66,6 @@ function d3_scale_linear(domain, range, interpolate, clamp) {
 
   scale.rangeRound = function(x) {
     return scale.range(x).interpolate(d3_interpolateRound);
-  };
-
-  scale.clamp = function(x) {
-    if (!arguments.length) return clamp;
-    clamp = x;
-    return rescale();
   };
 
   scale.interpolate = function(x) {
@@ -83,7 +95,7 @@ function d3_scale_linear(domain, range, interpolate, clamp) {
 }
 
 function d3_scale_linearRebind(scale, linear) {
-  return d3.rebind(scale, linear, "range", "rangeRound", "interpolate", "clamp");
+  return d3.rebind(scale, linear, "range", "rangeRound", "uninterpolate", "interpolate", "clamp");
 }
 
 function d3_scale_linearNice(domain, m) {
