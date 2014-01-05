@@ -20,7 +20,8 @@ d3.svg.axis = function() {
       tickFilter = 2,
       tickSubdivide = 0,
       tickSize_f,
-      tickEndSize_f;
+      tickEndSize_f,
+      tickPadding_f;
 
   reinit_ticksizes();
 
@@ -79,6 +80,14 @@ d3.svg.axis = function() {
       end = mult * tickEndSize;
       tickEndSize_f = function(d, i) {
         return end;
+      };
+    }
+
+    if (typeof tickPadding === "function") {
+      tickPadding_f = tickPadding;
+    } else {
+      tickPadding_f = function(d, i) {
+        return tickPadding;
       };
     }
   }
@@ -146,7 +155,7 @@ d3.svg.axis = function() {
         orient: orient,                          // String
         tickSize: tickSize_f,                    // functor(d, i)
         tickEndSize: tickEndSize_f,              // functor(d, i)
-        tickPadding: tickPadding,                // Number
+        tickPadding: tickPadding_f,              // functor(d, i)
         tickLabelPosition: tickLabelPosition_,   // functor(d, i)
         tickFormat: tickFormat,                  // functor(d)
         tickFormatExtended: tickFormatExtended_  // functor(d, i)
@@ -280,16 +289,16 @@ d3.svg.axis = function() {
           lineEnter.attr("x2", 0).attr("y2", tickSize_f);
           textEnter.attr("x", 0).attr("y", function(d, i) {
             var l = tickSize_f(d, i);
-            return l < 0 ? l - tickPadding : l + tickPadding;
+            return l < 0 ? l - tickPadding_f(d, i) : l + tickPadding_f(d, i);
           }).each(labelPos_f);
           textUpdateEnter.attr("x", 0).attr("y", function(d, i) {
             var l = tickSize_f(d, i);
-            return l < 0 ? l - tickPadding : l + tickPadding;
+            return l < 0 ? l - tickPadding_f(d, i) : l + tickPadding_f(d, i);
           }).each(labelPos_f);
           lineUpdate.attr("x2", 0).attr("y2", tickSize_f);
           textUpdate.attr("x", 0).attr("y", function (d, i) {
             var l = tickSize_f(d, i);
-            return l < 0 ? l - tickPadding : l + tickPadding;
+            return l < 0 ? l - tickPadding_f(d, i) : l + tickPadding_f(d, i);
           }).each(labelPos_f);
           pathUpdate.attr("d", "M" + range[0] + "," + tickEndSize_f(range, 0) + "V0H" + range[1] + "V" + tickEndSize_f(range, 1));
           break;
@@ -300,16 +309,16 @@ d3.svg.axis = function() {
           lineEnter.attr("y2", 0).attr("x2", tickSize_f);
           textEnter.attr("y", 0).attr("x", function(d, i) {
             var l = tickSize_f(d, i);
-            return l < 0 ? l - tickPadding : l + tickPadding;
+            return l < 0 ? l - tickPadding_f(d, i) : l + tickPadding_f(d, i);
           }).each(labelPos_f);
           textUpdateEnter.attr("y", 0).attr("x", function(d, i) {
             var l = tickSize_f(d, i);
-            return l < 0 ? l - tickPadding : l + tickPadding;
+            return l < 0 ? l - tickPadding_f(d, i) : l + tickPadding_f(d, i);
           }).each(labelPos_f);
           lineUpdate.attr("y2", 0).attr("x2", tickSize_f);
           textUpdate.attr("y", 0).attr("x", function(d, i) {
             var l = tickSize_f(d, i);
-            return l < 0 ? l - tickPadding : l + tickPadding;
+            return l < 0 ? l - tickPadding_f(d, i) : l + tickPadding_f(d, i);
           }).each(labelPos_f);
           pathUpdate.attr("d", "M" + -tickEndSize_f(range, 0) + "," + range[0] + "H0V" + range[1] + "H" + -tickEndSize_f(range, 1));
           break;
@@ -346,7 +355,7 @@ d3.svg.axis = function() {
             orient: orient,                          // String
         tickSize: tickSize_f,                    // functor(d, i)
         tickEndSize: tickEndSize_f,              // functor(d, i)
-        tickPadding: tickPadding,                // Number
+        tickPadding: tickPadding_f,              // functor(d, i)
         tickLabelPosition: tickLabelPosition_,   // functor(d, i)
         tickFormat: tickFormat,                  // functor(d)
         tickFormatExtended: tickFormatExtended_  // functor(d, i)
@@ -409,7 +418,12 @@ d3.svg.axis = function() {
 
   axis.tickPadding = function(x) {
     if (!arguments.length) return tickPadding;
-    tickPadding = +x;
+    if (typeof x === 'function') {
+      tickPadding = x;
+    } else {
+      tickPadding = +x;
+    }
+    reinit_ticksizes();
     return axis;
   };
 
