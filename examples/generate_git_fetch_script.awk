@@ -202,6 +202,12 @@ BEGIN {
 /\/github.com\/wiki\//        {
     next;
 }
+/\/github.com\/api\//        {
+    next;
+}
+/\/api.github.com\//        {
+    next;
+}
 /\/raw.github.com\/wiki\//        {
     next;
 }
