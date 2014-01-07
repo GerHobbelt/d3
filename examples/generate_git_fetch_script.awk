@@ -55,7 +55,7 @@ BEGIN {
     printf("\n");
     printf("\n");
     printf("function git_add {\n");
-    printf("    if test -d \"$2\" ; then\n");
+    printf("    if test -s \"$2/.git/index\" ; then\n");
     printf("        pushd .                                                                                         2> /dev/null   > /dev/null\n");
     printf("        cd $2\n");
     printf("        git pull --all\n");

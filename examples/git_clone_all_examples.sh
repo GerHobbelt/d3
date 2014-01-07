@@ -6,7 +6,7 @@ pushd $(dirname $0)                                                             
 
 
 function git_add {
-    if test -d "$2" ; then
+    if test -s "$2/.git/index" ; then
         pushd .                                                                                         2> /dev/null   > /dev/null
         cd $2
         git pull --all
