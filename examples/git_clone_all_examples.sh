@@ -1128,6 +1128,7 @@ git_add  https://gist.github.com/972398.git                                     
 git_add  https://gist.github.com/993912.git                                      gist-993912
 git_add  https://gist.github.com/996370.git                                      gist-996370
 git_add  https://gist.github.com/999346.git                                      gist-999346
+git_add  https://github.com/Addepar/ember-table.git                              github-Addepar_ember-table
 git_add  https://github.com/BertrandDechoux/d3js-sandbox.git                     github-BertrandDechoux_d3js-sandbox
 git_add  https://github.com/Caged/d3-tip.git                                     github-Caged_d3-tip
 git_add  https://github.com/CrowdStrike/ember-timetree.git                       github-CrowdStrike_ember-timetree
@@ -1137,7 +1138,6 @@ git_add  https://github.com/NickQiZhu/dc.js.git                                 
 git_add  https://github.com/PatMartin/DexCharts.git                              github-PatMartin_DexCharts
 git_add  https://github.com/Quartz/Chartbuilder.git                              github-Quartz_Chartbuilder
 git_add  https://github.com/Swizec/d3.js-book-examples.git                       github-Swizec_d3_js-book-examples
-git_add  https://github.com/addepar/ember-table.git                              github-addepar_ember-table
 git_add  https://github.com/alangrafu/radar-chart-d3.git                         github-alangrafu_radar-chart-d3
 git_add  https://github.com/alexandersimoes/d3plus.git                           github-alexandersimoes_d3plus
 git_add  https://github.com/alexbbrown/g3plot-1.git                              github-alexbbrown_g3plot-1
@@ -1157,7 +1157,6 @@ git_add  https://github.com/cakey/infro.git                                     
 git_add  https://github.com/calvinmetcalf/k3.git                                 github-calvinmetcalf_k3
 git_add  https://github.com/calvinmetcalf/leaflet.demos.git                      github-calvinmetcalf_leaflet_demos
 git_add  https://github.com/calvinmetcalf/psychic-octo-nemesis.git               github-calvinmetcalf_psychic-octo-nemesis
-git_add  https://github.com/ccarpenterg/blog.git                                 github-ccarpenterg_blog
 git_add  https://github.com/chelm/jsgeo.git                                      github-chelm_jsgeo
 git_add  https://github.com/cotrino/experimentos.git                             github-cotrino_experimentos
 git_add  https://github.com/cpettitt/dagre.git                                   github-cpettitt_dagre
@@ -1189,7 +1188,6 @@ git_add  https://github.com/gajus/interdependent-interactive-histograms.git     
 git_add  https://github.com/gajus/pie-chart.git                                  github-gajus_pie-chart
 git_add  https://github.com/gameprez/gpdk.git                                    github-gameprez_gpdk
 git_add  https://github.com/gencay/stackedGroupedChart.git                       github-gencay_stackedGroupedChart
-git_add  https://github.com/gijs/blog.git                                        github-gijs_blog
 git_add  https://github.com/goulu/Goulib.git                                     github-goulu_Goulib
 git_add  https://github.com/hadley/r2d3.git                                      github-hadley_r2d3
 git_add  https://github.com/hhuuggoo/pushd3.git                                  github-hhuuggoo_pushd3
@@ -1261,11 +1259,10 @@ git_add  https://github.com/shutterstock/rickshaw.git                           
 git_add  https://github.com/square/crossfilter.git                               github-square_crossfilter
 git_add  https://github.com/square/cube.git                                      github-square_cube
 git_add  https://github.com/square/cubism.git                                    github-square_cubism
-git_add  https://github.com/square/tesseract.git                                 github-square_tesseract
 git_add  https://github.com/sympy/sympy.git                                      github-sympy_sympy
 git_add  https://github.com/syntagmatic/parallel-coordinates.git                 github-syntagmatic_parallel-coordinates
 git_add  https://github.com/tamc/Sankey.git                                      github-tamc_Sankey
-git_add  https://github.com/tenxer/xcharts.git                                   github-tenxer_xcharts
+git_add  https://github.com/tenXer/xcharts.git                                   github-tenXer_xcharts
 git_add  https://github.com/trinary/d3-transform.git                             github-trinary_d3-transform
 git_add  https://github.com/turban/d3.slider.git                                 github-turban_d3_slider
 git_add  https://github.com/upphiminn/d3.ForceBundle.git                         github-upphiminn_d3_ForceBundle
