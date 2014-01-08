@@ -2564,3 +2564,23 @@ popd                                                                            
 # https://github.com/zziuni/d3.git
 # https://github.com/zzolo/d3js-example-presentation.git
 # https://github.com/zzolo/mjc-data-visualization-presentation.git
+
+# D3.js Axes …… <a href="http://bl.ocks.org/3605035" title="view this gist via bl.ocks.org">∆</a> <a href="http://bl.ocks.org/GerHobbelt" title="view a list of all my gists at bl.ocks.org">∞</a>
+# 
+# This is a copy of [Ger Hobbelt's examples/axis/axis-classical.html](https://github.com/GerHobbelt/d3/blob/master/examples/axis/axis-classical.html).
+# 
+# The 'classical' axes showcase the augmented d3.axes component in https://github.com/GerHobbelt/d3
+# 
+# To see the same axes (rendered differently as vanilla D3 doesn't support functions for subtick count, etc. in its d3.axis component (at least as per v2.10.0 release),
+# view:
+# 
+# - same code, with crash protection wrappers, for vanilla D3.js: [gist 3605069](http://bl.ocks.org/3605069)
+# - reduced code wuitable for use with vanilla D3.js as is, with crash protection wrappers: [gist 3605124](http://bl.ocks.org/3605124)
+# 
+# 
+## Related gists
+# 
+# - [gist 3605035](http://bl.ocks.org/3605035): a series of linear axes with varying degress of sophistication, using the advanced d3.axis component
+# - [gist 3605069](http://bl.ocks.org/3605069): same code, with crash protection wrappers, for vanilla D3.js (use to see how many of these vanilla D3.js supports today)
+# - [gist 3605124](http://bl.ocks.org/3605124): reduced code suitable for use with vanilla D3.js v2.10 as is, with crash protection wrappers
+# 
