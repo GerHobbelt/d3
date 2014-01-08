@@ -7249,7 +7249,7 @@ d3 = function() {
       return rescale();
     };
     scale.domainClamp = function(x) {
-      return scale.domain(x).uninterploate(d3_uninterpolateClamp);
+      return scale.domain(x).uninterpolate(d3_uninterpolateClamp);
     };
     scale.clamp = function(x) {
       if (!arguments.length) return uninterpolate === d3_uninterpolateClamp;
@@ -7288,7 +7288,7 @@ d3 = function() {
       return rescale();
     };
     scale.copy = function() {
-      return d3_scale_linear(domain, range, interpolate, clamp);
+      return d3_scale_linear(domain, range, uninterpolate, interpolate);
     };
     return rescale();
   }
@@ -8765,10 +8765,6 @@ d3 = function() {
             min_spacing[1] = min_spacing[0] || 2;
           }
         }
-        for (i = 0; i < arr.length; i++) {
-          d = arr[i];
-          if (!d.subindex) {}
-        }
       }
       if (g) {
         g.each(function() {
@@ -8792,11 +8788,10 @@ d3 = function() {
           var lineEnter = tickEnter.select("line.tick-line"), lineUpdate = tickUpdate.select("line.tick-line"), textEnter = tickEnter.select("text.tick-text");
           ticks.filter(function(d, i) {
             return !d.subindex;
-          }).each(function(d, i) {
-            var node = d3.select(this);
-            if (node.select("text.tick-text").empty()) {
+          }).forEach(function(d, i) {
+            if (tick.select("text.tick-text").empty()) {
               d.is_promoted = true;
-              node.append("text").attr("class", "tick-text").style("opacity", 1e-6);
+              tick.append("text").attr("class", "tick-text").style("opacity", 1e-6);
             } else {
               d.is_promoted = false;
             }

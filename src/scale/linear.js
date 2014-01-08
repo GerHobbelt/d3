@@ -40,7 +40,7 @@ function d3_scale_linear(domain, range, uninterpolate, interpolate) {
   };
 
   scale.domainClamp = function(x) {
-    return scale.domain(x).uninterploate(d3_uninterpolateClamp);
+    return scale.domain(x).uninterpolate(d3_uninterpolateClamp);
   };
 
   scale.clamp = function(x) {
@@ -88,7 +88,7 @@ function d3_scale_linear(domain, range, uninterpolate, interpolate) {
   };
 
   scale.copy = function() {
-    return d3_scale_linear(domain, range, interpolate, clamp);
+    return d3_scale_linear(domain, range, uninterpolate, interpolate);
   };
 
   return rescale();

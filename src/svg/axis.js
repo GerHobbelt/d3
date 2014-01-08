@@ -175,11 +175,13 @@ d3.svg.axis = function() {
           min_spacing[1] = (min_spacing[0] || 2);
         }
       }
-      for (i = 0; i < arr.length; i++) {
-        d = arr[i];
-        if (!d.subindex) {
-        }
-      }
+      // for (i = 0; i < arr.length; i++) {
+      //   d = arr[i];
+      //   if (!d.subindex) {
+      //   }
+      // }
+
+      // TBD
     }
 
     if (g) {
@@ -227,11 +229,10 @@ d3.svg.axis = function() {
         // ensuring these promoted elements are very easily recognizable through .filter().
         ticks.filter(function(d, i) {
           return !d.subindex;
-        }).each(function(d, i) {
-          var node = d3.select(this);
-          if (node.select("text.tick-text").empty()) {
+        }).forEach(function(d, i) {
+          if (tick.select("text.tick-text").empty()) {
             d.is_promoted = true;
-            node.append("text").attr("class", "tick-text").style("opacity", 1e-6);
+            tick.append("text").attr("class", "tick-text").style("opacity", 1e-6);
           } else {
             d.is_promoted = false;
           }
