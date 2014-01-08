@@ -313,6 +313,10 @@ BEGIN {
 END             {
     # nuke a few obvious entries:
     stmts["github-mbostock/d3"] = "";
+    stmts["github-GerHobbelt/d3"] = "";
+    stmts["github-zziuni/d3"] = "";
+    stmts["github-johan/d3"] = "";
+    stmts["github-latentflip/d3"] = "";
 
     max = asort(stmts);
     for (i = 1; i <= max; i++)

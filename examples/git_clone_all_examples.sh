@@ -135,6 +135,10 @@ echo "<dl>" >> examples_index.html
 
 
 
+
+
+
+
 gist_add     300494
 gist_add     458648
 gist_add     492147
@@ -1266,14 +1270,12 @@ github_add  jasondavies/d3-parsets
 github_add  jazzido/d3micromaps
 github_add  jiahuang/d3-timeline
 github_add  jllord/sheetsee.js
-github_add  johan/d3
 github_add  jondot/graphene
 github_add  jsundram/d3-choropleth
 github_add  k9ert/meteor-deployments
 github_add  kbroman/d3examples
 github_add  kenhub/giraffe
 github_add  kpeng/visionyc
-github_add  latentflip/d3
 github_add  latentflip/violin
 github_add  lbrucher/d3-tree-heatmap
 github_add  lgrammel/d3_gwt
@@ -1334,7 +1336,6 @@ github_add  vogievetsky/IntroD3
 github_add  webholics/talk-munichjs-d3
 github_add  webmonarch/d34raphael
 github_add  wrobstory/bearcart
-github_add  zziuni/d3
 github_add  zzolo/d3js-example-presentation
 github_add  zzolo/mjc-data-visualization-presentation
 
@@ -2421,6 +2422,7 @@ popd                                                                            
 # https://github.com/BertrandDechoux/d3js-sandbox.git
 # https://github.com/Caged/d3-tip.git
 # https://github.com/CrowdStrike/ember-timetree.git
+# https://github.com/GerHobbelt/d3.git
 # https://github.com/MinnPost/simple-map-d3.git
 # https://github.com/MonsieurCactus/hanejs.git
 # https://github.com/NickQiZhu/dc.js.git
@@ -2564,23 +2566,3 @@ popd                                                                            
 # https://github.com/zziuni/d3.git
 # https://github.com/zzolo/d3js-example-presentation.git
 # https://github.com/zzolo/mjc-data-visualization-presentation.git
-
-# D3.js Axes …… <a href="http://bl.ocks.org/3605035" title="view this gist via bl.ocks.org">∆</a> <a href="http://bl.ocks.org/GerHobbelt" title="view a list of all my gists at bl.ocks.org">∞</a>
-# 
-# This is a copy of [Ger Hobbelt's examples/axis/axis-classical.html](https://github.com/GerHobbelt/d3/blob/master/examples/axis/axis-classical.html).
-# 
-# The 'classical' axes showcase the augmented d3.axes component in https://github.com/GerHobbelt/d3
-# 
-# To see the same axes (rendered differently as vanilla D3 doesn't support functions for subtick count, etc. in its d3.axis component (at least as per v2.10.0 release),
-# view:
-# 
-# - same code, with crash protection wrappers, for vanilla D3.js: [gist 3605069](http://bl.ocks.org/3605069)
-# - reduced code wuitable for use with vanilla D3.js as is, with crash protection wrappers: [gist 3605124](http://bl.ocks.org/3605124)
-# 
-# 
-## Related gists
-# 
-# - [gist 3605035](http://bl.ocks.org/3605035): a series of linear axes with varying degress of sophistication, using the advanced d3.axis component
-# - [gist 3605069](http://bl.ocks.org/3605069): same code, with crash protection wrappers, for vanilla D3.js (use to see how many of these vanilla D3.js supports today)
-# - [gist 3605124](http://bl.ocks.org/3605124): reduced code suitable for use with vanilla D3.js v2.10 as is, with crash protection wrappers
-# 
