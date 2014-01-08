@@ -41,9 +41,18 @@ function mk_name(str) {
     return str;
 }
 
-function push_entry(idx, line) {
+function push_entry(idx, line, comment_line) {
     stmts[idx] = line;
+    comment_stmts[idx] = comment_line;
     #printf("# id %s: '%s' --> '%s'\n", idx, line, stmts[idx]);
+}
+
+function push_gist_entry(gist_nr) {
+    push_entry("gist-" gist_nr, sprintf("gist_add  %9s", gist_nr), sprintf("https://gist.github.com/%s.git", gist_nr));
+}
+
+function push_github_entry(git_repo) {
+    push_entry("github-" git_repo, sprintf("github_add  %s", git_repo), sprintf("https://github.com/%s.git", git_repo));
 }
 
 BEGIN {
@@ -52,21 +61,73 @@ BEGIN {
     printf("\n");
     printf("pushd $(dirname $0)                                                                                     2> /dev/null   > /dev/null\n");
     printf("\n");
+    printf("if ! test -d \"./\\!descriptions\" ; then\n");
+    printf("  mkdir \"./\\!descriptions\"\n");
+    printf("fi\n");
+    printf("pwd\n");
     printf("\n");
-    printf("\n");
-    printf("function git_add {\n");
-    printf("    if test -s \"$2/.git/index\" ; then\n");
+    printf("function gist_add {\n");
+    printf("    local full_uri=$( printf \"https://gist.github.com/%%s.git\" \"$1\" );\n");
+    printf("    local dir_path=$( printf \"gist-%%s\" \"$1\" );\n");
+    printf("    echo \"gist: full_uri = ${full_uri}, dir_path = ${dir_path}\"\n");
+    printf("     \n");
+    printf("    if test -s \"${dir_path}/.git/index\" ; then\n");
     printf("        pushd .                                                                                         2> /dev/null   > /dev/null\n");
-    printf("        cd $2\n");
+    printf("        cd ${dir_path}\n");
     printf("        git pull --all\n");
     printf("        popd                                                                                            2> /dev/null   > /dev/null\n");
     printf("    else \n");
-    printf("        git clone $1 $2\n");
+    printf("        rm -rf ${dir_path}                                                                              2> /dev/null   > /dev/null\n");
+    printf("        echo git clone ${full_uri} ${dir_path}\n");
+    printf("        git clone ${full_uri} ${dir_path}\n");
     printf("    fi\n");
     printf("    if test \"$mode\" = \"W\" ; then\n");
-    printf("        git_register_remote_for_UnixVM $1 $2\n");
+    printf("        git_register_remote_for_UnixVM ${full_uri} ${dir_path}\n");
     printf("    fi\n");
+    printf("\n");
+    printf("    echo \"<dt>gist:$1 (View: <a href='http://bl.ocks.org/$1'>bl.ocks.org</a> / <a href='${dir_path}/'>local</a>)</dt>\" >> examples_index.html\n");
+    printf("    if ! test -s \"./\\!descriptions/${dir_path}.txt\" ; then\n");
+    printf("        echo curl -o \"./\\!descriptions/${dir_path}.txt\" https://api.github.com/gists/$1 \n");
+    printf("        curl -o \"./\\!descriptions/${dir_path}.txt\" https://api.github.com/gists/$1 \n");
+    printf("    fi\n");
+    printf("    touch \"./\\!descriptions/${dir_path}.txt\"\n");
+    printf("\n");
+    printf("    echo \"<dd>\" >> examples_index.html\n");
+    printf("    cat \"./\\!descriptions/${dir_path}.txt\" | gawk -f ./git_clone_all_examples.awk -v gist=$1 >> examples_index.html\n");
+    printf("    echo \"</dd>\" >> examples_index.html\n");
     printf("}\n");
+    printf("\n");
+    printf("function github_add {\n");
+    printf("    local full_uri=$( printf \"https://github.com/%%s.git\" \"$1\" );\n");
+    printf("    local dir_path=$( printf \"github.%%s\" \"$1\" | sed -e \"s/[^a-zA-Z0-9_.-]\\+/./g\" -e \"s/\\.\\+/./g\" );\n");
+    printf("    echo \"github: full_uri = ${full_uri}, dir_path = ${dir_path}\"\n");
+    printf("     \n");
+    printf("    if test -s \"${dir_path}/.git/index\" ; then\n");
+    printf("        pushd .                                                                                         2> /dev/null   > /dev/null\n");
+    printf("        cd ${dir_path}\n");
+    printf("        git pull --all\n");
+    printf("        popd                                                                                            2> /dev/null   > /dev/null\n");
+    printf("    else \n");
+    printf("        rm -rf ${dir_path}                                                                              2> /dev/null   > /dev/null\n");
+    printf("        echo git clone ${full_uri} ${dir_path}\n");
+    printf("        git clone ${full_uri} ${dir_path}\n");
+    printf("    fi\n");
+    printf("    if test \"$mode\" = \"W\" ; then\n");
+    printf("        git_register_remote_for_UnixVM ${full_uri} ${dir_path}\n");
+    printf("    fi\n");
+    printf("\n");
+    printf("    echo \"<dt>github:$1 (View: <a href='https://github.com/$1'>github</a> / <a href='${dir_path}/'>local</a>)</dt>\" >> examples_index.html\n");
+    printf("    if ! test -s \"./\\!descriptions/${dir_path}.txt\" ; then\n");
+    printf("        echo curl -o \"./\\!descriptions/${dir_path}.txt\" https://api.github.com/repos/$1 \n");
+    printf("        curl -o \"./\\!descriptions/${dir_path}.txt\" https://api.github.com/repos/$1 \n");
+    printf("    fi\n");
+    printf("    touch \"./\\!descriptions/${dir_path}.txt\"\n");
+    printf("\n");
+    printf("    echo \"<dd>\" >> examples_index.html\n");
+    printf("    cat \"./\\!descriptions/${dir_path}.txt\" | gawk -f ./git_clone_all_examples.awk -v github=$1 >> examples_index.html\n");
+    printf("    echo \"</dd>\" >> examples_index.html\n");
+    printf("}\n");
+    printf("\n");
     printf("\n");
     printf("function git_register_remote_for_UnixVM {\n");
     printf("    if test -d \"$2\" ; then\n");
@@ -119,10 +180,22 @@ BEGIN {
     printf("\n");
     printf("\n");
     printf("\n");
+    printf("echo \"<html><body>\" > examples_index.html\n");
+    printf("\n");
+    printf("echo \"<h1>D3 example/test gists and git repositories:</h1>\" >> examples_index.html\n");
+    printf("echo \"<dl>\" >> examples_index.html\n");
+    printf("\n");
+    printf("\n");
+    printf("\n");
+    printf("\n");
+    printf("\n");
+    printf("\n");
+    printf("\n");
 
     state = 0;
     idx = 0;
     stmts[0] = "";
+    comment_stmts[0] = "";
 }
 
 
@@ -131,9 +204,7 @@ BEGIN {
 /bl\.ocks\.org\/[0-9]+$/        {
     gist_nr = extract_gist_number($0, 2);
 
-    full_uri = sprintf("https://gist.github.com/%s.git", gist_nr);
-     
-    push_entry("gist-" gist_nr, sprintf("git_add  %-70s  %s", full_uri, "gist-" gist_nr));
+    push_gist_entry(gist_nr);
     next;
 }
 
@@ -141,9 +212,7 @@ BEGIN {
 /bl\.ocks\.org\/[0-9]+\//        {
     gist_nr = extract_gist_number($0, 2);
 
-    full_uri = sprintf("https://gist.github.com/%s.git", gist_nr);
-     
-    push_entry("gist-" gist_nr, sprintf("git_add  %-70s  %s", full_uri, "gist-" gist_nr));
+    push_gist_entry(gist_nr);
     next;
 }
 
@@ -151,9 +220,7 @@ BEGIN {
 /bl\.ocks\.org\/[^\/]+\/[0-9]+$/        {
     gist_nr = extract_gist_number($0, 3);
 
-    full_uri = sprintf("https://gist.github.com/%s.git", gist_nr);
-     
-    push_entry("gist-" gist_nr, sprintf("git_add  %-70s  %s", full_uri, "gist-" gist_nr));
+    push_gist_entry(gist_nr);
     next;
 }
 
@@ -161,9 +228,7 @@ BEGIN {
 /bl\.ocks\.org\/[^\/]+\/[0-9]+\//        {
     gist_nr = extract_gist_number($0, 3);
 
-    full_uri = sprintf("https://gist.github.com/%s.git", gist_nr);
-     
-    push_entry("gist-" gist_nr, sprintf("git_add  %-70s  %s", full_uri, "gist-" gist_nr));
+    push_gist_entry(gist_nr);
     next;
 }
 
@@ -171,9 +236,7 @@ BEGIN {
 /bl\.ocks\.org\/[^\/]+\/raw\/[0-9]+\//        {
     gist_nr = extract_gist_number($0, 4);
 
-    full_uri = sprintf("https://gist.github.com/%s.git", gist_nr);
-     
-    push_entry("gist-" gist_nr, sprintf("git_add  %-70s  %s", full_uri, "gist-" gist_nr));
+    push_gist_entry(gist_nr);
     next;
 }
 
@@ -181,9 +244,7 @@ BEGIN {
 /gist\.github\.com\/[0-9]+\./        {
     gist_nr = extract_gist_number($0, 2);
 
-    full_uri = sprintf("https://gist.github.com/%s.git", gist_nr);
-     
-    push_entry("gist-" gist_nr, sprintf("git_add  %-70s  %s", full_uri, "gist-" gist_nr));
+    push_gist_entry(gist_nr);
     next;
 }
 
@@ -217,9 +278,7 @@ BEGIN {
 /\/raw.github.com\/[^\/]+\/[^\/]+/        {
     git_repo = extract_user_and_repo($0, 2);
 
-    full_uri = sprintf("https://github.com/%s.git", git_repo);
-     
-    push_entry("github-" git_repo, sprintf("git_add  %-70s  %s", full_uri, mk_name("github-" git_repo)));
+    push_github_entry(git_repo);
     next;
 }
 
@@ -233,9 +292,7 @@ BEGIN {
     #printf("Selecting Github repo URI [%s/%s] for line '%s' '%s'\n", user, repo, $0, str);
     git_repo = user "/" repo;
 
-    full_uri = sprintf("https://github.com/%s.git", git_repo);
-     
-    push_entry("github-" git_repo, sprintf("git_add  %-70s  %s", full_uri, mk_name("github-" git_repo)));
+    push_github_entry(git_repo);
     next;
 }
 
@@ -243,9 +300,7 @@ BEGIN {
 /\/github.com\/[^\/]+\/[^\/]+/        {
     git_repo = extract_user_and_repo($0, 2);
 
-    full_uri = sprintf("https://github.com/%s.git", git_repo);
-     
-    push_entry("github-" git_repo, sprintf("git_add  %-70s  %s", full_uri, mk_name("github-" git_repo)));
+    push_github_entry(git_repo);
     next;
 }
 
@@ -267,7 +322,30 @@ END             {
     printf("\n");
     printf("\n");
     printf("\n");
+    printf("\n");
+    printf("\n");
+    printf("\n");
+    printf("echo \"</dl>\" >> examples_index.html\n");
+    printf("echo \"</body></html>\" >> examples_index.html\n");
+    printf("\n");
     printf("popd                                                                                                    2> /dev/null   > /dev/null\n");
     printf("\n");
+    printf("\n");
+    printf("#\n");
+    printf("# The URLs below are included in this file to serve as 'memory',\n");
+    printf("# i.e. to keep these around even when they are not (yet) listed\n");
+    printf("# in the wiki documents which we scan for gists/github URIs.\n");
+    printf("# This results in a rerun of the generate_git_fetch_script.sh\n");
+    printf("# including all these repositories again, just like they were before.\n");
+    printf("#\n");
+    printf("# TL;DR: we don't loose any repo's we specified apart from the wiki itself.\n");
+    printf("#\n");
+    printf("#\n");
+    printf("#\n");
+    max = asort(comment_stmts);
+    for (i = 1; i <= max; i++)
+    {
+        printf("# %s\n", comment_stmts[i]);
+    }
 }
 

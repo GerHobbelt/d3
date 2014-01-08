@@ -3,21 +3,73 @@
 
 pushd $(dirname $0)                                                                                     2> /dev/null   > /dev/null
 
+if ! test -d "./\!descriptions" ; then
+  mkdir "./\!descriptions"
+fi
+pwd
 
-
-function git_add {
-    if test -s "$2/.git/index" ; then
+function gist_add {
+    local full_uri=$( printf "https://gist.github.com/%s.git" "$1" );
+    local dir_path=$( printf "gist-%s" "$1" );
+    echo "gist: full_uri = ${full_uri}, dir_path = ${dir_path}"
+     
+    if test -s "${dir_path}/.git/index" ; then
         pushd .                                                                                         2> /dev/null   > /dev/null
-        cd $2
+        cd ${dir_path}
         git pull --all
         popd                                                                                            2> /dev/null   > /dev/null
     else 
-        git clone $1 $2
+        rm -rf ${dir_path}                                                                              2> /dev/null   > /dev/null
+        echo git clone ${full_uri} ${dir_path}
+        git clone ${full_uri} ${dir_path}
     fi
     if test "$mode" = "W" ; then
-        git_register_remote_for_UnixVM $1 $2
+        git_register_remote_for_UnixVM ${full_uri} ${dir_path}
     fi
+
+    echo "<dt>gist:$1 (View: <a href='http://bl.ocks.org/$1'>bl.ocks.org</a> / <a href='${dir_path}/'>local</a>)</dt>" >> examples_index.html
+    if ! test -s "./\!descriptions/${dir_path}.txt" ; then
+        echo curl -o "./\!descriptions/${dir_path}.txt" https://api.github.com/gists/$1 
+        curl -o "./\!descriptions/${dir_path}.txt" https://api.github.com/gists/$1 
+    fi
+    touch "./\!descriptions/${dir_path}.txt"
+
+    echo "<dd>" >> examples_index.html
+    cat "./\!descriptions/${dir_path}.txt" | gawk -f ./git_clone_all_examples.awk -v gist=$1 >> examples_index.html
+    echo "</dd>" >> examples_index.html
 }
+
+function github_add {
+    local full_uri=$( printf "https://github.com/%s.git" "$1" );
+    local dir_path=$( printf "github.%s" "$1" | sed -e "s/[^a-zA-Z0-9_.-]\+/./g" -e "s/\.\+/./g" );
+    echo "github: full_uri = ${full_uri}, dir_path = ${dir_path}"
+     
+    if test -s "${dir_path}/.git/index" ; then
+        pushd .                                                                                         2> /dev/null   > /dev/null
+        cd ${dir_path}
+        git pull --all
+        popd                                                                                            2> /dev/null   > /dev/null
+    else 
+        rm -rf ${dir_path}                                                                              2> /dev/null   > /dev/null
+        echo git clone ${full_uri} ${dir_path}
+        git clone ${full_uri} ${dir_path}
+    fi
+    if test "$mode" = "W" ; then
+        git_register_remote_for_UnixVM ${full_uri} ${dir_path}
+    fi
+
+    echo "<dt>github:$1 (View: <a href='https://github.com/$1'>github</a> / <a href='${dir_path}/'>local</a>)</dt>" >> examples_index.html
+    if ! test -s "./\!descriptions/${dir_path}.txt" ; then
+        echo curl -o "./\!descriptions/${dir_path}.txt" https://api.github.com/repos/$1 
+        curl -o "./\!descriptions/${dir_path}.txt" https://api.github.com/repos/$1 
+    fi
+    touch "./\!descriptions/${dir_path}.txt"
+
+    echo "<dd>" >> examples_index.html
+    cat "./\!descriptions/${dir_path}.txt" | gawk -f ./git_clone_all_examples.awk -v github=$1 >> examples_index.html
+    echo "</dd>" >> examples_index.html
+}
+
 
 function git_register_remote_for_UnixVM {
     if test -d "$2" ; then
@@ -70,1212 +122,2445 @@ esac
 
 
 
+echo "<html><body>" > examples_index.html
+
+echo "<h1>D3 example/test gists and git repositories:</h1>" >> examples_index.html
+echo "<dl>" >> examples_index.html
 
 
-git_add  https://gist.github.com/1005090.git                                     gist-1005090
-git_add  https://gist.github.com/1005873.git                                     gist-1005873
-git_add  https://gist.github.com/1009139.git                                     gist-1009139
-git_add  https://gist.github.com/1009308.git                                     gist-1009308
-git_add  https://gist.github.com/1014829.git                                     gist-1014829
-git_add  https://gist.github.com/1016220.git                                     gist-1016220
-git_add  https://gist.github.com/1016860.git                                     gist-1016860
-git_add  https://gist.github.com/1020902.git                                     gist-1020902
-git_add  https://gist.github.com/1021103.git                                     gist-1021103
-git_add  https://gist.github.com/1021841.git                                     gist-1021841
-git_add  https://gist.github.com/1021953.git                                     gist-1021953
-git_add  https://gist.github.com/1026649.git                                     gist-1026649
-git_add  https://gist.github.com/1036776.git                                     gist-1036776
-git_add  https://gist.github.com/1044242.git                                     gist-1044242
-git_add  https://gist.github.com/1046712.git                                     gist-1046712
-git_add  https://gist.github.com/1059602.git                                     gist-1059602
-git_add  https://gist.github.com/1061834.git                                     gist-1061834
-git_add  https://gist.github.com/1062288.git                                     gist-1062288
-git_add  https://gist.github.com/1062383.git                                     gist-1062383
-git_add  https://gist.github.com/1062544.git                                     gist-1062544
-git_add  https://gist.github.com/1065859.git                                     gist-1065859
-git_add  https://gist.github.com/1065861.git                                     gist-1065861
-git_add  https://gist.github.com/1067616.git                                     gist-1067616
-git_add  https://gist.github.com/1067636.git                                     gist-1067636
-git_add  https://gist.github.com/1071269.git                                     gist-1071269
-git_add  https://gist.github.com/1071981.git                                     gist-1071981
-git_add  https://gist.github.com/1073373.git                                     gist-1073373
-git_add  https://gist.github.com/1074045.git                                     gist-1074045
-git_add  https://gist.github.com/1075123.git                                     gist-1075123
-git_add  https://gist.github.com/1076158.git                                     gist-1076158
-git_add  https://gist.github.com/1080941.git                                     gist-1080941
-git_add  https://gist.github.com/1083726.git                                     gist-1083726
-git_add  https://gist.github.com/1083732.git                                     gist-1083732
-git_add  https://gist.github.com/1086421.git                                     gist-1086421
-git_add  https://gist.github.com/1087001.git                                     gist-1087001
-git_add  https://gist.github.com/1090203.git                                     gist-1090203
-git_add  https://gist.github.com/1090691.git                                     gist-1090691
-git_add  https://gist.github.com/1093025.git                                     gist-1093025
-git_add  https://gist.github.com/1093130.git                                     gist-1093130
-git_add  https://gist.github.com/1095727.git                                     gist-1095727
-git_add  https://gist.github.com/1095795.git                                     gist-1095795
-git_add  https://gist.github.com/1096355.git                                     gist-1096355
-git_add  https://gist.github.com/1098617.git                                     gist-1098617
-git_add  https://gist.github.com/1100394.git                                     gist-1100394
-git_add  https://gist.github.com/1117287.git                                     gist-1117287
-git_add  https://gist.github.com/1123639.git                                     gist-1123639
-git_add  https://gist.github.com/1125339.git                                     gist-1125339
-git_add  https://gist.github.com/1125458.git                                     gist-1125458
-git_add  https://gist.github.com/1125997.git                                     gist-1125997
-git_add  https://gist.github.com/1129492.git                                     gist-1129492
-git_add  https://gist.github.com/1133472.git                                     gist-1133472
-git_add  https://gist.github.com/1134768.git                                     gist-1134768
-git_add  https://gist.github.com/1136236.git                                     gist-1136236
-git_add  https://gist.github.com/1137131.git                                     gist-1137131
-git_add  https://gist.github.com/1138500.git                                     gist-1138500
-git_add  https://gist.github.com/1139473.git                                     gist-1139473
-git_add  https://gist.github.com/1144047.git                                     gist-1144047
-git_add  https://gist.github.com/1148172.git                                     gist-1148172
-git_add  https://gist.github.com/1148365.git                                     gist-1148365
-git_add  https://gist.github.com/1153292.git                                     gist-1153292
-git_add  https://gist.github.com/1155488.git                                     gist-1155488
-git_add  https://gist.github.com/1157415.git                                     gist-1157415
-git_add  https://gist.github.com/1157787.git                                     gist-1157787
-git_add  https://gist.github.com/1159696.git                                     gist-1159696
-git_add  https://gist.github.com/1160929.git                                     gist-1160929
-git_add  https://gist.github.com/1163659.git                                     gist-1163659
-git_add  https://gist.github.com/1166403.git                                     gist-1166403
-git_add  https://gist.github.com/1169680.git                                     gist-1169680
-git_add  https://gist.github.com/1171371.git                                     gist-1171371
-git_add  https://gist.github.com/1174302.git                                     gist-1174302
-git_add  https://gist.github.com/1175688.git                                     gist-1175688
-git_add  https://gist.github.com/1177588.git                                     gist-1177588
-git_add  https://gist.github.com/1177827.git                                     gist-1177827
-git_add  https://gist.github.com/1177880.git                                     gist-1177880
-git_add  https://gist.github.com/1178682.git                                     gist-1178682
-git_add  https://gist.github.com/1179647.git                                     gist-1179647
-git_add  https://gist.github.com/1182434.git                                     gist-1182434
-git_add  https://gist.github.com/1182485.git                                     gist-1182485
-git_add  https://gist.github.com/1184766.git                                     gist-1184766
-git_add  https://gist.github.com/1185705.git                                     gist-1185705
-git_add  https://gist.github.com/1187808.git                                     gist-1187808
-git_add  https://gist.github.com/1195063.git                                     gist-1195063
-git_add  https://gist.github.com/1197731.git                                     gist-1197731
-git_add  https://gist.github.com/1198017.git                                     gist-1198017
-git_add  https://gist.github.com/1199811.git                                     gist-1199811
-git_add  https://gist.github.com/1202253.git                                     gist-1202253
-git_add  https://gist.github.com/1212197.git                                     gist-1212197
-git_add  https://gist.github.com/1212215.git                                     gist-1212215
-git_add  https://gist.github.com/1214915.git                                     gist-1214915
-git_add  https://gist.github.com/1218859.git                                     gist-1218859
-git_add  https://gist.github.com/1219585.git                                     gist-1219585
-git_add  https://gist.github.com/1221654.git                                     gist-1221654
-git_add  https://gist.github.com/1221675.git                                     gist-1221675
-git_add  https://gist.github.com/1222777.git                                     gist-1222777
-git_add  https://gist.github.com/1224222.git                                     gist-1224222
-git_add  https://gist.github.com/1225313.git                                     gist-1225313
-git_add  https://gist.github.com/1226718.git                                     gist-1226718
-git_add  https://gist.github.com/1233904.git                                     gist-1233904
-git_add  https://gist.github.com/1243323.git                                     gist-1243323
-git_add  https://gist.github.com/1246403.git                                     gist-1246403
-git_add  https://gist.github.com/1249394.git                                     gist-1249394
-git_add  https://gist.github.com/1249681.git                                     gist-1249681
-git_add  https://gist.github.com/1249958.git                                     gist-1249958
-git_add  https://gist.github.com/1252867.git                                     gist-1252867
-git_add  https://gist.github.com/1256572.git                                     gist-1256572
-git_add  https://gist.github.com/1257485.git                                     gist-1257485
-git_add  https://gist.github.com/1262305.git                                     gist-1262305
-git_add  https://gist.github.com/1263239.git                                     gist-1263239
-git_add  https://gist.github.com/1266259.git                                     gist-1266259
-git_add  https://gist.github.com/1269004.git                                     gist-1269004
-git_add  https://gist.github.com/1271058.git                                     gist-1271058
-git_add  https://gist.github.com/1275654.git                                     gist-1275654
-git_add  https://gist.github.com/1275742.git                                     gist-1275742
-git_add  https://gist.github.com/1276463.git                                     gist-1276463
-git_add  https://gist.github.com/1277254.git                                     gist-1277254
-git_add  https://gist.github.com/1277968.git                                     gist-1277968
-git_add  https://gist.github.com/1283663.git                                     gist-1283663
-git_add  https://gist.github.com/1288493.git                                     gist-1288493
-git_add  https://gist.github.com/1291667.git                                     gist-1291667
-git_add  https://gist.github.com/1291672.git                                     gist-1291672
-git_add  https://gist.github.com/1300016.git                                     gist-1300016
-git_add  https://gist.github.com/1303584.git                                     gist-1303584
-git_add  https://gist.github.com/1305111.git                                     gist-1305111
-git_add  https://gist.github.com/1305337.git                                     gist-1305337
-git_add  https://gist.github.com/1305347.git                                     gist-1305347
-git_add  https://gist.github.com/1306365.git                                     gist-1306365
-git_add  https://gist.github.com/1308257.git                                     gist-1308257
-git_add  https://gist.github.com/1308400.git                                     gist-1308400
-git_add  https://gist.github.com/1313857.git                                     gist-1313857
-git_add  https://gist.github.com/1314483.git                                     gist-1314483
-git_add  https://gist.github.com/1316832.git                                     gist-1316832
-git_add  https://gist.github.com/1317455.git                                     gist-1317455
-git_add  https://gist.github.com/1320232.git                                     gist-1320232
-git_add  https://gist.github.com/1321837.git                                     gist-1321837
-git_add  https://gist.github.com/1322814.git                                     gist-1322814
-git_add  https://gist.github.com/1322907.git                                     gist-1322907
-git_add  https://gist.github.com/1322948.git                                     gist-1322948
-git_add  https://gist.github.com/1323729.git                                     gist-1323729
-git_add  https://gist.github.com/1323841.git                                     gist-1323841
-git_add  https://gist.github.com/1325574.git                                     gist-1325574
-git_add  https://gist.github.com/1326318.git                                     gist-1326318
-git_add  https://gist.github.com/1327441.git                                     gist-1327441
-git_add  https://gist.github.com/1335475.git                                     gist-1335475
-git_add  https://gist.github.com/1337511.git                                     gist-1337511
-git_add  https://gist.github.com/1339996.git                                     gist-1339996
-git_add  https://gist.github.com/1340727.git                                     gist-1340727
-git_add  https://gist.github.com/1341021.git                                     gist-1341021
-git_add  https://gist.github.com/1341281.git                                     gist-1341281
-git_add  https://gist.github.com/1341679.git                                     gist-1341679
-git_add  https://gist.github.com/1342359.git                                     gist-1342359
-git_add  https://gist.github.com/1343714.git                                     gist-1343714
-git_add  https://gist.github.com/1345853.git                                     gist-1345853
-git_add  https://gist.github.com/1346395.git                                     gist-1346395
-git_add  https://gist.github.com/1346410.git                                     gist-1346410
-git_add  https://gist.github.com/1351113.git                                     gist-1351113
-git_add  https://gist.github.com/1353700.git                                     gist-1353700
-git_add  https://gist.github.com/1357601.git                                     gist-1357601
-git_add  https://gist.github.com/1357620.git                                     gist-1357620
-git_add  https://gist.github.com/1363743.git                                     gist-1363743
-git_add  https://gist.github.com/1364304.git                                     gist-1364304
-git_add  https://gist.github.com/1365279.git                                     gist-1365279
-git_add  https://gist.github.com/1367999.git                                     gist-1367999
-git_add  https://gist.github.com/1368205.git                                     gist-1368205
-git_add  https://gist.github.com/1371412.git                                     gist-1371412
-git_add  https://gist.github.com/1373819.git                                     gist-1373819
-git_add  https://gist.github.com/1374397.git                                     gist-1374397
-git_add  https://gist.github.com/1377729.git                                     gist-1377729
-git_add  https://gist.github.com/1378144.git                                     gist-1378144
-git_add  https://gist.github.com/1379988.git                                     gist-1379988
-git_add  https://gist.github.com/1386444.git                                     gist-1386444
-git_add  https://gist.github.com/1389927.git                                     gist-1389927
-git_add  https://gist.github.com/1393200.git                                     gist-1393200
-git_add  https://gist.github.com/1399097.git                                     gist-1399097
-git_add  https://gist.github.com/1399117.git                                     gist-1399117
-git_add  https://gist.github.com/1399211.git                                     gist-1399211
-git_add  https://gist.github.com/1404346.git                                     gist-1404346
-git_add  https://gist.github.com/1405439.git                                     gist-1405439
-git_add  https://gist.github.com/1423627.git                                     gist-1423627
-git_add  https://gist.github.com/1424037.git                                     gist-1424037
-git_add  https://gist.github.com/1439005.git                                     gist-1439005
-git_add  https://gist.github.com/1440766.git                                     gist-1440766
-git_add  https://gist.github.com/1441881.git                                     gist-1441881
-git_add  https://gist.github.com/1457934.git                                     gist-1457934
-git_add  https://gist.github.com/1468492.git                                     gist-1468492
-git_add  https://gist.github.com/1468715.git                                     gist-1468715
-git_add  https://gist.github.com/1469438.git                                     gist-1469438
-git_add  https://gist.github.com/1473535.git                                     gist-1473535
-git_add  https://gist.github.com/1479319.git                                     gist-1479319
-git_add  https://gist.github.com/1483226.git                                     gist-1483226
-git_add  https://gist.github.com/1484345.git                                     gist-1484345
-git_add  https://gist.github.com/1488375.git                                     gist-1488375
-git_add  https://gist.github.com/1488680.git                                     gist-1488680
-git_add  https://gist.github.com/1491435.git                                     gist-1491435
-git_add  https://gist.github.com/1494117.git                                     gist-1494117
-git_add  https://gist.github.com/1499279.git                                     gist-1499279
-git_add  https://gist.github.com/1502762.git                                     gist-1502762
-git_add  https://gist.github.com/1502887.git                                     gist-1502887
-git_add  https://gist.github.com/1503463.git                                     gist-1503463
-git_add  https://gist.github.com/1505811.git                                     gist-1505811
-git_add  https://gist.github.com/1508606.git                                     gist-1508606
-git_add  https://gist.github.com/1509502.git                                     gist-1509502
-git_add  https://gist.github.com/1516547.git                                     gist-1516547
-git_add  https://gist.github.com/1535916.git                                     gist-1535916
-git_add  https://gist.github.com/1536332.git                                     gist-1536332
-git_add  https://gist.github.com/1541816.git                                     gist-1541816
-git_add  https://gist.github.com/1547192.git                                     gist-1547192
-git_add  https://gist.github.com/1548215.git                                     gist-1548215
-git_add  https://gist.github.com/1552725.git                                     gist-1552725
-git_add  https://gist.github.com/1557377.git                                     gist-1557377
-git_add  https://gist.github.com/1557990.git                                     gist-1557990
-git_add  https://gist.github.com/1558011.git                                     gist-1558011
-git_add  https://gist.github.com/1573240.git                                     gist-1573240
-git_add  https://gist.github.com/1579132.git                                     gist-1579132
-git_add  https://gist.github.com/1582075.git                                     gist-1582075
-git_add  https://gist.github.com/1584697.git                                     gist-1584697
-git_add  https://gist.github.com/1616423.git                                     gist-1616423
-git_add  https://gist.github.com/1624656.git                                     gist-1624656
-git_add  https://gist.github.com/1624660.git                                     gist-1624660
-git_add  https://gist.github.com/1627378.git                                     gist-1627378
-git_add  https://gist.github.com/1627439.git                                     gist-1627439
-git_add  https://gist.github.com/1628131.git                                     gist-1628131
-git_add  https://gist.github.com/1629464.git                                     gist-1629464
-git_add  https://gist.github.com/1629644.git                                     gist-1629644
-git_add  https://gist.github.com/1630683.git                                     gist-1630683
-git_add  https://gist.github.com/1642874.git                                     gist-1642874
-git_add  https://gist.github.com/1642989.git                                     gist-1642989
-git_add  https://gist.github.com/1643051.git                                     gist-1643051
-git_add  https://gist.github.com/1648635.git                                     gist-1648635
-git_add  https://gist.github.com/1649463.git                                     gist-1649463
-git_add  https://gist.github.com/1653763.git                                     gist-1653763
-git_add  https://gist.github.com/1667139.git                                     gist-1667139
-git_add  https://gist.github.com/1667367.git                                     gist-1667367
-git_add  https://gist.github.com/1691430.git                                     gist-1691430
-git_add  https://gist.github.com/1696080.git                                     gist-1696080
-git_add  https://gist.github.com/1696372.git                                     gist-1696372
-git_add  https://gist.github.com/1699744.git                                     gist-1699744
-git_add  https://gist.github.com/1705868.git                                     gist-1705868
-git_add  https://gist.github.com/1706523.git                                     gist-1706523
-git_add  https://gist.github.com/1706849.git                                     gist-1706849
-git_add  https://gist.github.com/1747543.git                                     gist-1747543
-git_add  https://gist.github.com/1748247.git                                     gist-1748247
-git_add  https://gist.github.com/1771630.git                                     gist-1771630
-git_add  https://gist.github.com/1800198.git                                     gist-1800198
-git_add  https://gist.github.com/1804889.git                                     gist-1804889
-git_add  https://gist.github.com/1804919.git                                     gist-1804919
-git_add  https://gist.github.com/1846692.git                                     gist-1846692
-git_add  https://gist.github.com/1849162.git                                     gist-1849162
-git_add  https://gist.github.com/1854471.git                                     gist-1854471
-git_add  https://gist.github.com/1865422.git                                     gist-1865422
-git_add  https://gist.github.com/1867866.git                                     gist-1867866
-git_add  https://gist.github.com/1869677.git                                     gist-1869677
-git_add  https://gist.github.com/1871853.git                                     gist-1871853
-git_add  https://gist.github.com/1883717.git                                     gist-1883717
-git_add  https://gist.github.com/1887532.git                                     gist-1887532
-git_add  https://gist.github.com/1893974.git                                     gist-1893974
-git_add  https://gist.github.com/1920939.git                                     gist-1920939
-git_add  https://gist.github.com/1933560.git                                     gist-1933560
-git_add  https://gist.github.com/1935509.git                                     gist-1935509
-git_add  https://gist.github.com/1962173.git                                     gist-1962173
-git_add  https://gist.github.com/1963983.git                                     gist-1963983
-git_add  https://gist.github.com/1965462.git                                     gist-1965462
-git_add  https://gist.github.com/2005817.git                                     gist-2005817
-git_add  https://gist.github.com/2011590.git                                     gist-2011590
-git_add  https://gist.github.com/2037124.git                                     gist-2037124
-git_add  https://gist.github.com/2066415.git                                     gist-2066415
-git_add  https://gist.github.com/2066421.git                                     gist-2066421
-git_add  https://gist.github.com/2086461.git                                     gist-2086461
-git_add  https://gist.github.com/2164562.git                                     gist-2164562
-git_add  https://gist.github.com/2165875.git                                     gist-2165875
-git_add  https://gist.github.com/2206340.git                                     gist-2206340
-git_add  https://gist.github.com/2206489.git                                     gist-2206489
-git_add  https://gist.github.com/2206529.git                                     gist-2206529
-git_add  https://gist.github.com/2206590.git                                     gist-2206590
-git_add  https://gist.github.com/2209220.git                                     gist-2209220
-git_add  https://gist.github.com/2280295.git                                     gist-2280295
-git_add  https://gist.github.com/2286893.git                                     gist-2286893
-git_add  https://gist.github.com/2287399.git                                     gist-2287399
-git_add  https://gist.github.com/2289263.git                                     gist-2289263
-git_add  https://gist.github.com/2294676.git                                     gist-2294676
-git_add  https://gist.github.com/2295155.git                                     gist-2295155
-git_add  https://gist.github.com/2295263.git                                     gist-2295263
-git_add  https://gist.github.com/2322933.git                                     gist-2322933
-git_add  https://gist.github.com/2338034.git                                     gist-2338034
-git_add  https://gist.github.com/2346962.git                                     gist-2346962
-git_add  https://gist.github.com/2361485.git                                     gist-2361485
-git_add  https://gist.github.com/2366285.git                                     gist-2366285
-git_add  https://gist.github.com/2366983.git                                     gist-2366983
-git_add  https://gist.github.com/2368837.git                                     gist-2368837
-git_add  https://gist.github.com/2369589.git                                     gist-2369589
-git_add  https://gist.github.com/2374239.git                                     gist-2374239
-git_add  https://gist.github.com/2429963.git                                     gist-2429963
-git_add  https://gist.github.com/2465185.git                                     gist-2465185
-git_add  https://gist.github.com/2504633.git                                     gist-2504633
-git_add  https://gist.github.com/2505393.git                                     gist-2505393
-git_add  https://gist.github.com/2511921.git                                     gist-2511921
-git_add  https://gist.github.com/2512177.git                                     gist-2512177
-git_add  https://gist.github.com/2514183.git                                     gist-2514183
-git_add  https://gist.github.com/2522156.git                                     gist-2522156
-git_add  https://gist.github.com/2547496.git                                     gist-2547496
-git_add  https://gist.github.com/2554910.git                                     gist-2554910
-git_add  https://gist.github.com/2556042.git                                     gist-2556042
-git_add  https://gist.github.com/2565344.git                                     gist-2565344
-git_add  https://gist.github.com/2573074.git                                     gist-2573074
-git_add  https://gist.github.com/2585241.git                                     gist-2585241
-git_add  https://gist.github.com/2595950.git                                     gist-2595950
-git_add  https://gist.github.com/2597692.git                                     gist-2597692
-git_add  https://gist.github.com/2599189.git                                     gist-2599189
-git_add  https://gist.github.com/2623079.git                                     gist-2623079
-git_add  https://gist.github.com/2647922.git                                     gist-2647922
-git_add  https://gist.github.com/2647924.git                                     gist-2647924
-git_add  https://gist.github.com/2653660.git                                     gist-2653660
-git_add  https://gist.github.com/2657838.git                                     gist-2657838
-git_add  https://gist.github.com/2706022.git                                     gist-2706022
-git_add  https://gist.github.com/2724230.git                                     gist-2724230
-git_add  https://gist.github.com/2724323.git                                     gist-2724323
-git_add  https://gist.github.com/2727824.git                                     gist-2727824
-git_add  https://gist.github.com/2759731.git                                     gist-2759731
-git_add  https://gist.github.com/2839676.git                                     gist-2839676
-git_add  https://gist.github.com/2846454.git                                     gist-2846454
-git_add  https://gist.github.com/2846726.git                                     gist-2846726
-git_add  https://gist.github.com/2869760.git                                     gist-2869760
-git_add  https://gist.github.com/2869871.git                                     gist-2869871
-git_add  https://gist.github.com/2869946.git                                     gist-2869946
-git_add  https://gist.github.com/2870030.git                                     gist-2870030
-git_add  https://gist.github.com/2879486.git                                     gist-2879486
-git_add  https://gist.github.com/2883411.git                                     gist-2883411
-git_add  https://gist.github.com/2920551.git                                     gist-2920551
-git_add  https://gist.github.com/2932721.git                                     gist-2932721
-git_add  https://gist.github.com/2941604.git                                     gist-2941604
-git_add  https://gist.github.com/2942506.git                                     gist-2942506
-git_add  https://gist.github.com/2949937.git                                     gist-2949937
-git_add  https://gist.github.com/2949981.git                                     gist-2949981
-git_add  https://gist.github.com/2962761.git                                     gist-2962761
-git_add  https://gist.github.com/2962888.git                                     gist-2962888
-git_add  https://gist.github.com/2966094.git                                     gist-2966094
-git_add  https://gist.github.com/2974930.git                                     gist-2974930
-git_add  https://gist.github.com/2983699.git                                     gist-2983699
-git_add  https://gist.github.com/2991587.git                                     gist-2991587
-git_add  https://gist.github.com/2996766.git                                     gist-2996766
-git_add  https://gist.github.com/2996785.git                                     gist-2996785
-git_add  https://gist.github.com/2997144.git                                     gist-2997144
-git_add  https://gist.github.com/300494.git                                      gist-300494
-git_add  https://gist.github.com/3007180.git                                     gist-3007180
-git_add  https://gist.github.com/3014589.git                                     gist-3014589
-git_add  https://gist.github.com/3019563.git                                     gist-3019563
-git_add  https://gist.github.com/3020685.git                                     gist-3020685
-git_add  https://gist.github.com/3021474.git                                     gist-3021474
-git_add  https://gist.github.com/3025699.git                                     gist-3025699
-git_add  https://gist.github.com/3031319.git                                     gist-3031319
-git_add  https://gist.github.com/3035090.git                                     gist-3035090
-git_add  https://gist.github.com/3037015.git                                     gist-3037015
-git_add  https://gist.github.com/3048166.git                                     gist-3048166
-git_add  https://gist.github.com/3048168.git                                     gist-3048168
-git_add  https://gist.github.com/3048450.git                                     gist-3048450
-git_add  https://gist.github.com/3048740.git                                     gist-3048740
-git_add  https://gist.github.com/3055104.git                                     gist-3055104
-git_add  https://gist.github.com/3057239.git                                     gist-3057239
-git_add  https://gist.github.com/3058685.git                                     gist-3058685
-git_add  https://gist.github.com/3061181.git                                     gist-3061181
-git_add  https://gist.github.com/3070621.git                                     gist-3070621
-git_add  https://gist.github.com/3070659.git                                     gist-3070659
-git_add  https://gist.github.com/3071239.git                                     gist-3071239
-git_add  https://gist.github.com/3074470.git                                     gist-3074470
-git_add  https://gist.github.com/3081153.git                                     gist-3081153
-git_add  https://gist.github.com/3087986.git                                     gist-3087986
-git_add  https://gist.github.com/3092303.git                                     gist-3092303
-git_add  https://gist.github.com/3094619.git                                     gist-3094619
-git_add  https://gist.github.com/3095037.git                                     gist-3095037
-git_add  https://gist.github.com/3104394.git                                     gist-3104394
-git_add  https://gist.github.com/3116650.git                                     gist-3116650
-git_add  https://gist.github.com/3116713.git                                     gist-3116713
-git_add  https://gist.github.com/3116836.git                                     gist-3116836
-git_add  https://gist.github.com/3116844.git                                     gist-3116844
-git_add  https://gist.github.com/3117757.git                                     gist-3117757
-git_add  https://gist.github.com/3118901.git                                     gist-3118901
-git_add  https://gist.github.com/3125020.git                                     gist-3125020
-git_add  https://gist.github.com/3125434.git                                     gist-3125434
-git_add  https://gist.github.com/3125600.git                                     gist-3125600
-git_add  https://gist.github.com/3138656.git                                     gist-3138656
-git_add  https://gist.github.com/3145795.git                                     gist-3145795
-git_add  https://gist.github.com/3151228.git                                     gist-3151228
-git_add  https://gist.github.com/3151318.git                                     gist-3151318
-git_add  https://gist.github.com/3154300.git                                     gist-3154300
-git_add  https://gist.github.com/3154741.git                                     gist-3154741
-git_add  https://gist.github.com/3173233.git                                     gist-3173233
-git_add  https://gist.github.com/3173784.git                                     gist-3173784
-git_add  https://gist.github.com/3175935.git                                     gist-3175935
-git_add  https://gist.github.com/3176159.git                                     gist-3176159
-git_add  https://gist.github.com/3180395.git                                     gist-3180395
-git_add  https://gist.github.com/3183403.git                                     gist-3183403
-git_add  https://gist.github.com/3184089.git                                     gist-3184089
-git_add  https://gist.github.com/3190391.git                                     gist-3190391
-git_add  https://gist.github.com/3192376.git                                     gist-3192376
-git_add  https://gist.github.com/3194190.git                                     gist-3194190
-git_add  https://gist.github.com/3201606.git                                     gist-3201606
-git_add  https://gist.github.com/3202354.git                                     gist-3202354
-git_add  https://gist.github.com/3203343.git                                     gist-3203343
-git_add  https://gist.github.com/3212294.git                                     gist-3212294
-git_add  https://gist.github.com/3213173.git                                     gist-3213173
-git_add  https://gist.github.com/3231298.git                                     gist-3231298
-git_add  https://gist.github.com/3231307.git                                     gist-3231307
-git_add  https://gist.github.com/3244058.git                                     gist-3244058
-git_add  https://gist.github.com/3258821.git                                     gist-3258821
-git_add  https://gist.github.com/3259783.git                                     gist-3259783
-git_add  https://gist.github.com/3287802.git                                     gist-3287802
-git_add  https://gist.github.com/3288044.git                                     gist-3288044
-git_add  https://gist.github.com/3289530.git                                     gist-3289530
-git_add  https://gist.github.com/3290263.git                                     gist-3290263
-git_add  https://gist.github.com/3290752.git                                     gist-3290752
-git_add  https://gist.github.com/3305515.git                                     gist-3305515
-git_add  https://gist.github.com/3305854.git                                     gist-3305854
-git_add  https://gist.github.com/3305937.git                                     gist-3305937
-git_add  https://gist.github.com/3306147.git                                     gist-3306147
-git_add  https://gist.github.com/3306234.git                                     gist-3306234
-git_add  https://gist.github.com/3306362.git                                     gist-3306362
-git_add  https://gist.github.com/3310187.git                                     gist-3310187
-git_add  https://gist.github.com/3310233.git                                     gist-3310233
-git_add  https://gist.github.com/3310323.git                                     gist-3310323
-git_add  https://gist.github.com/3310560.git                                     gist-3310560
-git_add  https://gist.github.com/3311124.git                                     gist-3311124
-git_add  https://gist.github.com/3315291.git                                     gist-3315291
-git_add  https://gist.github.com/3315318.git                                     gist-3315318
-git_add  https://gist.github.com/3331545.git                                     gist-3331545
-git_add  https://gist.github.com/3331937.git                                     gist-3331937
-git_add  https://gist.github.com/3344600.git                                     gist-3344600
-git_add  https://gist.github.com/3349192.git                                     gist-3349192
-git_add  https://gist.github.com/3355967.git                                     gist-3355967
-git_add  https://gist.github.com/3371488.git                                     gist-3371488
-git_add  https://gist.github.com/3371592.git                                     gist-3371592
-git_add  https://gist.github.com/3391642.git                                     gist-3391642
-git_add  https://gist.github.com/3422480.git                                     gist-3422480
-git_add  https://gist.github.com/3468167.git                                     gist-3468167
-git_add  https://gist.github.com/3480186.git                                     gist-3480186
-git_add  https://gist.github.com/3517374.git                                     gist-3517374
-git_add  https://gist.github.com/3543186.git                                     gist-3543186
-git_add  https://gist.github.com/3605035.git                                     gist-3605035
-git_add  https://gist.github.com/3605069.git                                     gist-3605069
-git_add  https://gist.github.com/3605124.git                                     gist-3605124
-git_add  https://gist.github.com/3616279.git                                     gist-3616279
-git_add  https://gist.github.com/3630001.git                                     gist-3630001
-git_add  https://gist.github.com/3637711.git                                     gist-3637711
-git_add  https://gist.github.com/3664045.git                                     gist-3664045
-git_add  https://gist.github.com/3664049.git                                     gist-3664049
-git_add  https://gist.github.com/3669333.git                                     gist-3669333
-git_add  https://gist.github.com/3669455.git                                     gist-3669455
-git_add  https://gist.github.com/3670696.git                                     gist-3670696
-git_add  https://gist.github.com/3670903.git                                     gist-3670903
-git_add  https://gist.github.com/3671490.git                                     gist-3671490
-git_add  https://gist.github.com/3671592.git                                     gist-3671592
-git_add  https://gist.github.com/3680957.git                                     gist-3680957
-git_add  https://gist.github.com/3680958.git                                     gist-3680958
-git_add  https://gist.github.com/3680999.git                                     gist-3680999
-git_add  https://gist.github.com/3681006.git                                     gist-3681006
-git_add  https://gist.github.com/3682676.git                                     gist-3682676
-git_add  https://gist.github.com/3682698.git                                     gist-3682698
-git_add  https://gist.github.com/3682990.git                                     gist-3682990
-git_add  https://gist.github.com/3683278.git                                     gist-3683278
-git_add  https://gist.github.com/3683489.git                                     gist-3683489
-git_add  https://gist.github.com/3689677.git                                     gist-3689677
-git_add  https://gist.github.com/3695277.git                                     gist-3695277
-git_add  https://gist.github.com/3696645.git                                     gist-3696645
-git_add  https://gist.github.com/3697451.git                                     gist-3697451
-git_add  https://gist.github.com/3709000.git                                     gist-3709000
-git_add  https://gist.github.com/3710082.git                                     gist-3710082
-git_add  https://gist.github.com/3710148.git                                     gist-3710148
-git_add  https://gist.github.com/3710566.git                                     gist-3710566
-git_add  https://gist.github.com/3711245.git                                     gist-3711245
-git_add  https://gist.github.com/3711652.git                                     gist-3711652
-git_add  https://gist.github.com/3712397.git                                     gist-3712397
-git_add  https://gist.github.com/3712399.git                                     gist-3712399
-git_add  https://gist.github.com/3712408.git                                     gist-3712408
-git_add  https://gist.github.com/3719042.git                                     gist-3719042
-git_add  https://gist.github.com/3719724.git                                     gist-3719724
-git_add  https://gist.github.com/3732612.git                                     gist-3732612
-git_add  https://gist.github.com/3732893.git                                     gist-3732893
-git_add  https://gist.github.com/3734168.git                                     gist-3734168
-git_add  https://gist.github.com/3734273.git                                     gist-3734273
-git_add  https://gist.github.com/3734308.git                                     gist-3734308
-git_add  https://gist.github.com/3734313.git                                     gist-3734313
-git_add  https://gist.github.com/3734316.git                                     gist-3734316
-git_add  https://gist.github.com/3734317.git                                     gist-3734317
-git_add  https://gist.github.com/3734321.git                                     gist-3734321
-git_add  https://gist.github.com/3734322.git                                     gist-3734322
-git_add  https://gist.github.com/3734324.git                                     gist-3734324
-git_add  https://gist.github.com/3734325.git                                     gist-3734325
-git_add  https://gist.github.com/3734327.git                                     gist-3734327
-git_add  https://gist.github.com/3734328.git                                     gist-3734328
-git_add  https://gist.github.com/3734329.git                                     gist-3734329
-git_add  https://gist.github.com/3734330.git                                     gist-3734330
-git_add  https://gist.github.com/3734333.git                                     gist-3734333
-git_add  https://gist.github.com/3734336.git                                     gist-3734336
-git_add  https://gist.github.com/3734342.git                                     gist-3734342
-git_add  https://gist.github.com/3734343.git                                     gist-3734343
-git_add  https://gist.github.com/3739752.git                                     gist-3739752
-git_add  https://gist.github.com/3750558.git                                     gist-3750558
-git_add  https://gist.github.com/3750900.git                                     gist-3750900
-git_add  https://gist.github.com/3750941.git                                     gist-3750941
-git_add  https://gist.github.com/3757101.git                                     gist-3757101
-git_add  https://gist.github.com/3757110.git                                     gist-3757110
-git_add  https://gist.github.com/3757119.git                                     gist-3757119
-git_add  https://gist.github.com/3757125.git                                     gist-3757125
-git_add  https://gist.github.com/3757132.git                                     gist-3757132
-git_add  https://gist.github.com/3757137.git                                     gist-3757137
-git_add  https://gist.github.com/3757349.git                                     gist-3757349
-git_add  https://gist.github.com/3763057.git                                     gist-3763057
-git_add  https://gist.github.com/3763867.git                                     gist-3763867
-git_add  https://gist.github.com/3772069.git                                     gist-3772069
-git_add  https://gist.github.com/3779574.git                                     gist-3779574
-git_add  https://gist.github.com/3783604.git                                     gist-3783604
-git_add  https://gist.github.com/3788999.git                                     gist-3788999
-git_add  https://gist.github.com/3790085.git                                     gist-3790085
-git_add  https://gist.github.com/3790444.git                                     gist-3790444
-git_add  https://gist.github.com/3791255.git                                     gist-3791255
-git_add  https://gist.github.com/3795040.git                                     gist-3795040
-git_add  https://gist.github.com/3795048.git                                     gist-3795048
-git_add  https://gist.github.com/3795544.git                                     gist-3795544
-git_add  https://gist.github.com/3796831.git                                     gist-3796831
-git_add  https://gist.github.com/3797581.git                                     gist-3797581
-git_add  https://gist.github.com/3797585.git                                     gist-3797585
-git_add  https://gist.github.com/3797591.git                                     gist-3797591
-git_add  https://gist.github.com/3804779.git                                     gist-3804779
-git_add  https://gist.github.com/3808218.git                                     gist-3808218
-git_add  https://gist.github.com/3808221.git                                     gist-3808221
-git_add  https://gist.github.com/3808234.git                                     gist-3808234
-git_add  https://gist.github.com/3828981.git                                     gist-3828981
-git_add  https://gist.github.com/3846051.git                                     gist-3846051
-git_add  https://gist.github.com/3853405.git                                     gist-3853405
-git_add  https://gist.github.com/3854614.git                                     gist-3854614
-git_add  https://gist.github.com/3867220.git                                     gist-3867220
-git_add  https://gist.github.com/3883098.git                                     gist-3883098
-git_add  https://gist.github.com/3883195.git                                     gist-3883195
-git_add  https://gist.github.com/3883245.git                                     gist-3883245
-git_add  https://gist.github.com/3884914.git                                     gist-3884914
-git_add  https://gist.github.com/3884955.git                                     gist-3884955
-git_add  https://gist.github.com/3885211.git                                     gist-3885211
-git_add  https://gist.github.com/3885304.git                                     gist-3885304
-git_add  https://gist.github.com/3885705.git                                     gist-3885705
-git_add  https://gist.github.com/3886208.git                                     gist-3886208
-git_add  https://gist.github.com/3886394.git                                     gist-3886394
-git_add  https://gist.github.com/3887051.git                                     gist-3887051
-git_add  https://gist.github.com/3887118.git                                     gist-3887118
-git_add  https://gist.github.com/3887193.git                                     gist-3887193
-git_add  https://gist.github.com/3887235.git                                     gist-3887235
-git_add  https://gist.github.com/3888852.git                                     gist-3888852
-git_add  https://gist.github.com/3892919.git                                     gist-3892919
-git_add  https://gist.github.com/3892928.git                                     gist-3892928
-git_add  https://gist.github.com/3894205.git                                     gist-3894205
-git_add  https://gist.github.com/3900925.git                                     gist-3900925
-git_add  https://gist.github.com/3902569.git                                     gist-3902569
-git_add  https://gist.github.com/3903818.git                                     gist-3903818
-git_add  https://gist.github.com/3916621.git                                     gist-3916621
-git_add  https://gist.github.com/3918369.git                                     gist-3918369
-git_add  https://gist.github.com/3921009.git                                     gist-3921009
-git_add  https://gist.github.com/3934356.git                                     gist-3934356
-git_add  https://gist.github.com/3943967.git                                     gist-3943967
-git_add  https://gist.github.com/3946824.git                                     gist-3946824
-git_add  https://gist.github.com/3953793.git                                     gist-3953793
-git_add  https://gist.github.com/3960741.git                                     gist-3960741
-git_add  https://gist.github.com/3962108.git                                     gist-3962108
-git_add  https://gist.github.com/3969722.git                                     gist-3969722
-git_add  https://gist.github.com/3970883.git                                     gist-3970883
-git_add  https://gist.github.com/4015254.git                                     gist-4015254
-git_add  https://gist.github.com/4047002.git                                     gist-4047002
-git_add  https://gist.github.com/4052873.git                                     gist-4052873
-git_add  https://gist.github.com/4053096.git                                     gist-4053096
-git_add  https://gist.github.com/4054247.git                                     gist-4054247
-git_add  https://gist.github.com/4055889.git                                     gist-4055889
-git_add  https://gist.github.com/4055892.git                                     gist-4055892
-git_add  https://gist.github.com/4055908.git                                     gist-4055908
-git_add  https://gist.github.com/4060366.git                                     gist-4060366
-git_add  https://gist.github.com/4060606.git                                     gist-4060606
-git_add  https://gist.github.com/4060954.git                                     gist-4060954
-git_add  https://gist.github.com/4061502.git                                     gist-4061502
-git_add  https://gist.github.com/4061961.git                                     gist-4061961
-git_add  https://gist.github.com/4062006.git                                     gist-4062006
-git_add  https://gist.github.com/4062045.git                                     gist-4062045
-git_add  https://gist.github.com/4062085.git                                     gist-4062085
-git_add  https://gist.github.com/4062844.git                                     gist-4062844
-git_add  https://gist.github.com/4062919.git                                     gist-4062919
-git_add  https://gist.github.com/4063269.git                                     gist-4063269
-git_add  https://gist.github.com/4063318.git                                     gist-4063318
-git_add  https://gist.github.com/4063423.git                                     gist-4063423
-git_add  https://gist.github.com/4063530.git                                     gist-4063530
-git_add  https://gist.github.com/4063550.git                                     gist-4063550
-git_add  https://gist.github.com/4063570.git                                     gist-4063570
-git_add  https://gist.github.com/4063582.git                                     gist-4063582
-git_add  https://gist.github.com/4063663.git                                     gist-4063663
-git_add  https://gist.github.com/4068610.git                                     gist-4068610
-git_add  https://gist.github.com/4090846.git                                     gist-4090846
-git_add  https://gist.github.com/4090848.git                                     gist-4090848
-git_add  https://gist.github.com/4090870.git                                     gist-4090870
-git_add  https://gist.github.com/4091835.git                                     gist-4091835
-git_add  https://gist.github.com/4092944.git                                     gist-4092944
-git_add  https://gist.github.com/4108203.git                                     gist-4108203
-git_add  https://gist.github.com/4122298.git                                     gist-4122298
-git_add  https://gist.github.com/4132797.git                                     gist-4132797
-git_add  https://gist.github.com/4134037.git                                     gist-4134037
-git_add  https://gist.github.com/4134057.git                                     gist-4134057
-git_add  https://gist.github.com/4136647.git                                     gist-4136647
-git_add  https://gist.github.com/4149176.git                                     gist-4149176
-git_add  https://gist.github.com/4150951.git                                     gist-4150951
-git_add  https://gist.github.com/4163057.git                                     gist-4163057
-git_add  https://gist.github.com/4165404.git                                     gist-4165404
-git_add  https://gist.github.com/4168921.git                                     gist-4168921
-git_add  https://gist.github.com/4175202.git                                     gist-4175202
-git_add  https://gist.github.com/4180634.git                                     gist-4180634
-git_add  https://gist.github.com/4183330.git                                     gist-4183330
-git_add  https://gist.github.com/4198499.git                                     gist-4198499
-git_add  https://gist.github.com/4206573.git                                     gist-4206573
-git_add  https://gist.github.com/4206810.git                                     gist-4206810
-git_add  https://gist.github.com/4206857.git                                     gist-4206857
-git_add  https://gist.github.com/4206975.git                                     gist-4206975
-git_add  https://gist.github.com/4207744.git                                     gist-4207744
-git_add  https://gist.github.com/4218871.git                                     gist-4218871
-git_add  https://gist.github.com/4236639.git                                     gist-4236639
-git_add  https://gist.github.com/4237768.git                                     gist-4237768
-git_add  https://gist.github.com/4241134.git                                     gist-4241134
-git_add  https://gist.github.com/4246925.git                                     gist-4246925
-git_add  https://gist.github.com/4248145.git                                     gist-4248145
-git_add  https://gist.github.com/4248146.git                                     gist-4248146
-git_add  https://gist.github.com/4254963.git                                     gist-4254963
-git_add  https://gist.github.com/4260668.git                                     gist-4260668
-git_add  https://gist.github.com/4265100.git                                     gist-4265100
-git_add  https://gist.github.com/4281513.git                                     gist-4281513
-git_add  https://gist.github.com/4282586.git                                     gist-4282586
-git_add  https://gist.github.com/4289018.git                                     gist-4289018
-git_add  https://gist.github.com/4292338.git                                     gist-4292338
-git_add  https://gist.github.com/4310087.git                                     gist-4310087
-git_add  https://gist.github.com/4315896.git                                     gist-4315896
-git_add  https://gist.github.com/4318672.git                                     gist-4318672
-git_add  https://gist.github.com/4319903.git                                     gist-4319903
-git_add  https://gist.github.com/4323929.git                                     gist-4323929
-git_add  https://gist.github.com/4324236.git                                     gist-4324236
-git_add  https://gist.github.com/4329423.git                                     gist-4329423
-git_add  https://gist.github.com/4330486.git                                     gist-4330486
-git_add  https://gist.github.com/4331208.git                                     gist-4331208
-git_add  https://gist.github.com/4333610.git                                     gist-4333610
-git_add  https://gist.github.com/4339083.git                                     gist-4339083
-git_add  https://gist.github.com/4339162.git                                     gist-4339162
-git_add  https://gist.github.com/4339184.git                                     gist-4339184
-git_add  https://gist.github.com/4339607.git                                     gist-4339607
-git_add  https://gist.github.com/4340039.git                                     gist-4340039
-git_add  https://gist.github.com/4341134.git                                     gist-4341134
-git_add  https://gist.github.com/4341156.git                                     gist-4341156
-git_add  https://gist.github.com/4341417.git                                     gist-4341417
-git_add  https://gist.github.com/4341574.git                                     gist-4341574
-git_add  https://gist.github.com/4341699.git                                     gist-4341699
-git_add  https://gist.github.com/4341954.git                                     gist-4341954
-git_add  https://gist.github.com/4342045.git                                     gist-4342045
-git_add  https://gist.github.com/4342190.git                                     gist-4342190
-git_add  https://gist.github.com/4343153.git                                     gist-4343153
-git_add  https://gist.github.com/4343214.git                                     gist-4343214
-git_add  https://gist.github.com/4347473.git                                     gist-4347473
-git_add  https://gist.github.com/4348024.git                                     gist-4348024
-git_add  https://gist.github.com/4348373.git                                     gist-4348373
-git_add  https://gist.github.com/4349166.git                                     gist-4349166
-git_add  https://gist.github.com/4349187.git                                     gist-4349187
-git_add  https://gist.github.com/4349486.git                                     gist-4349486
-git_add  https://gist.github.com/4349509.git                                     gist-4349509
-git_add  https://gist.github.com/4349545.git                                     gist-4349545
-git_add  https://gist.github.com/4360892.git                                     gist-4360892
-git_add  https://gist.github.com/4362031.git                                     gist-4362031
-git_add  https://gist.github.com/4362310.git                                     gist-4362310
-git_add  https://gist.github.com/4364903.git                                     gist-4364903
-git_add  https://gist.github.com/4370043.git                                     gist-4370043
-git_add  https://gist.github.com/4390054.git                                     gist-4390054
-git_add  https://gist.github.com/4403522.git                                     gist-4403522
-git_add  https://gist.github.com/4408297.git                                     gist-4408297
-git_add  https://gist.github.com/4414107.git                                     gist-4414107
-git_add  https://gist.github.com/4425979.git                                     gist-4425979
-git_add  https://gist.github.com/4431123.git                                     gist-4431123
-git_add  https://gist.github.com/4433918.git                                     gist-4433918
-git_add  https://gist.github.com/4436875.git                                     gist-4436875
-git_add  https://gist.github.com/4444770.git                                     gist-4444770
-git_add  https://gist.github.com/4448162.git                                     gist-4448162
-git_add  https://gist.github.com/4448587.git                                     gist-4448587
-git_add  https://gist.github.com/4454550.git                                     gist-4454550
-git_add  https://gist.github.com/4458497.git                                     gist-4458497
-git_add  https://gist.github.com/4458680.git                                     gist-4458680
-git_add  https://gist.github.com/4458991.git                                     gist-4458991
-git_add  https://gist.github.com/4459071.git                                     gist-4459071
-git_add  https://gist.github.com/4459130.git                                     gist-4459130
-git_add  https://gist.github.com/4459466.git                                     gist-4459466
-git_add  https://gist.github.com/4459716.git                                     gist-4459716
-git_add  https://gist.github.com/4463049.git                                     gist-4463049
-git_add  https://gist.github.com/4463127.git                                     gist-4463127
-git_add  https://gist.github.com/4463155.git                                     gist-4463155
-git_add  https://gist.github.com/4463175.git                                     gist-4463175
-git_add  https://gist.github.com/4463237.git                                     gist-4463237
-git_add  https://gist.github.com/4465109.git                                     gist-4465109
-git_add  https://gist.github.com/4465118.git                                     gist-4465118
-git_add  https://gist.github.com/4465130.git                                     gist-4465130
-git_add  https://gist.github.com/4465137.git                                     gist-4465137
-git_add  https://gist.github.com/4465140.git                                     gist-4465140
-git_add  https://gist.github.com/4476279.git                                     gist-4476279
-git_add  https://gist.github.com/4476487.git                                     gist-4476487
-git_add  https://gist.github.com/4476496.git                                     gist-4476496
-git_add  https://gist.github.com/4479477.git                                     gist-4479477
-git_add  https://gist.github.com/4479513.git                                     gist-4479513
-git_add  https://gist.github.com/4479547.git                                     gist-4479547
-git_add  https://gist.github.com/4481220.git                                     gist-4481220
-git_add  https://gist.github.com/4481265.git                                     gist-4481265
-git_add  https://gist.github.com/4481520.git                                     gist-4481520
-git_add  https://gist.github.com/4481531.git                                     gist-4481531
-git_add  https://gist.github.com/4482115.git                                     gist-4482115
-git_add  https://gist.github.com/4485778.git                                     gist-4485778
-git_add  https://gist.github.com/4487674.git                                     gist-4487674
-git_add  https://gist.github.com/4487695.git                                     gist-4487695
-git_add  https://gist.github.com/4489342.git                                     gist-4489342
-git_add  https://gist.github.com/4489365.git                                     gist-4489365
-git_add  https://gist.github.com/4491174.git                                     gist-4491174
-git_add  https://gist.github.com/4496212.git                                     gist-4496212
-git_add  https://gist.github.com/4498187.git                                     gist-4498187
-git_add  https://gist.github.com/4498292.git                                     gist-4498292
-git_add  https://gist.github.com/4503672.git                                     gist-4503672
-git_add  https://gist.github.com/4519926.git                                     gist-4519926
-git_add  https://gist.github.com/4519975.git                                     gist-4519975
-git_add  https://gist.github.com/4522565.git                                     gist-4522565
-git_add  https://gist.github.com/4525362.git                                     gist-4525362
-git_add  https://gist.github.com/4526201.git                                     gist-4526201
-git_add  https://gist.github.com/4548858.git                                     gist-4548858
-git_add  https://gist.github.com/4557698.git                                     gist-4557698
-git_add  https://gist.github.com/4560481.git                                     gist-4560481
-git_add  https://gist.github.com/4565798.git                                     gist-4565798
-git_add  https://gist.github.com/4566102.git                                     gist-4566102
-git_add  https://gist.github.com/4573883.git                                     gist-4573883
-git_add  https://gist.github.com/4583749.git                                     gist-4583749
-git_add  https://gist.github.com/458648.git                                      gist-458648
-git_add  https://gist.github.com/4589092.git                                     gist-4589092
-git_add  https://gist.github.com/4597134.git                                     gist-4597134
-git_add  https://gist.github.com/4600693.git                                     gist-4600693
-git_add  https://gist.github.com/4613663.git                                     gist-4613663
-git_add  https://gist.github.com/4616231.git                                     gist-4616231
-git_add  https://gist.github.com/4618602.git                                     gist-4618602
-git_add  https://gist.github.com/4626240.git                                     gist-4626240
-git_add  https://gist.github.com/4629518.git                                     gist-4629518
-git_add  https://gist.github.com/4631136.git                                     gist-4631136
-git_add  https://gist.github.com/4636377.git                                     gist-4636377
-git_add  https://gist.github.com/4645873.git                                     gist-4645873
-git_add  https://gist.github.com/4657115.git                                     gist-4657115
-git_add  https://gist.github.com/4668062.git                                     gist-4668062
-git_add  https://gist.github.com/4670487.git                                     gist-4670487
-git_add  https://gist.github.com/4679202.git                                     gist-4679202
-git_add  https://gist.github.com/4686432.git                                     gist-4686432
-git_add  https://gist.github.com/4686541.git                                     gist-4686541
-git_add  https://gist.github.com/4687713.git                                     gist-4687713
-git_add  https://gist.github.com/4689139.git                                     gist-4689139
-git_add  https://gist.github.com/4695821.git                                     gist-4695821
-git_add  https://gist.github.com/4699389.git                                     gist-4699389
-git_add  https://gist.github.com/4699541.git                                     gist-4699541
-git_add  https://gist.github.com/4704168.git                                     gist-4704168
-git_add  https://gist.github.com/4707858.git                                     gist-4707858
-git_add  https://gist.github.com/4710330.git                                     gist-4710330
-git_add  https://gist.github.com/4710662.git                                     gist-4710662
-git_add  https://gist.github.com/4710879.git                                     gist-4710879
-git_add  https://gist.github.com/4712128.git                                     gist-4712128
-git_add  https://gist.github.com/4718717.git                                     gist-4718717
-git_add  https://gist.github.com/4723857.git                                     gist-4723857
-git_add  https://gist.github.com/4731053.git                                     gist-4731053
-git_add  https://gist.github.com/4731228.git                                     gist-4731228
-git_add  https://gist.github.com/4734864.git                                     gist-4734864
-git_add  https://gist.github.com/4736806.git                                     gist-4736806
-git_add  https://gist.github.com/4751960.git                                     gist-4751960
-git_add  https://gist.github.com/492147.git                                      gist-492147
-git_add  https://gist.github.com/4946049.git                                     gist-4946049
-git_add  https://gist.github.com/4955504.git                                     gist-4955504
-git_add  https://gist.github.com/4963194.git                                     gist-4963194
-git_add  https://gist.github.com/4963273.git                                     gist-4963273
-git_add  https://gist.github.com/4965422.git                                     gist-4965422
-git_add  https://gist.github.com/4965670.git                                     gist-4965670
-git_add  https://gist.github.com/4968288.git                                     gist-4968288
-git_add  https://gist.github.com/4969007.git                                     gist-4969007
-git_add  https://gist.github.com/4970051.git                                     gist-4970051
-git_add  https://gist.github.com/4970328.git                                     gist-4970328
-git_add  https://gist.github.com/4973620.git                                     gist-4973620
-git_add  https://gist.github.com/4986745.git                                     gist-4986745
-git_add  https://gist.github.com/4987520.git                                     gist-4987520
-git_add  https://gist.github.com/5001347.git                                     gist-5001347
-git_add  https://gist.github.com/5014368.git                                     gist-5014368
-git_add  https://gist.github.com/5023284.git                                     gist-5023284
-git_add  https://gist.github.com/5028304.git                                     gist-5028304
-git_add  https://gist.github.com/5044313.git                                     gist-5044313
-git_add  https://gist.github.com/5044999.git                                     gist-5044999
-git_add  https://gist.github.com/5050136.git                                     gist-5050136
-git_add  https://gist.github.com/5050837.git                                     gist-5050837
-git_add  https://gist.github.com/5073718.git                                     gist-5073718
-git_add  https://gist.github.com/5075497.git                                     gist-5075497
-git_add  https://gist.github.com/5087116.git                                     gist-5087116
-git_add  https://gist.github.com/5091037.git                                     gist-5091037
-git_add  https://gist.github.com/5100636.git                                     gist-5100636
-git_add  https://gist.github.com/5107530.git                                     gist-5107530
-git_add  https://gist.github.com/5117844.git                                     gist-5117844
-git_add  https://gist.github.com/5126418.git                                     gist-5126418
-git_add  https://gist.github.com/5144735.git                                     gist-5144735
-git_add  https://gist.github.com/5149102.git                                     gist-5149102
-git_add  https://gist.github.com/5152233.git                                     gist-5152233
-git_add  https://gist.github.com/5165219.git                                     gist-5165219
-git_add  https://gist.github.com/5166482.git                                     gist-5166482
-git_add  https://gist.github.com/5167276.git                                     gist-5167276
-git_add  https://gist.github.com/5180185.git                                     gist-5180185
-git_add  https://gist.github.com/5194757.git                                     gist-5194757
-git_add  https://gist.github.com/5196687.git                                     gist-5196687
-git_add  https://gist.github.com/5200394.git                                     gist-5200394
-git_add  https://gist.github.com/5230202.git                                     gist-5230202
-git_add  https://gist.github.com/5230564.git                                     gist-5230564
-git_add  https://gist.github.com/5230571.git                                     gist-5230571
-git_add  https://gist.github.com/5230580.git                                     gist-5230580
-git_add  https://gist.github.com/5232838.git                                     gist-5232838
-git_add  https://gist.github.com/5234763.git                                     gist-5234763
-git_add  https://gist.github.com/5244131.git                                     gist-5244131
-git_add  https://gist.github.com/5247027.git                                     gist-5247027
-git_add  https://gist.github.com/5249328.git                                     gist-5249328
-git_add  https://gist.github.com/5288565.git                                     gist-5288565
-git_add  https://gist.github.com/5288571.git                                     gist-5288571
-git_add  https://gist.github.com/5288577.git                                     gist-5288577
-git_add  https://gist.github.com/5288583.git                                     gist-5288583
-git_add  https://gist.github.com/5288590.git                                     gist-5288590
-git_add  https://gist.github.com/5301594.git                                     gist-5301594
-git_add  https://gist.github.com/5322390.git                                     gist-5322390
-git_add  https://gist.github.com/5323061.git                                     gist-5323061
-git_add  https://gist.github.com/5342063.git                                     gist-5342063
-git_add  https://gist.github.com/5342818.git                                     gist-5342818
-git_add  https://gist.github.com/5348789.git                                     gist-5348789
-git_add  https://gist.github.com/5349951.git                                     gist-5349951
-git_add  https://gist.github.com/5369146.git                                     gist-5369146
-git_add  https://gist.github.com/5376764.git                                     gist-5376764
-git_add  https://gist.github.com/5385402.git                                     gist-5385402
-git_add  https://gist.github.com/539589.git                                      gist-539589
-git_add  https://gist.github.com/5397710.git                                     gist-5397710
-git_add  https://gist.github.com/5398614.git                                     gist-5398614
-git_add  https://gist.github.com/5403383.git                                     gist-5403383
-git_add  https://gist.github.com/5405240.git                                     gist-5405240
-git_add  https://gist.github.com/5408146.git                                     gist-5408146
-git_add  https://gist.github.com/5413933.git                                     gist-5413933
-git_add  https://gist.github.com/5415941.git                                     gist-5415941
-git_add  https://gist.github.com/5416405.git                                     gist-5416405
-git_add  https://gist.github.com/5416440.git                                     gist-5416440
-git_add  https://gist.github.com/5417216.git                                     gist-5417216
-git_add  https://gist.github.com/5423680.git                                     gist-5423680
-git_add  https://gist.github.com/5431779.git                                     gist-5431779
-git_add  https://gist.github.com/5437184.git                                     gist-5437184
-git_add  https://gist.github.com/5441022.git                                     gist-5441022
-git_add  https://gist.github.com/5452290.git                                     gist-5452290
-git_add  https://gist.github.com/5467720.git                                     gist-5467720
-git_add  https://gist.github.com/5479755.git                                     gist-5479755
-git_add  https://gist.github.com/5497403.git                                     gist-5497403
-git_add  https://gist.github.com/5503544.git                                     gist-5503544
-git_add  https://gist.github.com/550849.git                                      gist-550849
-git_add  https://gist.github.com/5518052.git                                     gist-5518052
-git_add  https://gist.github.com/5519642.git                                     gist-5519642
-git_add  https://gist.github.com/5519819.git                                     gist-5519819
-git_add  https://gist.github.com/5520449.git                                     gist-5520449
-git_add  https://gist.github.com/5522467.git                                     gist-5522467
-git_add  https://gist.github.com/5537671.git                                     gist-5537671
-git_add  https://gist.github.com/5537697.git                                     gist-5537697
-git_add  https://gist.github.com/5538271.git                                     gist-5538271
-git_add  https://gist.github.com/5544008.git                                     gist-5544008
-git_add  https://gist.github.com/5544621.git                                     gist-5544621
-git_add  https://gist.github.com/5545680.git                                     gist-5545680
-git_add  https://gist.github.com/5557726.git                                     gist-5557726
-git_add  https://gist.github.com/5558084.git                                     gist-5558084
-git_add  https://gist.github.com/5562380.git                                     gist-5562380
-git_add  https://gist.github.com/5577023.git                                     gist-5577023
-git_add  https://gist.github.com/5580103.git                                     gist-5580103
-git_add  https://gist.github.com/5586845.git                                     gist-5586845
-git_add  https://gist.github.com/5591116.git                                     gist-5591116
-git_add  https://gist.github.com/5591130.git                                     gist-5591130
-git_add  https://gist.github.com/5593150.git                                     gist-5593150
-git_add  https://gist.github.com/5603250.git                                     gist-5603250
-git_add  https://gist.github.com/5603464.git                                     gist-5603464
-git_add  https://gist.github.com/5606078.git                                     gist-5606078
-git_add  https://gist.github.com/5608230.git                                     gist-5608230
-git_add  https://gist.github.com/5616813.git                                     gist-5616813
-git_add  https://gist.github.com/5617379.git                                     gist-5617379
-git_add  https://gist.github.com/5620764.git                                     gist-5620764
-git_add  https://gist.github.com/5620807.git                                     gist-5620807
-git_add  https://gist.github.com/5625053.git                                     gist-5625053
-git_add  https://gist.github.com/5628329.git                                     gist-5628329
-git_add  https://gist.github.com/5628479.git                                     gist-5628479
-git_add  https://gist.github.com/5629120.git                                     gist-5629120
-git_add  https://gist.github.com/5649592.git                                     gist-5649592
-git_add  https://gist.github.com/5663666.git                                     gist-5663666
-git_add  https://gist.github.com/5669650.git                                     gist-5669650
-git_add  https://gist.github.com/5672200.git                                     gist-5672200
-git_add  https://gist.github.com/5673836.git                                     gist-5673836
-git_add  https://gist.github.com/5681842.git                                     gist-5681842
-git_add  https://gist.github.com/5681974.git                                     gist-5681974
-git_add  https://gist.github.com/5682158.git                                     gist-5682158
-git_add  https://gist.github.com/5683024.git                                     gist-5683024
-git_add  https://gist.github.com/5684816.git                                     gist-5684816
-git_add  https://gist.github.com/5687467.git                                     gist-5687467
-git_add  https://gist.github.com/5695142.git                                     gist-5695142
-git_add  https://gist.github.com/5699934.git                                     gist-5699934
-git_add  https://gist.github.com/5707610.git                                     gist-5707610
-git_add  https://gist.github.com/5707818.git                                     gist-5707818
-git_add  https://gist.github.com/5731578.git                                     gist-5731578
-git_add  https://gist.github.com/5731632.git                                     gist-5731632
-git_add  https://gist.github.com/5731693.git                                     gist-5731693
-git_add  https://gist.github.com/5731808.git                                     gist-5731808
-git_add  https://gist.github.com/5731979.git                                     gist-5731979
-git_add  https://gist.github.com/5732029.git                                     gist-5732029
-git_add  https://gist.github.com/5735623.git                                     gist-5735623
-git_add  https://gist.github.com/5735626.git                                     gist-5735626
-git_add  https://gist.github.com/5735647.git                                     gist-5735647
-git_add  https://gist.github.com/5735649.git                                     gist-5735649
-git_add  https://gist.github.com/5735770.git                                     gist-5735770
-git_add  https://gist.github.com/5737662.git                                     gist-5737662
-git_add  https://gist.github.com/5743979.git                                     gist-5743979
-git_add  https://gist.github.com/5754673.git                                     gist-5754673
-git_add  https://gist.github.com/5779682.git                                     gist-5779682
-git_add  https://gist.github.com/5779690.git                                     gist-5779690
-git_add  https://gist.github.com/5798874.git                                     gist-5798874
-git_add  https://gist.github.com/5808079.git                                     gist-5808079
-git_add  https://gist.github.com/5820393.git                                     gist-5820393
-git_add  https://gist.github.com/5822102.git                                     gist-5822102
-git_add  https://gist.github.com/5827353.git                                     gist-5827353
-git_add  https://gist.github.com/582915.git                                      gist-582915
-git_add  https://gist.github.com/583229.git                                      gist-583229
-git_add  https://gist.github.com/583734.git                                      gist-583734
-git_add  https://gist.github.com/5841683.git                                     gist-5841683
-git_add  https://gist.github.com/584742.git                                      gist-584742
-git_add  https://gist.github.com/5851933.git                                     gist-5851933
-git_add  https://gist.github.com/5861122.git                                     gist-5861122
-git_add  https://gist.github.com/5866872.git                                     gist-5866872
-git_add  https://gist.github.com/5872848.git                                     gist-5872848
-git_add  https://gist.github.com/587387.git                                      gist-587387
-git_add  https://gist.github.com/587424.git                                      gist-587424
-git_add  https://gist.github.com/590163.git                                      gist-590163
-git_add  https://gist.github.com/590744.git                                      gist-590744
-git_add  https://gist.github.com/5909708.git                                     gist-5909708
-git_add  https://gist.github.com/5912673.git                                     gist-5912673
-git_add  https://gist.github.com/5914438.git                                     gist-5914438
-git_add  https://gist.github.com/5925375.git                                     gist-5925375
-git_add  https://gist.github.com/592743.git                                      gist-592743
-git_add  https://gist.github.com/5928813.git                                     gist-5928813
-git_add  https://gist.github.com/592882.git                                      gist-592882
-git_add  https://gist.github.com/592896.git                                      gist-592896
-git_add  https://gist.github.com/593875.git                                      gist-593875
-git_add  https://gist.github.com/5944371.git                                     gist-5944371
-git_add  https://gist.github.com/5947583.git                                     gist-5947583
-git_add  https://gist.github.com/5952814.git                                     gist-5952814
-git_add  https://gist.github.com/5962277.git                                     gist-5962277
-git_add  https://gist.github.com/597287.git                                      gist-597287
-git_add  https://gist.github.com/597292.git                                      gist-597292
-git_add  https://gist.github.com/5977197.git                                     gist-5977197
-git_add  https://gist.github.com/5986172.git                                     gist-5986172
-git_add  https://gist.github.com/5988971.git                                     gist-5988971
-git_add  https://gist.github.com/5993342.git                                     gist-5993342
-git_add  https://gist.github.com/5996232.git                                     gist-5996232
-git_add  https://gist.github.com/600164.git                                      gist-600164
-git_add  https://gist.github.com/6007521.git                                     gist-6007521
-git_add  https://gist.github.com/601639.git                                      gist-601639
-git_add  https://gist.github.com/601985.git                                      gist-601985
-git_add  https://gist.github.com/603062.git                                      gist-603062
-git_add  https://gist.github.com/603148.git                                      gist-603148
-git_add  https://gist.github.com/6052681.git                                     gist-6052681
-git_add  https://gist.github.com/6059532.git                                     gist-6059532
-git_add  https://gist.github.com/6081914.git                                     gist-6081914
-git_add  https://gist.github.com/609059.git                                      gist-609059
-git_add  https://gist.github.com/6112167.git                                     gist-6112167
-git_add  https://gist.github.com/6116436.git                                     gist-6116436
-git_add  https://gist.github.com/611840.git                                      gist-611840
-git_add  https://gist.github.com/6123708.git                                     gist-6123708
-git_add  https://gist.github.com/6140181.git                                     gist-6140181
-git_add  https://gist.github.com/6185526.git                                     gist-6185526
-git_add  https://gist.github.com/6186172.git                                     gist-6186172
-git_add  https://gist.github.com/6187523.git                                     gist-6187523
-git_add  https://gist.github.com/618908.git                                      gist-618908
-git_add  https://gist.github.com/6216724.git                                     gist-6216724
-git_add  https://gist.github.com/6216797.git                                     gist-6216797
-git_add  https://gist.github.com/6224050.git                                     gist-6224050
-git_add  https://gist.github.com/6224396.git                                     gist-6224396
-git_add  https://gist.github.com/6225662.git                                     gist-6225662
-git_add  https://gist.github.com/6226534.git                                     gist-6226534
-git_add  https://gist.github.com/6232537.git                                     gist-6232537
-git_add  https://gist.github.com/6232620.git                                     gist-6232620
-git_add  https://gist.github.com/6238040.git                                     gist-6238040
-git_add  https://gist.github.com/6242308.git                                     gist-6242308
-git_add  https://gist.github.com/6245977.git                                     gist-6245977
-git_add  https://gist.github.com/6252418.git                                     gist-6252418
-git_add  https://gist.github.com/625531.git                                      gist-625531
-git_add  https://gist.github.com/625657.git                                      gist-625657
-git_add  https://gist.github.com/6262722.git                                     gist-6262722
-git_add  https://gist.github.com/6264239.git                                     gist-6264239
-git_add  https://gist.github.com/6287633.git                                     gist-6287633
-git_add  https://gist.github.com/6301817.git                                     gist-6301817
-git_add  https://gist.github.com/6301872.git                                     gist-6301872
-git_add  https://gist.github.com/6312708.git                                     gist-6312708
-git_add  https://gist.github.com/6316349.git                                     gist-6316349
-git_add  https://gist.github.com/6320825.git                                     gist-6320825
-git_add  https://gist.github.com/6392996.git                                     gist-6392996
-git_add  https://gist.github.com/6400988.git                                     gist-6400988
-git_add  https://gist.github.com/6406992.git                                     gist-6406992
-git_add  https://gist.github.com/6408735.git                                     gist-6408735
-git_add  https://gist.github.com/6408918.git                                     gist-6408918
-git_add  https://gist.github.com/6409154.git                                     gist-6409154
-git_add  https://gist.github.com/6409668.git                                     gist-6409668
-git_add  https://gist.github.com/6409844.git                                     gist-6409844
-git_add  https://gist.github.com/6419716.git                                     gist-6419716
-git_add  https://gist.github.com/6420534.git                                     gist-6420534
-git_add  https://gist.github.com/6432815.git                                     gist-6432815
-git_add  https://gist.github.com/6436923.git                                     gist-6436923
-git_add  https://gist.github.com/6452972.git                                     gist-6452972
-git_add  https://gist.github.com/645734.git                                      gist-645734
-git_add  https://gist.github.com/645758.git                                      gist-645758
-git_add  https://gist.github.com/6457608.git                                     gist-6457608
-git_add  https://gist.github.com/6459889.git                                     gist-6459889
-git_add  https://gist.github.com/6468148.git                                     gist-6468148
-git_add  https://gist.github.com/6472779.git                                     gist-6472779
-git_add  https://gist.github.com/6476579.git                                     gist-6476579
-git_add  https://gist.github.com/647888.git                                      gist-647888
-git_add  https://gist.github.com/6506614.git                                     gist-6506614
-git_add  https://gist.github.com/6515478.git                                     gist-6515478
-git_add  https://gist.github.com/6541165.git                                     gist-6541165
-git_add  https://gist.github.com/660054.git                                      gist-660054
-git_add  https://gist.github.com/6641917.git                                     gist-6641917
-git_add  https://gist.github.com/665906.git                                      gist-665906
-git_add  https://gist.github.com/667245.git                                      gist-667245
-git_add  https://gist.github.com/672899.git                                      gist-672899
-git_add  https://gist.github.com/6738360.git                                     gist-6738360
-git_add  https://gist.github.com/675512.git                                      gist-675512
-git_add  https://gist.github.com/705856.git                                      gist-705856
-git_add  https://gist.github.com/7090426.git                                     gist-7090426
-git_add  https://gist.github.com/710387.git                                      gist-710387
-git_add  https://gist.github.com/7123450.git                                     gist-7123450
-git_add  https://gist.github.com/714554.git                                      gist-714554
-git_add  https://gist.github.com/7191340.git                                     gist-7191340
-git_add  https://gist.github.com/7880033.git                                     gist-7880033
-git_add  https://gist.github.com/8119685.git                                     gist-8119685
-git_add  https://gist.github.com/843177.git                                      gist-843177
-git_add  https://gist.github.com/844752.git                                      gist-844752
-git_add  https://gist.github.com/846688.git                                      gist-846688
-git_add  https://gist.github.com/846704.git                                      gist-846704
-git_add  https://gist.github.com/846710.git                                      gist-846710
-git_add  https://gist.github.com/847677.git                                      gist-847677
-git_add  https://gist.github.com/849853.git                                      gist-849853
-git_add  https://gist.github.com/865396.git                                      gist-865396
-git_add  https://gist.github.com/870118.git                                      gist-870118
-git_add  https://gist.github.com/881980.git                                      gist-881980
-git_add  https://gist.github.com/882152.git                                      gist-882152
-git_add  https://gist.github.com/899649.git                                      gist-899649
-git_add  https://gist.github.com/899670.git                                      gist-899670
-git_add  https://gist.github.com/899711.git                                      gist-899711
-git_add  https://gist.github.com/900050.git                                      gist-900050
-git_add  https://gist.github.com/906688.git                                      gist-906688
-git_add  https://gist.github.com/910126.git                                      gist-910126
-git_add  https://gist.github.com/912735.git                                      gist-912735
-git_add  https://gist.github.com/929623.git                                      gist-929623
-git_add  https://gist.github.com/938288.git                                      gist-938288
-git_add  https://gist.github.com/939927.git                                      gist-939927
-git_add  https://gist.github.com/940838.git                                      gist-940838
-git_add  https://gist.github.com/950642.git                                      gist-950642
-git_add  https://gist.github.com/972398.git                                      gist-972398
-git_add  https://gist.github.com/993912.git                                      gist-993912
-git_add  https://gist.github.com/996370.git                                      gist-996370
-git_add  https://gist.github.com/999346.git                                      gist-999346
-git_add  https://github.com/Addepar/ember-table.git                              github-Addepar_ember-table
-git_add  https://github.com/BertrandDechoux/d3js-sandbox.git                     github-BertrandDechoux_d3js-sandbox
-git_add  https://github.com/Caged/d3-tip.git                                     github-Caged_d3-tip
-git_add  https://github.com/CrowdStrike/ember-timetree.git                       github-CrowdStrike_ember-timetree
-git_add  https://github.com/MinnPost/simple-map-d3.git                           github-MinnPost_simple-map-d3
-git_add  https://github.com/MonsieurCactus/hanejs.git                            github-MonsieurCactus_hanejs
-git_add  https://github.com/NickQiZhu/dc.js.git                                  github-NickQiZhu_dc_js
-git_add  https://github.com/PatMartin/DexCharts.git                              github-PatMartin_DexCharts
-git_add  https://github.com/Quartz/Chartbuilder.git                              github-Quartz_Chartbuilder
-git_add  https://github.com/Swizec/d3.js-book-examples.git                       github-Swizec_d3_js-book-examples
-git_add  https://github.com/alangrafu/radar-chart-d3.git                         github-alangrafu_radar-chart-d3
-git_add  https://github.com/alexandersimoes/d3plus.git                           github-alexandersimoes_d3plus
-git_add  https://github.com/alexbbrown/g3plot-1.git                              github-alexbbrown_g3plot-1
-git_add  https://github.com/anilomanwar/RedialLine.git                           github-anilomanwar_RedialLine
-git_add  https://github.com/anilomanwar/d3jsExperiments.git                      github-anilomanwar_d3jsExperiments
-git_add  https://github.com/areski/python-nvd3.git                               github-areski_python-nvd3
-git_add  https://github.com/artzub/wbgds.git                                     github-artzub_wbgds
-git_add  https://github.com/asutherland/d3-threeD.git                            github-asutherland_d3-threeD
-git_add  https://github.com/auchenberg/dependo.git                               github-auchenberg_dependo
-git_add  https://github.com/benbjohnson/miniviz.git                              github-benbjohnson_miniviz
-git_add  https://github.com/bjuhn/UrbanDataChallenge.git                         github-bjuhn_UrbanDataChallenge
-git_add  https://github.com/blog/1360-introducing-contributions.git              github-blog_1360-introducing-contributions
-git_add  https://github.com/bollwyvl/blockd3.git                                 github-bollwyvl_blockd3
-git_add  https://github.com/boorad/d3-tsline.git                                 github-boorad_d3-tsline
-git_add  https://github.com/caged/d3-tip.git                                     github-caged_d3-tip
-git_add  https://github.com/cakey/infro.git                                      github-cakey_infro
-git_add  https://github.com/calvinmetcalf/k3.git                                 github-calvinmetcalf_k3
-git_add  https://github.com/calvinmetcalf/leaflet.demos.git                      github-calvinmetcalf_leaflet_demos
-git_add  https://github.com/calvinmetcalf/psychic-octo-nemesis.git               github-calvinmetcalf_psychic-octo-nemesis
-git_add  https://github.com/chelm/jsgeo.git                                      github-chelm_jsgeo
-git_add  https://github.com/cotrino/experimentos.git                             github-cotrino_experimentos
-git_add  https://github.com/cpettitt/dagre.git                                   github-cpettitt_dagre
-git_add  https://github.com/d3/d3-geo-projection.git                             github-d3_d3-geo-projection
-git_add  https://github.com/d3/d3-plugins.git                                    github-d3_d3-plugins
-git_add  https://github.com/d3/parallel-coordinates.git                          github-d3_parallel-coordinates
-git_add  https://github.com/danielfrg/copper.git                                 github-danielfrg_copper
-git_add  https://github.com/danielgtaylor/bibviz.git                             github-danielgtaylor_bibviz
-git_add  https://github.com/dansdom/D3-Builder.git                               github-dansdom_D3-Builder
-git_add  https://github.com/dansdom/plugins-d3-pie.git                           github-dansdom_plugins-d3-pie
-git_add  https://github.com/davidcox/plotsk.git                                  github-davidcox_plotsk
-git_add  https://github.com/dciarletta/d3-floorplan.git                          github-dciarletta_d3-floorplan
-git_add  https://github.com/deepakg/waterfall.git                                github-deepakg_waterfall
-git_add  https://github.com/dk8996/Gantt-Chart.git                               github-dk8996_Gantt-Chart
-git_add  https://github.com/dkandalov/delta-flora-for-intellij.git               github-dkandalov_delta-flora-for-intellij
-git_add  https://github.com/drsm79/Backbone-d3.git                               github-drsm79_Backbone-d3
-git_add  https://github.com/dustinlarimer/inkscape-s3-server.git                 github-dustinlarimer_inkscape-s3-server
-git_add  https://github.com/dyninc/d3-smokechart.git                             github-dyninc_d3-smokechart
-git_add  https://github.com/enjalot/adventures_in_d3.git                         github-enjalot_adventures_in_d3
-git_add  https://github.com/enjalot/d34github.git                                github-enjalot_d34github
-git_add  https://github.com/enjalot/dot-append.git                               github-enjalot_dot-append
-git_add  https://github.com/enjalot/dot-enter.git                                github-enjalot_dot-enter
-git_add  https://github.com/enjalot/intro-d3.git                                 github-enjalot_intro-d3
-git_add  https://github.com/exlee/d3-dash-gen.git                                github-exlee_d3-dash-gen
-git_add  https://github.com/eyeseast/visible-data.git                            github-eyeseast_visible-data
-git_add  https://github.com/fod/jobflow.git                                      github-fod_jobflow
-git_add  https://github.com/fullscale/dangle.git                                 github-fullscale_dangle
-git_add  https://github.com/gajus/interdependent-interactive-histograms.git      github-gajus_interdependent-interactive-histograms
-git_add  https://github.com/gajus/pie-chart.git                                  github-gajus_pie-chart
-git_add  https://github.com/gameprez/gpdk.git                                    github-gameprez_gpdk
-git_add  https://github.com/gencay/stackedGroupedChart.git                       github-gencay_stackedGroupedChart
-git_add  https://github.com/goulu/Goulib.git                                     github-goulu_Goulib
-git_add  https://github.com/hadley/r2d3.git                                      github-hadley_r2d3
-git_add  https://github.com/hhuuggoo/pushd3.git                                  github-hhuuggoo_pushd3
-git_add  https://github.com/hughsk/colony.git                                    github-hughsk_colony
-git_add  https://github.com/ignacioola/insights.git                              github-ignacioola_insights
-git_add  https://github.com/ilyabo/remittances.git                               github-ilyabo_remittances
-git_add  https://github.com/inlineblock/funnel.js.git                            github-inlineblock_funnel_js
-git_add  https://github.com/interactivethings/d3-comparator.git                  github-interactivethings_d3-comparator
-git_add  https://github.com/ipython/jsplugins.git                                github-ipython_jsplugins
-git_add  https://github.com/iros/d3.chart.tooltips.git                           github-iros_d3_chart_tooltips
-git_add  https://github.com/jasondavies/d3-cloud.git                             github-jasondavies_d3-cloud
-git_add  https://github.com/jasondavies/d3-parsets.git                           github-jasondavies_d3-parsets
-git_add  https://github.com/jazzido/d3micromaps.git                              github-jazzido_d3micromaps
-git_add  https://github.com/jiahuang/d3-timeline.git                             github-jiahuang_d3-timeline
-git_add  https://github.com/jllord/sheetsee.js.git                               github-jllord_sheetsee_js
-git_add  https://github.com/johan/d3.git                                         github-johan_d3
-git_add  https://github.com/jondot/graphene.git                                  github-jondot_graphene
-git_add  https://github.com/jsundram/d3-choropleth.git                           github-jsundram_d3-choropleth
-git_add  https://github.com/k9ert/meteor-deployments.git                         github-k9ert_meteor-deployments
-git_add  https://github.com/kbroman/d3examples.git                               github-kbroman_d3examples
-git_add  https://github.com/kenhub/giraffe.git                                   github-kenhub_giraffe
-git_add  https://github.com/kpeng/visionyc.git                                   github-kpeng_visionyc
-git_add  https://github.com/latentflip/d3.git                                    github-latentflip_d3
-git_add  https://github.com/latentflip/violin.git                                github-latentflip_violin
-git_add  https://github.com/lbrucher/d3-tree-heatmap.git                         github-lbrucher_d3-tree-heatmap
-git_add  https://github.com/lgrammel/d3_gwt.git                                  github-lgrammel_d3_gwt
-git_add  https://github.com/liufly/Dual-scale-D3-Bar-Chart.git                   github-liufly_Dual-scale-D3-Bar-Chart
-git_add  https://github.com/markmarkoh/datamaps.git                              github-markmarkoh_datamaps
-git_add  https://github.com/masayuki0812/c3.git                                  github-masayuki0812_c3
-git_add  https://github.com/mbostock/protovis.git                                github-mbostock_protovis
-git_add  https://github.com/mbostock/queue.git                                   github-mbostock_queue
-git_add  https://github.com/mbostock/smash.git                                   github-mbostock_smash
-git_add  https://github.com/mbostock/topojson.git                                github-mbostock_topojson
-git_add  https://github.com/meloncholy/mt-stats-viewer.git                       github-meloncholy_mt-stats-viewer
-git_add  https://github.com/meloncholy/mt-stats.git                              github-meloncholy_mt-stats
-git_add  https://github.com/mhansen/stolen-vehicles-pt2.git                      github-mhansen_stolen-vehicles-pt2
-git_add  https://github.com/mhemesath/r2d3.git                                   github-mhemesath_r2d3
-git_add  https://github.com/migurski/Dymo.git                                    github-migurski_Dymo
-git_add  https://github.com/mikedewar/d3py.git                                   github-mikedewar_d3py
-git_add  https://github.com/milafrerichs/eeg_unternehmen.git                     github-milafrerichs_eeg_unternehmen
-git_add  https://github.com/milafrerichs/fahrradunfaelle.git                     github-milafrerichs_fahrradunfaelle
-git_add  https://github.com/mishoo/UglifyJS2.git                                 github-mishoo_UglifyJS2
-git_add  https://github.com/misoproject/d3.chart.git                             github-misoproject_d3_chart
-git_add  https://github.com/mlarocca/Dynamic-Charts.git                          github-mlarocca_Dynamic-Charts
-git_add  https://github.com/mxcl/homebrew.git                                    github-mxcl_homebrew
-git_add  https://github.com/nachocab/clickme.git                                 github-nachocab_clickme
-git_add  https://github.com/nandayadav/nfldrafts_visualization.git               github-nandayadav_nfldrafts_visualization
-git_add  https://github.com/nandayadav/rega.git                                  github-nandayadav_rega
-git_add  https://github.com/nowherenearithaca/empires.git                        github-nowherenearithaca_empires
-git_add  https://github.com/nrabinowitz/d3_utils.git                             github-nrabinowitz_d3_utils
-git_add  https://github.com/nstehr/NHL-Slopegraph.git                            github-nstehr_NHL-Slopegraph
-git_add  https://github.com/nstehr/NHL-Trade-Arc.git                             github-nstehr_NHL-Trade-Arc
-git_add  https://github.com/pnavarrc/earthquake.git                              github-pnavarrc_earthquake
-git_add  https://github.com/prcweb/d3-circularheat.git                           github-prcweb_d3-circularheat
-git_add  https://github.com/rameshvs/jsplotlib.git                               github-rameshvs_jsplotlib
-git_add  https://github.com/ramnathv/slidifyExamples.git                         github-ramnathv_slidifyExamples
-git_add  https://github.com/rkirsling/modallogic.git                             github-rkirsling_modallogic
-git_add  https://github.com/roundrobin/d3.js-Sublime-2-Snippets.git              github-roundrobin_d3_js-Sublime-2-Snippets
-git_add  https://github.com/sammyd/blog.git                                      github-sammyd_blog
-git_add  https://github.com/sammyt/see.git                                       github-sammyt_see
-git_add  https://github.com/saranyan/commerce_wheel.git                          github-saranyan_commerce_wheel
-git_add  https://github.com/schnipz/leap-motion-demos.git                        github-schnipz_leap-motion-demos
-git_add  https://github.com/scottcheng/bj-air-vis.git                            github-scottcheng_bj-air-vis
-git_add  https://github.com/sdelarquier/rbspd3.git                               github-sdelarquier_rbspd3
-git_add  https://github.com/shawnbot/aight.git                                   github-shawnbot_aight
-git_add  https://github.com/shawnbot/d3-bootstrap.git                            github-shawnbot_d3-bootstrap
-git_add  https://github.com/shawnbot/d3-cartogram.git                            github-shawnbot_d3-cartogram
-git_add  https://github.com/shutterstock/rickshaw.git                            github-shutterstock_rickshaw
-git_add  https://github.com/square/crossfilter.git                               github-square_crossfilter
-git_add  https://github.com/square/cube.git                                      github-square_cube
-git_add  https://github.com/square/cubism.git                                    github-square_cubism
-git_add  https://github.com/sympy/sympy.git                                      github-sympy_sympy
-git_add  https://github.com/syntagmatic/parallel-coordinates.git                 github-syntagmatic_parallel-coordinates
-git_add  https://github.com/tamc/Sankey.git                                      github-tamc_Sankey
-git_add  https://github.com/tenXer/xcharts.git                                   github-tenXer_xcharts
-git_add  https://github.com/trinary/d3-transform.git                             github-trinary_d3-transform
-git_add  https://github.com/turban/d3.slider.git                                 github-turban_d3_slider
-git_add  https://github.com/upphiminn/d3.ForceBundle.git                         github-upphiminn_d3_ForceBundle
-git_add  https://github.com/vogievetsky/DVL.git                                  github-vogievetsky_DVL
-git_add  https://github.com/vogievetsky/IntroD3.git                              github-vogievetsky_IntroD3
-git_add  https://github.com/webholics/talk-munichjs-d3.git                       github-webholics_talk-munichjs-d3
-git_add  https://github.com/webmonarch/d34raphael.git                            github-webmonarch_d34raphael
-git_add  https://github.com/wrobstory/bearcart.git                               github-wrobstory_bearcart
-git_add  https://github.com/zziuni/d3.git                                        github-zziuni_d3
-git_add  https://github.com/zzolo/d3js-example-presentation.git                  github-zzolo_d3js-example-presentation
-git_add  https://github.com/zzolo/mjc-data-visualization-presentation.git        github-zzolo_mjc-data-visualization-presentation
 
 
+
+
+
+
+
+gist_add     300494
+gist_add     458648
+gist_add     492147
+gist_add     539589
+gist_add     550849
+gist_add     582915
+gist_add     583229
+gist_add     583734
+gist_add     584742
+gist_add     587387
+gist_add     587424
+gist_add     590163
+gist_add     590744
+gist_add     592743
+gist_add     592882
+gist_add     592896
+gist_add     593875
+gist_add     597287
+gist_add     597292
+gist_add     600164
+gist_add     601639
+gist_add     601985
+gist_add     603062
+gist_add     603148
+gist_add     609059
+gist_add     611840
+gist_add     618908
+gist_add     625531
+gist_add     625657
+gist_add     645734
+gist_add     645758
+gist_add     647888
+gist_add     660054
+gist_add     665906
+gist_add     667245
+gist_add     672899
+gist_add     675512
+gist_add     705856
+gist_add     710387
+gist_add     714554
+gist_add     843177
+gist_add     844752
+gist_add     846688
+gist_add     846704
+gist_add     846710
+gist_add     847677
+gist_add     849853
+gist_add     865396
+gist_add     870118
+gist_add     881980
+gist_add     882152
+gist_add     899649
+gist_add     899670
+gist_add     899711
+gist_add     900050
+gist_add     906688
+gist_add     910126
+gist_add     912735
+gist_add     929623
+gist_add     938288
+gist_add     939927
+gist_add     940838
+gist_add     950642
+gist_add     972398
+gist_add     993912
+gist_add     996370
+gist_add     999346
+gist_add    1005090
+gist_add    1005873
+gist_add    1009139
+gist_add    1009308
+gist_add    1014829
+gist_add    1016220
+gist_add    1016860
+gist_add    1020902
+gist_add    1021103
+gist_add    1021841
+gist_add    1021953
+gist_add    1026649
+gist_add    1036776
+gist_add    1044242
+gist_add    1046712
+gist_add    1059602
+gist_add    1061834
+gist_add    1062288
+gist_add    1062383
+gist_add    1062544
+gist_add    1065859
+gist_add    1065861
+gist_add    1067616
+gist_add    1067636
+gist_add    1071269
+gist_add    1071981
+gist_add    1073373
+gist_add    1074045
+gist_add    1075123
+gist_add    1076158
+gist_add    1080941
+gist_add    1083726
+gist_add    1083732
+gist_add    1086421
+gist_add    1087001
+gist_add    1090203
+gist_add    1090691
+gist_add    1093025
+gist_add    1093130
+gist_add    1095727
+gist_add    1095795
+gist_add    1096355
+gist_add    1098617
+gist_add    1100394
+gist_add    1117287
+gist_add    1123639
+gist_add    1125339
+gist_add    1125458
+gist_add    1125997
+gist_add    1129492
+gist_add    1133472
+gist_add    1134768
+gist_add    1136236
+gist_add    1137131
+gist_add    1138500
+gist_add    1139473
+gist_add    1144047
+gist_add    1148172
+gist_add    1148365
+gist_add    1153292
+gist_add    1155488
+gist_add    1157415
+gist_add    1157787
+gist_add    1159696
+gist_add    1160929
+gist_add    1163659
+gist_add    1166403
+gist_add    1169680
+gist_add    1171371
+gist_add    1174302
+gist_add    1175688
+gist_add    1177588
+gist_add    1177827
+gist_add    1177880
+gist_add    1178682
+gist_add    1179647
+gist_add    1182434
+gist_add    1182485
+gist_add    1184766
+gist_add    1185705
+gist_add    1187808
+gist_add    1195063
+gist_add    1197731
+gist_add    1198017
+gist_add    1199811
+gist_add    1202253
+gist_add    1212197
+gist_add    1212215
+gist_add    1214915
+gist_add    1218859
+gist_add    1219585
+gist_add    1221654
+gist_add    1221675
+gist_add    1222777
+gist_add    1224222
+gist_add    1225313
+gist_add    1226718
+gist_add    1233904
+gist_add    1243323
+gist_add    1246403
+gist_add    1249394
+gist_add    1249681
+gist_add    1249958
+gist_add    1252867
+gist_add    1256572
+gist_add    1257485
+gist_add    1262305
+gist_add    1263239
+gist_add    1266259
+gist_add    1269004
+gist_add    1271058
+gist_add    1275654
+gist_add    1275742
+gist_add    1276463
+gist_add    1277254
+gist_add    1277968
+gist_add    1283663
+gist_add    1288493
+gist_add    1291667
+gist_add    1291672
+gist_add    1300016
+gist_add    1303584
+gist_add    1305111
+gist_add    1305337
+gist_add    1305347
+gist_add    1306365
+gist_add    1308257
+gist_add    1308400
+gist_add    1313857
+gist_add    1314483
+gist_add    1316832
+gist_add    1317455
+gist_add    1320232
+gist_add    1321837
+gist_add    1322814
+gist_add    1322907
+gist_add    1322948
+gist_add    1323729
+gist_add    1323841
+gist_add    1325574
+gist_add    1326318
+gist_add    1327441
+gist_add    1335475
+gist_add    1337511
+gist_add    1339996
+gist_add    1340727
+gist_add    1341021
+gist_add    1341281
+gist_add    1341679
+gist_add    1342359
+gist_add    1343714
+gist_add    1345853
+gist_add    1346395
+gist_add    1346410
+gist_add    1351113
+gist_add    1353700
+gist_add    1357601
+gist_add    1357620
+gist_add    1363743
+gist_add    1364304
+gist_add    1365279
+gist_add    1367999
+gist_add    1368205
+gist_add    1371412
+gist_add    1373819
+gist_add    1374397
+gist_add    1377729
+gist_add    1378144
+gist_add    1379988
+gist_add    1386444
+gist_add    1389927
+gist_add    1393200
+gist_add    1399097
+gist_add    1399117
+gist_add    1399211
+gist_add    1404346
+gist_add    1405439
+gist_add    1423627
+gist_add    1424037
+gist_add    1439005
+gist_add    1440766
+gist_add    1441881
+gist_add    1457934
+gist_add    1468492
+gist_add    1468715
+gist_add    1469438
+gist_add    1473535
+gist_add    1479319
+gist_add    1483226
+gist_add    1484345
+gist_add    1488375
+gist_add    1488680
+gist_add    1491435
+gist_add    1494117
+gist_add    1499279
+gist_add    1502762
+gist_add    1502887
+gist_add    1503463
+gist_add    1505811
+gist_add    1508606
+gist_add    1509502
+gist_add    1516547
+gist_add    1535916
+gist_add    1536332
+gist_add    1541816
+gist_add    1547192
+gist_add    1548215
+gist_add    1552725
+gist_add    1557377
+gist_add    1557990
+gist_add    1558011
+gist_add    1573240
+gist_add    1579132
+gist_add    1582075
+gist_add    1584697
+gist_add    1616423
+gist_add    1624656
+gist_add    1624660
+gist_add    1627378
+gist_add    1627439
+gist_add    1628131
+gist_add    1629464
+gist_add    1629644
+gist_add    1630683
+gist_add    1642874
+gist_add    1642989
+gist_add    1643051
+gist_add    1648635
+gist_add    1649463
+gist_add    1653763
+gist_add    1667139
+gist_add    1667367
+gist_add    1691430
+gist_add    1696080
+gist_add    1696372
+gist_add    1699744
+gist_add    1705868
+gist_add    1706523
+gist_add    1706849
+gist_add    1747543
+gist_add    1748247
+gist_add    1771630
+gist_add    1800198
+gist_add    1804889
+gist_add    1804919
+gist_add    1846692
+gist_add    1849162
+gist_add    1854471
+gist_add    1865422
+gist_add    1867866
+gist_add    1869677
+gist_add    1871853
+gist_add    1883717
+gist_add    1887532
+gist_add    1893974
+gist_add    1920939
+gist_add    1933560
+gist_add    1935509
+gist_add    1962173
+gist_add    1963983
+gist_add    1965462
+gist_add    2005817
+gist_add    2011590
+gist_add    2037124
+gist_add    2066415
+gist_add    2066421
+gist_add    2086461
+gist_add    2164562
+gist_add    2165875
+gist_add    2206340
+gist_add    2206489
+gist_add    2206529
+gist_add    2206590
+gist_add    2209220
+gist_add    2280295
+gist_add    2286893
+gist_add    2287399
+gist_add    2289263
+gist_add    2294676
+gist_add    2295155
+gist_add    2295263
+gist_add    2322933
+gist_add    2338034
+gist_add    2346962
+gist_add    2361485
+gist_add    2366285
+gist_add    2366983
+gist_add    2368837
+gist_add    2369589
+gist_add    2374239
+gist_add    2429963
+gist_add    2465185
+gist_add    2504633
+gist_add    2505393
+gist_add    2511921
+gist_add    2512177
+gist_add    2514183
+gist_add    2522156
+gist_add    2547496
+gist_add    2554910
+gist_add    2556042
+gist_add    2565344
+gist_add    2573074
+gist_add    2585241
+gist_add    2595950
+gist_add    2597692
+gist_add    2599189
+gist_add    2623079
+gist_add    2647922
+gist_add    2647924
+gist_add    2653660
+gist_add    2657838
+gist_add    2706022
+gist_add    2724230
+gist_add    2724323
+gist_add    2727824
+gist_add    2759731
+gist_add    2839676
+gist_add    2846454
+gist_add    2846726
+gist_add    2869760
+gist_add    2869871
+gist_add    2869946
+gist_add    2870030
+gist_add    2879486
+gist_add    2883411
+gist_add    2920551
+gist_add    2932721
+gist_add    2941604
+gist_add    2942506
+gist_add    2949937
+gist_add    2949981
+gist_add    2962761
+gist_add    2962888
+gist_add    2966094
+gist_add    2974930
+gist_add    2983699
+gist_add    2991587
+gist_add    2996766
+gist_add    2996785
+gist_add    2997144
+gist_add    3007180
+gist_add    3014589
+gist_add    3019563
+gist_add    3020685
+gist_add    3021474
+gist_add    3025699
+gist_add    3031319
+gist_add    3035090
+gist_add    3037015
+gist_add    3048166
+gist_add    3048168
+gist_add    3048450
+gist_add    3048740
+gist_add    3055104
+gist_add    3057239
+gist_add    3058685
+gist_add    3061181
+gist_add    3070621
+gist_add    3070659
+gist_add    3071239
+gist_add    3074470
+gist_add    3081153
+gist_add    3087986
+gist_add    3092303
+gist_add    3094619
+gist_add    3095037
+gist_add    3104394
+gist_add    3116650
+gist_add    3116713
+gist_add    3116836
+gist_add    3116844
+gist_add    3117757
+gist_add    3118901
+gist_add    3125020
+gist_add    3125434
+gist_add    3125600
+gist_add    3138656
+gist_add    3145795
+gist_add    3151228
+gist_add    3151318
+gist_add    3154300
+gist_add    3154741
+gist_add    3173233
+gist_add    3173784
+gist_add    3175935
+gist_add    3176159
+gist_add    3180395
+gist_add    3183403
+gist_add    3184089
+gist_add    3190391
+gist_add    3192376
+gist_add    3194190
+gist_add    3201606
+gist_add    3202354
+gist_add    3203343
+gist_add    3212294
+gist_add    3213173
+gist_add    3231298
+gist_add    3231307
+gist_add    3244058
+gist_add    3258821
+gist_add    3259783
+gist_add    3287802
+gist_add    3288044
+gist_add    3289530
+gist_add    3290263
+gist_add    3290752
+gist_add    3305515
+gist_add    3305854
+gist_add    3305937
+gist_add    3306147
+gist_add    3306234
+gist_add    3306362
+gist_add    3310187
+gist_add    3310233
+gist_add    3310323
+gist_add    3310560
+gist_add    3311124
+gist_add    3315291
+gist_add    3315318
+gist_add    3331545
+gist_add    3331937
+gist_add    3344600
+gist_add    3349192
+gist_add    3355967
+gist_add    3371488
+gist_add    3371592
+gist_add    3391642
+gist_add    3422480
+gist_add    3468167
+gist_add    3480186
+gist_add    3517374
+gist_add    3543186
+gist_add    3605035
+gist_add    3605069
+gist_add    3605124
+gist_add    3616279
+gist_add    3630001
+gist_add    3637711
+gist_add    3664045
+gist_add    3664049
+gist_add    3669333
+gist_add    3669455
+gist_add    3670696
+gist_add    3670903
+gist_add    3671490
+gist_add    3671592
+gist_add    3680957
+gist_add    3680958
+gist_add    3680999
+gist_add    3681006
+gist_add    3682676
+gist_add    3682698
+gist_add    3682990
+gist_add    3683278
+gist_add    3683489
+gist_add    3689677
+gist_add    3695277
+gist_add    3696645
+gist_add    3697451
+gist_add    3709000
+gist_add    3710082
+gist_add    3710148
+gist_add    3710566
+gist_add    3711245
+gist_add    3711652
+gist_add    3712397
+gist_add    3712399
+gist_add    3712408
+gist_add    3719042
+gist_add    3719724
+gist_add    3732612
+gist_add    3732893
+gist_add    3734168
+gist_add    3734273
+gist_add    3734308
+gist_add    3734313
+gist_add    3734316
+gist_add    3734317
+gist_add    3734321
+gist_add    3734322
+gist_add    3734324
+gist_add    3734325
+gist_add    3734327
+gist_add    3734328
+gist_add    3734329
+gist_add    3734330
+gist_add    3734333
+gist_add    3734336
+gist_add    3734342
+gist_add    3734343
+gist_add    3739752
+gist_add    3750558
+gist_add    3750900
+gist_add    3750941
+gist_add    3757101
+gist_add    3757110
+gist_add    3757119
+gist_add    3757125
+gist_add    3757132
+gist_add    3757137
+gist_add    3757349
+gist_add    3763057
+gist_add    3763867
+gist_add    3772069
+gist_add    3779574
+gist_add    3783604
+gist_add    3788999
+gist_add    3790085
+gist_add    3790444
+gist_add    3791255
+gist_add    3795040
+gist_add    3795048
+gist_add    3795544
+gist_add    3796831
+gist_add    3797581
+gist_add    3797585
+gist_add    3797591
+gist_add    3804779
+gist_add    3808218
+gist_add    3808221
+gist_add    3808234
+gist_add    3828981
+gist_add    3846051
+gist_add    3853405
+gist_add    3854614
+gist_add    3867220
+gist_add    3883098
+gist_add    3883195
+gist_add    3883245
+gist_add    3884914
+gist_add    3884955
+gist_add    3885211
+gist_add    3885304
+gist_add    3885705
+gist_add    3886208
+gist_add    3886394
+gist_add    3887051
+gist_add    3887118
+gist_add    3887193
+gist_add    3887235
+gist_add    3888852
+gist_add    3892919
+gist_add    3892928
+gist_add    3894205
+gist_add    3900925
+gist_add    3902569
+gist_add    3903818
+gist_add    3916621
+gist_add    3918369
+gist_add    3921009
+gist_add    3934356
+gist_add    3943967
+gist_add    3946824
+gist_add    3953793
+gist_add    3960741
+gist_add    3962108
+gist_add    3969722
+gist_add    3970883
+gist_add    4015254
+gist_add    4047002
+gist_add    4052873
+gist_add    4053096
+gist_add    4054247
+gist_add    4055889
+gist_add    4055892
+gist_add    4055908
+gist_add    4060366
+gist_add    4060606
+gist_add    4060954
+gist_add    4061502
+gist_add    4061961
+gist_add    4062006
+gist_add    4062045
+gist_add    4062085
+gist_add    4062844
+gist_add    4062919
+gist_add    4063269
+gist_add    4063318
+gist_add    4063423
+gist_add    4063530
+gist_add    4063550
+gist_add    4063570
+gist_add    4063582
+gist_add    4063663
+gist_add    4068610
+gist_add    4090846
+gist_add    4090848
+gist_add    4090870
+gist_add    4091835
+gist_add    4092944
+gist_add    4108203
+gist_add    4122298
+gist_add    4132797
+gist_add    4134037
+gist_add    4134057
+gist_add    4136647
+gist_add    4149176
+gist_add    4150951
+gist_add    4163057
+gist_add    4165404
+gist_add    4168921
+gist_add    4175202
+gist_add    4180634
+gist_add    4183330
+gist_add    4198499
+gist_add    4206573
+gist_add    4206810
+gist_add    4206857
+gist_add    4206975
+gist_add    4207744
+gist_add    4218871
+gist_add    4236639
+gist_add    4237768
+gist_add    4241134
+gist_add    4246925
+gist_add    4248145
+gist_add    4248146
+gist_add    4254963
+gist_add    4260668
+gist_add    4265100
+gist_add    4281513
+gist_add    4282586
+gist_add    4289018
+gist_add    4292338
+gist_add    4310087
+gist_add    4315896
+gist_add    4318672
+gist_add    4319903
+gist_add    4323929
+gist_add    4324236
+gist_add    4329423
+gist_add    4330486
+gist_add    4331208
+gist_add    4333610
+gist_add    4339083
+gist_add    4339162
+gist_add    4339184
+gist_add    4339607
+gist_add    4340039
+gist_add    4341134
+gist_add    4341156
+gist_add    4341417
+gist_add    4341574
+gist_add    4341699
+gist_add    4341954
+gist_add    4342045
+gist_add    4342190
+gist_add    4343153
+gist_add    4343214
+gist_add    4347473
+gist_add    4348024
+gist_add    4348373
+gist_add    4349166
+gist_add    4349187
+gist_add    4349486
+gist_add    4349509
+gist_add    4349545
+gist_add    4360892
+gist_add    4362031
+gist_add    4362310
+gist_add    4364903
+gist_add    4370043
+gist_add    4390054
+gist_add    4403522
+gist_add    4408297
+gist_add    4414107
+gist_add    4425979
+gist_add    4431123
+gist_add    4433918
+gist_add    4436875
+gist_add    4444770
+gist_add    4448162
+gist_add    4448587
+gist_add    4454550
+gist_add    4458497
+gist_add    4458680
+gist_add    4458991
+gist_add    4459071
+gist_add    4459130
+gist_add    4459466
+gist_add    4459716
+gist_add    4463049
+gist_add    4463127
+gist_add    4463155
+gist_add    4463175
+gist_add    4463237
+gist_add    4465109
+gist_add    4465118
+gist_add    4465130
+gist_add    4465137
+gist_add    4465140
+gist_add    4476279
+gist_add    4476487
+gist_add    4476496
+gist_add    4479477
+gist_add    4479513
+gist_add    4479547
+gist_add    4481220
+gist_add    4481265
+gist_add    4481520
+gist_add    4481531
+gist_add    4482115
+gist_add    4485778
+gist_add    4487674
+gist_add    4487695
+gist_add    4489342
+gist_add    4489365
+gist_add    4491174
+gist_add    4496212
+gist_add    4498187
+gist_add    4498292
+gist_add    4503672
+gist_add    4519926
+gist_add    4519975
+gist_add    4522565
+gist_add    4525362
+gist_add    4526201
+gist_add    4548858
+gist_add    4557698
+gist_add    4560481
+gist_add    4565798
+gist_add    4566102
+gist_add    4573883
+gist_add    4583749
+gist_add    4589092
+gist_add    4597134
+gist_add    4600693
+gist_add    4613663
+gist_add    4616231
+gist_add    4618602
+gist_add    4626240
+gist_add    4629518
+gist_add    4631136
+gist_add    4636377
+gist_add    4645873
+gist_add    4657115
+gist_add    4668062
+gist_add    4670487
+gist_add    4679202
+gist_add    4686432
+gist_add    4686541
+gist_add    4687713
+gist_add    4689139
+gist_add    4695821
+gist_add    4699389
+gist_add    4699541
+gist_add    4704168
+gist_add    4707858
+gist_add    4710330
+gist_add    4710662
+gist_add    4710879
+gist_add    4712128
+gist_add    4718717
+gist_add    4723857
+gist_add    4731053
+gist_add    4731228
+gist_add    4734864
+gist_add    4736806
+gist_add    4751960
+gist_add    4946049
+gist_add    4955504
+gist_add    4963194
+gist_add    4963273
+gist_add    4965422
+gist_add    4965670
+gist_add    4968288
+gist_add    4969007
+gist_add    4970051
+gist_add    4970328
+gist_add    4973620
+gist_add    4986745
+gist_add    4987520
+gist_add    5001347
+gist_add    5014368
+gist_add    5023284
+gist_add    5028304
+gist_add    5044313
+gist_add    5044999
+gist_add    5050136
+gist_add    5050837
+gist_add    5073718
+gist_add    5075497
+gist_add    5087116
+gist_add    5091037
+gist_add    5100636
+gist_add    5107530
+gist_add    5117844
+gist_add    5126418
+gist_add    5144735
+gist_add    5149102
+gist_add    5152233
+gist_add    5165219
+gist_add    5166482
+gist_add    5167276
+gist_add    5180185
+gist_add    5194757
+gist_add    5196687
+gist_add    5200394
+gist_add    5230202
+gist_add    5230564
+gist_add    5230571
+gist_add    5230580
+gist_add    5232838
+gist_add    5234763
+gist_add    5244131
+gist_add    5247027
+gist_add    5249328
+gist_add    5288565
+gist_add    5288571
+gist_add    5288577
+gist_add    5288583
+gist_add    5288590
+gist_add    5301594
+gist_add    5322390
+gist_add    5323061
+gist_add    5342063
+gist_add    5342818
+gist_add    5348789
+gist_add    5349951
+gist_add    5369146
+gist_add    5376764
+gist_add    5385402
+gist_add    5397710
+gist_add    5398614
+gist_add    5403383
+gist_add    5405240
+gist_add    5408146
+gist_add    5413933
+gist_add    5415941
+gist_add    5416405
+gist_add    5416440
+gist_add    5417216
+gist_add    5423680
+gist_add    5431779
+gist_add    5437184
+gist_add    5441022
+gist_add    5452290
+gist_add    5467720
+gist_add    5479755
+gist_add    5497403
+gist_add    5503544
+gist_add    5518052
+gist_add    5519642
+gist_add    5519819
+gist_add    5520449
+gist_add    5522467
+gist_add    5537671
+gist_add    5537697
+gist_add    5538271
+gist_add    5544008
+gist_add    5544621
+gist_add    5545680
+gist_add    5557726
+gist_add    5558084
+gist_add    5562380
+gist_add    5577023
+gist_add    5580103
+gist_add    5586845
+gist_add    5591116
+gist_add    5591130
+gist_add    5593150
+gist_add    5603250
+gist_add    5603464
+gist_add    5606078
+gist_add    5608230
+gist_add    5616813
+gist_add    5617379
+gist_add    5620764
+gist_add    5620807
+gist_add    5625053
+gist_add    5628329
+gist_add    5628479
+gist_add    5629120
+gist_add    5649592
+gist_add    5663666
+gist_add    5669650
+gist_add    5672200
+gist_add    5673836
+gist_add    5681842
+gist_add    5681974
+gist_add    5682158
+gist_add    5683024
+gist_add    5684816
+gist_add    5687467
+gist_add    5695142
+gist_add    5699934
+gist_add    5707610
+gist_add    5707818
+gist_add    5731578
+gist_add    5731632
+gist_add    5731693
+gist_add    5731808
+gist_add    5731979
+gist_add    5732029
+gist_add    5735623
+gist_add    5735626
+gist_add    5735647
+gist_add    5735649
+gist_add    5735770
+gist_add    5737662
+gist_add    5743979
+gist_add    5754673
+gist_add    5779682
+gist_add    5779690
+gist_add    5798874
+gist_add    5808079
+gist_add    5820393
+gist_add    5822102
+gist_add    5827353
+gist_add    5841683
+gist_add    5851933
+gist_add    5861122
+gist_add    5866872
+gist_add    5872848
+gist_add    5909708
+gist_add    5912673
+gist_add    5914438
+gist_add    5925375
+gist_add    5928813
+gist_add    5944371
+gist_add    5947583
+gist_add    5952814
+gist_add    5962277
+gist_add    5977197
+gist_add    5986172
+gist_add    5988971
+gist_add    5993342
+gist_add    5996232
+gist_add    6007521
+gist_add    6052681
+gist_add    6059532
+gist_add    6081914
+gist_add    6112167
+gist_add    6116436
+gist_add    6123708
+gist_add    6140181
+gist_add    6185526
+gist_add    6186172
+gist_add    6187523
+gist_add    6216724
+gist_add    6216797
+gist_add    6224050
+gist_add    6224396
+gist_add    6225662
+gist_add    6226534
+gist_add    6232537
+gist_add    6232620
+gist_add    6238040
+gist_add    6242308
+gist_add    6245977
+gist_add    6252418
+gist_add    6262722
+gist_add    6264239
+gist_add    6287633
+gist_add    6301817
+gist_add    6301872
+gist_add    6312708
+gist_add    6316349
+gist_add    6320825
+gist_add    6392996
+gist_add    6400988
+gist_add    6406992
+gist_add    6408735
+gist_add    6408918
+gist_add    6409154
+gist_add    6409668
+gist_add    6409844
+gist_add    6419716
+gist_add    6420534
+gist_add    6432815
+gist_add    6436923
+gist_add    6452972
+gist_add    6457608
+gist_add    6459889
+gist_add    6468148
+gist_add    6472779
+gist_add    6476579
+gist_add    6506614
+gist_add    6515478
+gist_add    6541165
+gist_add    6641917
+gist_add    6738360
+gist_add    7090426
+gist_add    7123450
+gist_add    7191340
+gist_add    7880033
+gist_add    8119685
+github_add  Addepar/ember-table
+github_add  BertrandDechoux/d3js-sandbox
+github_add  Caged/d3-tip
+github_add  CrowdStrike/ember-timetree
+github_add  MinnPost/simple-map-d3
+github_add  MonsieurCactus/hanejs
+github_add  NickQiZhu/dc.js
+github_add  PatMartin/DexCharts
+github_add  Quartz/Chartbuilder
+github_add  Swizec/d3.js-book-examples
+github_add  alangrafu/radar-chart-d3
+github_add  alexandersimoes/d3plus
+github_add  alexbbrown/g3plot-1
+github_add  anilomanwar/RedialLine
+github_add  anilomanwar/d3jsExperiments
+github_add  areski/python-nvd3
+github_add  artzub/wbgds
+github_add  asutherland/d3-threeD
+github_add  auchenberg/dependo
+github_add  benbjohnson/miniviz
+github_add  bjuhn/UrbanDataChallenge
+github_add  blog/1360-introducing-contributions
+github_add  bollwyvl/blockd3
+github_add  boorad/d3-tsline
+github_add  caged/d3-tip
+github_add  cakey/infro
+github_add  calvinmetcalf/k3
+github_add  calvinmetcalf/leaflet.demos
+github_add  calvinmetcalf/psychic-octo-nemesis
+github_add  chelm/jsgeo
+github_add  cotrino/experimentos
+github_add  cpettitt/dagre
+github_add  d3/d3-geo-projection
+github_add  d3/d3-plugins
+github_add  d3/parallel-coordinates
+github_add  danielfrg/copper
+github_add  danielgtaylor/bibviz
+github_add  dansdom/D3-Builder
+github_add  dansdom/plugins-d3-pie
+github_add  davidcox/plotsk
+github_add  dciarletta/d3-floorplan
+github_add  deepakg/waterfall
+github_add  dk8996/Gantt-Chart
+github_add  dkandalov/delta-flora-for-intellij
+github_add  drsm79/Backbone-d3
+github_add  dustinlarimer/inkscape-s3-server
+github_add  dyninc/d3-smokechart
+github_add  enjalot/adventures_in_d3
+github_add  enjalot/d34github
+github_add  enjalot/dot-append
+github_add  enjalot/dot-enter
+github_add  enjalot/intro-d3
+github_add  exlee/d3-dash-gen
+github_add  eyeseast/visible-data
+github_add  fod/jobflow
+github_add  fullscale/dangle
+github_add  gajus/interdependent-interactive-histograms
+github_add  gajus/pie-chart
+github_add  gameprez/gpdk
+github_add  gencay/stackedGroupedChart
+github_add  goulu/Goulib
+github_add  hadley/r2d3
+github_add  hhuuggoo/pushd3
+github_add  hughsk/colony
+github_add  ignacioola/insights
+github_add  ilyabo/remittances
+github_add  inlineblock/funnel.js
+github_add  interactivethings/d3-comparator
+github_add  ipython/jsplugins
+github_add  iros/d3.chart.tooltips
+github_add  jasondavies/d3-cloud
+github_add  jasondavies/d3-parsets
+github_add  jazzido/d3micromaps
+github_add  jiahuang/d3-timeline
+github_add  jllord/sheetsee.js
+github_add  johan/d3
+github_add  jondot/graphene
+github_add  jsundram/d3-choropleth
+github_add  k9ert/meteor-deployments
+github_add  kbroman/d3examples
+github_add  kenhub/giraffe
+github_add  kpeng/visionyc
+github_add  latentflip/d3
+github_add  latentflip/violin
+github_add  lbrucher/d3-tree-heatmap
+github_add  lgrammel/d3_gwt
+github_add  liufly/Dual-scale-D3-Bar-Chart
+github_add  markmarkoh/datamaps
+github_add  masayuki0812/c3
+github_add  mbostock/protovis
+github_add  mbostock/queue
+github_add  mbostock/smash
+github_add  mbostock/topojson
+github_add  meloncholy/mt-stats
+github_add  meloncholy/mt-stats-viewer
+github_add  mhansen/stolen-vehicles-pt2
+github_add  mhemesath/r2d3
+github_add  migurski/Dymo
+github_add  mikedewar/d3py
+github_add  milafrerichs/eeg_unternehmen
+github_add  milafrerichs/fahrradunfaelle
+github_add  mishoo/UglifyJS2
+github_add  misoproject/d3.chart
+github_add  mlarocca/Dynamic-Charts
+github_add  mxcl/homebrew
+github_add  nachocab/clickme
+github_add  nandayadav/nfldrafts_visualization
+github_add  nandayadav/rega
+github_add  nowherenearithaca/empires
+github_add  nrabinowitz/d3_utils
+github_add  nstehr/NHL-Slopegraph
+github_add  nstehr/NHL-Trade-Arc
+github_add  pnavarrc/earthquake
+github_add  prcweb/d3-circularheat
+github_add  rameshvs/jsplotlib
+github_add  ramnathv/slidifyExamples
+github_add  rkirsling/modallogic
+github_add  roundrobin/d3.js-Sublime-2-Snippets
+github_add  sammyd/blog
+github_add  sammyt/see
+github_add  saranyan/commerce_wheel
+github_add  schnipz/leap-motion-demos
+github_add  scottcheng/bj-air-vis
+github_add  sdelarquier/rbspd3
+github_add  shawnbot/aight
+github_add  shawnbot/d3-bootstrap
+github_add  shawnbot/d3-cartogram
+github_add  shutterstock/rickshaw
+github_add  square/crossfilter
+github_add  square/cube
+github_add  square/cubism
+github_add  sympy/sympy
+github_add  syntagmatic/parallel-coordinates
+github_add  tamc/Sankey
+github_add  tenXer/xcharts
+github_add  trinary/d3-transform
+github_add  turban/d3.slider
+github_add  upphiminn/d3.ForceBundle
+github_add  vogievetsky/DVL
+github_add  vogievetsky/IntroD3
+github_add  webholics/talk-munichjs-d3
+github_add  webmonarch/d34raphael
+github_add  wrobstory/bearcart
+github_add  zziuni/d3
+github_add  zzolo/d3js-example-presentation
+github_add  zzolo/mjc-data-visualization-presentation
+
+
+
+
+
+
+echo "</dl>" >> examples_index.html
+echo "</body></html>" >> examples_index.html
 
 popd                                                                                                    2> /dev/null   > /dev/null
 
+
+#
+# The URLs below are included in this file to serve as 'memory',
+# i.e. to keep these around even when they are not (yet) listed
+# in the wiki documents which we scan for gists/github URIs.
+# This results in a rerun of the generate_git_fetch_script.sh
+# including all these repositories again, just like they were before.
+#
+# TL;DR: we don't loose any repo's we specified apart from the wiki itself.
+#
+#
+#
+# 
+# https://gist.github.com/1005090.git
+# https://gist.github.com/1005873.git
+# https://gist.github.com/1009139.git
+# https://gist.github.com/1009308.git
+# https://gist.github.com/1014829.git
+# https://gist.github.com/1016220.git
+# https://gist.github.com/1016860.git
+# https://gist.github.com/1020902.git
+# https://gist.github.com/1021103.git
+# https://gist.github.com/1021841.git
+# https://gist.github.com/1021953.git
+# https://gist.github.com/1026649.git
+# https://gist.github.com/1036776.git
+# https://gist.github.com/1044242.git
+# https://gist.github.com/1046712.git
+# https://gist.github.com/1059602.git
+# https://gist.github.com/1061834.git
+# https://gist.github.com/1062288.git
+# https://gist.github.com/1062383.git
+# https://gist.github.com/1062544.git
+# https://gist.github.com/1065859.git
+# https://gist.github.com/1065861.git
+# https://gist.github.com/1067616.git
+# https://gist.github.com/1067636.git
+# https://gist.github.com/1071269.git
+# https://gist.github.com/1071981.git
+# https://gist.github.com/1073373.git
+# https://gist.github.com/1074045.git
+# https://gist.github.com/1075123.git
+# https://gist.github.com/1076158.git
+# https://gist.github.com/1080941.git
+# https://gist.github.com/1083726.git
+# https://gist.github.com/1083732.git
+# https://gist.github.com/1086421.git
+# https://gist.github.com/1087001.git
+# https://gist.github.com/1090203.git
+# https://gist.github.com/1090691.git
+# https://gist.github.com/1093025.git
+# https://gist.github.com/1093130.git
+# https://gist.github.com/1095727.git
+# https://gist.github.com/1095795.git
+# https://gist.github.com/1096355.git
+# https://gist.github.com/1098617.git
+# https://gist.github.com/1100394.git
+# https://gist.github.com/1117287.git
+# https://gist.github.com/1123639.git
+# https://gist.github.com/1125339.git
+# https://gist.github.com/1125458.git
+# https://gist.github.com/1125997.git
+# https://gist.github.com/1129492.git
+# https://gist.github.com/1133472.git
+# https://gist.github.com/1134768.git
+# https://gist.github.com/1136236.git
+# https://gist.github.com/1137131.git
+# https://gist.github.com/1138500.git
+# https://gist.github.com/1139473.git
+# https://gist.github.com/1144047.git
+# https://gist.github.com/1148172.git
+# https://gist.github.com/1148365.git
+# https://gist.github.com/1153292.git
+# https://gist.github.com/1155488.git
+# https://gist.github.com/1157415.git
+# https://gist.github.com/1157787.git
+# https://gist.github.com/1159696.git
+# https://gist.github.com/1160929.git
+# https://gist.github.com/1163659.git
+# https://gist.github.com/1166403.git
+# https://gist.github.com/1169680.git
+# https://gist.github.com/1171371.git
+# https://gist.github.com/1174302.git
+# https://gist.github.com/1175688.git
+# https://gist.github.com/1177588.git
+# https://gist.github.com/1177827.git
+# https://gist.github.com/1177880.git
+# https://gist.github.com/1178682.git
+# https://gist.github.com/1179647.git
+# https://gist.github.com/1182434.git
+# https://gist.github.com/1182485.git
+# https://gist.github.com/1184766.git
+# https://gist.github.com/1185705.git
+# https://gist.github.com/1187808.git
+# https://gist.github.com/1195063.git
+# https://gist.github.com/1197731.git
+# https://gist.github.com/1198017.git
+# https://gist.github.com/1199811.git
+# https://gist.github.com/1202253.git
+# https://gist.github.com/1212197.git
+# https://gist.github.com/1212215.git
+# https://gist.github.com/1214915.git
+# https://gist.github.com/1218859.git
+# https://gist.github.com/1219585.git
+# https://gist.github.com/1221654.git
+# https://gist.github.com/1221675.git
+# https://gist.github.com/1222777.git
+# https://gist.github.com/1224222.git
+# https://gist.github.com/1225313.git
+# https://gist.github.com/1226718.git
+# https://gist.github.com/1233904.git
+# https://gist.github.com/1243323.git
+# https://gist.github.com/1246403.git
+# https://gist.github.com/1249394.git
+# https://gist.github.com/1249681.git
+# https://gist.github.com/1249958.git
+# https://gist.github.com/1252867.git
+# https://gist.github.com/1256572.git
+# https://gist.github.com/1257485.git
+# https://gist.github.com/1262305.git
+# https://gist.github.com/1263239.git
+# https://gist.github.com/1266259.git
+# https://gist.github.com/1269004.git
+# https://gist.github.com/1271058.git
+# https://gist.github.com/1275654.git
+# https://gist.github.com/1275742.git
+# https://gist.github.com/1276463.git
+# https://gist.github.com/1277254.git
+# https://gist.github.com/1277968.git
+# https://gist.github.com/1283663.git
+# https://gist.github.com/1288493.git
+# https://gist.github.com/1291667.git
+# https://gist.github.com/1291672.git
+# https://gist.github.com/1300016.git
+# https://gist.github.com/1303584.git
+# https://gist.github.com/1305111.git
+# https://gist.github.com/1305337.git
+# https://gist.github.com/1305347.git
+# https://gist.github.com/1306365.git
+# https://gist.github.com/1308257.git
+# https://gist.github.com/1308400.git
+# https://gist.github.com/1313857.git
+# https://gist.github.com/1314483.git
+# https://gist.github.com/1316832.git
+# https://gist.github.com/1317455.git
+# https://gist.github.com/1320232.git
+# https://gist.github.com/1321837.git
+# https://gist.github.com/1322814.git
+# https://gist.github.com/1322907.git
+# https://gist.github.com/1322948.git
+# https://gist.github.com/1323729.git
+# https://gist.github.com/1323841.git
+# https://gist.github.com/1325574.git
+# https://gist.github.com/1326318.git
+# https://gist.github.com/1327441.git
+# https://gist.github.com/1335475.git
+# https://gist.github.com/1337511.git
+# https://gist.github.com/1339996.git
+# https://gist.github.com/1340727.git
+# https://gist.github.com/1341021.git
+# https://gist.github.com/1341281.git
+# https://gist.github.com/1341679.git
+# https://gist.github.com/1342359.git
+# https://gist.github.com/1343714.git
+# https://gist.github.com/1345853.git
+# https://gist.github.com/1346395.git
+# https://gist.github.com/1346410.git
+# https://gist.github.com/1351113.git
+# https://gist.github.com/1353700.git
+# https://gist.github.com/1357601.git
+# https://gist.github.com/1357620.git
+# https://gist.github.com/1363743.git
+# https://gist.github.com/1364304.git
+# https://gist.github.com/1365279.git
+# https://gist.github.com/1367999.git
+# https://gist.github.com/1368205.git
+# https://gist.github.com/1371412.git
+# https://gist.github.com/1373819.git
+# https://gist.github.com/1374397.git
+# https://gist.github.com/1377729.git
+# https://gist.github.com/1378144.git
+# https://gist.github.com/1379988.git
+# https://gist.github.com/1386444.git
+# https://gist.github.com/1389927.git
+# https://gist.github.com/1393200.git
+# https://gist.github.com/1399097.git
+# https://gist.github.com/1399117.git
+# https://gist.github.com/1399211.git
+# https://gist.github.com/1404346.git
+# https://gist.github.com/1405439.git
+# https://gist.github.com/1423627.git
+# https://gist.github.com/1424037.git
+# https://gist.github.com/1439005.git
+# https://gist.github.com/1440766.git
+# https://gist.github.com/1441881.git
+# https://gist.github.com/1457934.git
+# https://gist.github.com/1468492.git
+# https://gist.github.com/1468715.git
+# https://gist.github.com/1469438.git
+# https://gist.github.com/1473535.git
+# https://gist.github.com/1479319.git
+# https://gist.github.com/1483226.git
+# https://gist.github.com/1484345.git
+# https://gist.github.com/1488375.git
+# https://gist.github.com/1488680.git
+# https://gist.github.com/1491435.git
+# https://gist.github.com/1494117.git
+# https://gist.github.com/1499279.git
+# https://gist.github.com/1502762.git
+# https://gist.github.com/1502887.git
+# https://gist.github.com/1503463.git
+# https://gist.github.com/1505811.git
+# https://gist.github.com/1508606.git
+# https://gist.github.com/1509502.git
+# https://gist.github.com/1516547.git
+# https://gist.github.com/1535916.git
+# https://gist.github.com/1536332.git
+# https://gist.github.com/1541816.git
+# https://gist.github.com/1547192.git
+# https://gist.github.com/1548215.git
+# https://gist.github.com/1552725.git
+# https://gist.github.com/1557377.git
+# https://gist.github.com/1557990.git
+# https://gist.github.com/1558011.git
+# https://gist.github.com/1573240.git
+# https://gist.github.com/1579132.git
+# https://gist.github.com/1582075.git
+# https://gist.github.com/1584697.git
+# https://gist.github.com/1616423.git
+# https://gist.github.com/1624656.git
+# https://gist.github.com/1624660.git
+# https://gist.github.com/1627378.git
+# https://gist.github.com/1627439.git
+# https://gist.github.com/1628131.git
+# https://gist.github.com/1629464.git
+# https://gist.github.com/1629644.git
+# https://gist.github.com/1630683.git
+# https://gist.github.com/1642874.git
+# https://gist.github.com/1642989.git
+# https://gist.github.com/1643051.git
+# https://gist.github.com/1648635.git
+# https://gist.github.com/1649463.git
+# https://gist.github.com/1653763.git
+# https://gist.github.com/1667139.git
+# https://gist.github.com/1667367.git
+# https://gist.github.com/1691430.git
+# https://gist.github.com/1696080.git
+# https://gist.github.com/1696372.git
+# https://gist.github.com/1699744.git
+# https://gist.github.com/1705868.git
+# https://gist.github.com/1706523.git
+# https://gist.github.com/1706849.git
+# https://gist.github.com/1747543.git
+# https://gist.github.com/1748247.git
+# https://gist.github.com/1771630.git
+# https://gist.github.com/1800198.git
+# https://gist.github.com/1804889.git
+# https://gist.github.com/1804919.git
+# https://gist.github.com/1846692.git
+# https://gist.github.com/1849162.git
+# https://gist.github.com/1854471.git
+# https://gist.github.com/1865422.git
+# https://gist.github.com/1867866.git
+# https://gist.github.com/1869677.git
+# https://gist.github.com/1871853.git
+# https://gist.github.com/1883717.git
+# https://gist.github.com/1887532.git
+# https://gist.github.com/1893974.git
+# https://gist.github.com/1920939.git
+# https://gist.github.com/1933560.git
+# https://gist.github.com/1935509.git
+# https://gist.github.com/1962173.git
+# https://gist.github.com/1963983.git
+# https://gist.github.com/1965462.git
+# https://gist.github.com/2005817.git
+# https://gist.github.com/2011590.git
+# https://gist.github.com/2037124.git
+# https://gist.github.com/2066415.git
+# https://gist.github.com/2066421.git
+# https://gist.github.com/2086461.git
+# https://gist.github.com/2164562.git
+# https://gist.github.com/2165875.git
+# https://gist.github.com/2206340.git
+# https://gist.github.com/2206489.git
+# https://gist.github.com/2206529.git
+# https://gist.github.com/2206590.git
+# https://gist.github.com/2209220.git
+# https://gist.github.com/2280295.git
+# https://gist.github.com/2286893.git
+# https://gist.github.com/2287399.git
+# https://gist.github.com/2289263.git
+# https://gist.github.com/2294676.git
+# https://gist.github.com/2295155.git
+# https://gist.github.com/2295263.git
+# https://gist.github.com/2322933.git
+# https://gist.github.com/2338034.git
+# https://gist.github.com/2346962.git
+# https://gist.github.com/2361485.git
+# https://gist.github.com/2366285.git
+# https://gist.github.com/2366983.git
+# https://gist.github.com/2368837.git
+# https://gist.github.com/2369589.git
+# https://gist.github.com/2374239.git
+# https://gist.github.com/2429963.git
+# https://gist.github.com/2465185.git
+# https://gist.github.com/2504633.git
+# https://gist.github.com/2505393.git
+# https://gist.github.com/2511921.git
+# https://gist.github.com/2512177.git
+# https://gist.github.com/2514183.git
+# https://gist.github.com/2522156.git
+# https://gist.github.com/2547496.git
+# https://gist.github.com/2554910.git
+# https://gist.github.com/2556042.git
+# https://gist.github.com/2565344.git
+# https://gist.github.com/2573074.git
+# https://gist.github.com/2585241.git
+# https://gist.github.com/2595950.git
+# https://gist.github.com/2597692.git
+# https://gist.github.com/2599189.git
+# https://gist.github.com/2623079.git
+# https://gist.github.com/2647922.git
+# https://gist.github.com/2647924.git
+# https://gist.github.com/2653660.git
+# https://gist.github.com/2657838.git
+# https://gist.github.com/2706022.git
+# https://gist.github.com/2724230.git
+# https://gist.github.com/2724323.git
+# https://gist.github.com/2727824.git
+# https://gist.github.com/2759731.git
+# https://gist.github.com/2839676.git
+# https://gist.github.com/2846454.git
+# https://gist.github.com/2846726.git
+# https://gist.github.com/2869760.git
+# https://gist.github.com/2869871.git
+# https://gist.github.com/2869946.git
+# https://gist.github.com/2870030.git
+# https://gist.github.com/2879486.git
+# https://gist.github.com/2883411.git
+# https://gist.github.com/2920551.git
+# https://gist.github.com/2932721.git
+# https://gist.github.com/2941604.git
+# https://gist.github.com/2942506.git
+# https://gist.github.com/2949937.git
+# https://gist.github.com/2949981.git
+# https://gist.github.com/2962761.git
+# https://gist.github.com/2962888.git
+# https://gist.github.com/2966094.git
+# https://gist.github.com/2974930.git
+# https://gist.github.com/2983699.git
+# https://gist.github.com/2991587.git
+# https://gist.github.com/2996766.git
+# https://gist.github.com/2996785.git
+# https://gist.github.com/2997144.git
+# https://gist.github.com/300494.git
+# https://gist.github.com/3007180.git
+# https://gist.github.com/3014589.git
+# https://gist.github.com/3019563.git
+# https://gist.github.com/3020685.git
+# https://gist.github.com/3021474.git
+# https://gist.github.com/3025699.git
+# https://gist.github.com/3031319.git
+# https://gist.github.com/3035090.git
+# https://gist.github.com/3037015.git
+# https://gist.github.com/3048166.git
+# https://gist.github.com/3048168.git
+# https://gist.github.com/3048450.git
+# https://gist.github.com/3048740.git
+# https://gist.github.com/3055104.git
+# https://gist.github.com/3057239.git
+# https://gist.github.com/3058685.git
+# https://gist.github.com/3061181.git
+# https://gist.github.com/3070621.git
+# https://gist.github.com/3070659.git
+# https://gist.github.com/3071239.git
+# https://gist.github.com/3074470.git
+# https://gist.github.com/3081153.git
+# https://gist.github.com/3087986.git
+# https://gist.github.com/3092303.git
+# https://gist.github.com/3094619.git
+# https://gist.github.com/3095037.git
+# https://gist.github.com/3104394.git
+# https://gist.github.com/3116650.git
+# https://gist.github.com/3116713.git
+# https://gist.github.com/3116836.git
+# https://gist.github.com/3116844.git
+# https://gist.github.com/3117757.git
+# https://gist.github.com/3118901.git
+# https://gist.github.com/3125020.git
+# https://gist.github.com/3125434.git
+# https://gist.github.com/3125600.git
+# https://gist.github.com/3138656.git
+# https://gist.github.com/3145795.git
+# https://gist.github.com/3151228.git
+# https://gist.github.com/3151318.git
+# https://gist.github.com/3154300.git
+# https://gist.github.com/3154741.git
+# https://gist.github.com/3173233.git
+# https://gist.github.com/3173784.git
+# https://gist.github.com/3175935.git
+# https://gist.github.com/3176159.git
+# https://gist.github.com/3180395.git
+# https://gist.github.com/3183403.git
+# https://gist.github.com/3184089.git
+# https://gist.github.com/3190391.git
+# https://gist.github.com/3192376.git
+# https://gist.github.com/3194190.git
+# https://gist.github.com/3201606.git
+# https://gist.github.com/3202354.git
+# https://gist.github.com/3203343.git
+# https://gist.github.com/3212294.git
+# https://gist.github.com/3213173.git
+# https://gist.github.com/3231298.git
+# https://gist.github.com/3231307.git
+# https://gist.github.com/3244058.git
+# https://gist.github.com/3258821.git
+# https://gist.github.com/3259783.git
+# https://gist.github.com/3287802.git
+# https://gist.github.com/3288044.git
+# https://gist.github.com/3289530.git
+# https://gist.github.com/3290263.git
+# https://gist.github.com/3290752.git
+# https://gist.github.com/3305515.git
+# https://gist.github.com/3305854.git
+# https://gist.github.com/3305937.git
+# https://gist.github.com/3306147.git
+# https://gist.github.com/3306234.git
+# https://gist.github.com/3306362.git
+# https://gist.github.com/3310187.git
+# https://gist.github.com/3310233.git
+# https://gist.github.com/3310323.git
+# https://gist.github.com/3310560.git
+# https://gist.github.com/3311124.git
+# https://gist.github.com/3315291.git
+# https://gist.github.com/3315318.git
+# https://gist.github.com/3331545.git
+# https://gist.github.com/3331937.git
+# https://gist.github.com/3344600.git
+# https://gist.github.com/3349192.git
+# https://gist.github.com/3355967.git
+# https://gist.github.com/3371488.git
+# https://gist.github.com/3371592.git
+# https://gist.github.com/3391642.git
+# https://gist.github.com/3422480.git
+# https://gist.github.com/3468167.git
+# https://gist.github.com/3480186.git
+# https://gist.github.com/3517374.git
+# https://gist.github.com/3543186.git
+# https://gist.github.com/3605035.git
+# https://gist.github.com/3605069.git
+# https://gist.github.com/3605124.git
+# https://gist.github.com/3616279.git
+# https://gist.github.com/3630001.git
+# https://gist.github.com/3637711.git
+# https://gist.github.com/3664045.git
+# https://gist.github.com/3664049.git
+# https://gist.github.com/3669333.git
+# https://gist.github.com/3669455.git
+# https://gist.github.com/3670696.git
+# https://gist.github.com/3670903.git
+# https://gist.github.com/3671490.git
+# https://gist.github.com/3671592.git
+# https://gist.github.com/3680957.git
+# https://gist.github.com/3680958.git
+# https://gist.github.com/3680999.git
+# https://gist.github.com/3681006.git
+# https://gist.github.com/3682676.git
+# https://gist.github.com/3682698.git
+# https://gist.github.com/3682990.git
+# https://gist.github.com/3683278.git
+# https://gist.github.com/3683489.git
+# https://gist.github.com/3689677.git
+# https://gist.github.com/3695277.git
+# https://gist.github.com/3696645.git
+# https://gist.github.com/3697451.git
+# https://gist.github.com/3709000.git
+# https://gist.github.com/3710082.git
+# https://gist.github.com/3710148.git
+# https://gist.github.com/3710566.git
+# https://gist.github.com/3711245.git
+# https://gist.github.com/3711652.git
+# https://gist.github.com/3712397.git
+# https://gist.github.com/3712399.git
+# https://gist.github.com/3712408.git
+# https://gist.github.com/3719042.git
+# https://gist.github.com/3719724.git
+# https://gist.github.com/3732612.git
+# https://gist.github.com/3732893.git
+# https://gist.github.com/3734168.git
+# https://gist.github.com/3734273.git
+# https://gist.github.com/3734308.git
+# https://gist.github.com/3734313.git
+# https://gist.github.com/3734316.git
+# https://gist.github.com/3734317.git
+# https://gist.github.com/3734321.git
+# https://gist.github.com/3734322.git
+# https://gist.github.com/3734324.git
+# https://gist.github.com/3734325.git
+# https://gist.github.com/3734327.git
+# https://gist.github.com/3734328.git
+# https://gist.github.com/3734329.git
+# https://gist.github.com/3734330.git
+# https://gist.github.com/3734333.git
+# https://gist.github.com/3734336.git
+# https://gist.github.com/3734342.git
+# https://gist.github.com/3734343.git
+# https://gist.github.com/3739752.git
+# https://gist.github.com/3750558.git
+# https://gist.github.com/3750900.git
+# https://gist.github.com/3750941.git
+# https://gist.github.com/3757101.git
+# https://gist.github.com/3757110.git
+# https://gist.github.com/3757119.git
+# https://gist.github.com/3757125.git
+# https://gist.github.com/3757132.git
+# https://gist.github.com/3757137.git
+# https://gist.github.com/3757349.git
+# https://gist.github.com/3763057.git
+# https://gist.github.com/3763867.git
+# https://gist.github.com/3772069.git
+# https://gist.github.com/3779574.git
+# https://gist.github.com/3783604.git
+# https://gist.github.com/3788999.git
+# https://gist.github.com/3790085.git
+# https://gist.github.com/3790444.git
+# https://gist.github.com/3791255.git
+# https://gist.github.com/3795040.git
+# https://gist.github.com/3795048.git
+# https://gist.github.com/3795544.git
+# https://gist.github.com/3796831.git
+# https://gist.github.com/3797581.git
+# https://gist.github.com/3797585.git
+# https://gist.github.com/3797591.git
+# https://gist.github.com/3804779.git
+# https://gist.github.com/3808218.git
+# https://gist.github.com/3808221.git
+# https://gist.github.com/3808234.git
+# https://gist.github.com/3828981.git
+# https://gist.github.com/3846051.git
+# https://gist.github.com/3853405.git
+# https://gist.github.com/3854614.git
+# https://gist.github.com/3867220.git
+# https://gist.github.com/3883098.git
+# https://gist.github.com/3883195.git
+# https://gist.github.com/3883245.git
+# https://gist.github.com/3884914.git
+# https://gist.github.com/3884955.git
+# https://gist.github.com/3885211.git
+# https://gist.github.com/3885304.git
+# https://gist.github.com/3885705.git
+# https://gist.github.com/3886208.git
+# https://gist.github.com/3886394.git
+# https://gist.github.com/3887051.git
+# https://gist.github.com/3887118.git
+# https://gist.github.com/3887193.git
+# https://gist.github.com/3887235.git
+# https://gist.github.com/3888852.git
+# https://gist.github.com/3892919.git
+# https://gist.github.com/3892928.git
+# https://gist.github.com/3894205.git
+# https://gist.github.com/3900925.git
+# https://gist.github.com/3902569.git
+# https://gist.github.com/3903818.git
+# https://gist.github.com/3916621.git
+# https://gist.github.com/3918369.git
+# https://gist.github.com/3921009.git
+# https://gist.github.com/3934356.git
+# https://gist.github.com/3943967.git
+# https://gist.github.com/3946824.git
+# https://gist.github.com/3953793.git
+# https://gist.github.com/3960741.git
+# https://gist.github.com/3962108.git
+# https://gist.github.com/3969722.git
+# https://gist.github.com/3970883.git
+# https://gist.github.com/4015254.git
+# https://gist.github.com/4047002.git
+# https://gist.github.com/4052873.git
+# https://gist.github.com/4053096.git
+# https://gist.github.com/4054247.git
+# https://gist.github.com/4055889.git
+# https://gist.github.com/4055892.git
+# https://gist.github.com/4055908.git
+# https://gist.github.com/4060366.git
+# https://gist.github.com/4060606.git
+# https://gist.github.com/4060954.git
+# https://gist.github.com/4061502.git
+# https://gist.github.com/4061961.git
+# https://gist.github.com/4062006.git
+# https://gist.github.com/4062045.git
+# https://gist.github.com/4062085.git
+# https://gist.github.com/4062844.git
+# https://gist.github.com/4062919.git
+# https://gist.github.com/4063269.git
+# https://gist.github.com/4063318.git
+# https://gist.github.com/4063423.git
+# https://gist.github.com/4063530.git
+# https://gist.github.com/4063550.git
+# https://gist.github.com/4063570.git
+# https://gist.github.com/4063582.git
+# https://gist.github.com/4063663.git
+# https://gist.github.com/4068610.git
+# https://gist.github.com/4090846.git
+# https://gist.github.com/4090848.git
+# https://gist.github.com/4090870.git
+# https://gist.github.com/4091835.git
+# https://gist.github.com/4092944.git
+# https://gist.github.com/4108203.git
+# https://gist.github.com/4122298.git
+# https://gist.github.com/4132797.git
+# https://gist.github.com/4134037.git
+# https://gist.github.com/4134057.git
+# https://gist.github.com/4136647.git
+# https://gist.github.com/4149176.git
+# https://gist.github.com/4150951.git
+# https://gist.github.com/4163057.git
+# https://gist.github.com/4165404.git
+# https://gist.github.com/4168921.git
+# https://gist.github.com/4175202.git
+# https://gist.github.com/4180634.git
+# https://gist.github.com/4183330.git
+# https://gist.github.com/4198499.git
+# https://gist.github.com/4206573.git
+# https://gist.github.com/4206810.git
+# https://gist.github.com/4206857.git
+# https://gist.github.com/4206975.git
+# https://gist.github.com/4207744.git
+# https://gist.github.com/4218871.git
+# https://gist.github.com/4236639.git
+# https://gist.github.com/4237768.git
+# https://gist.github.com/4241134.git
+# https://gist.github.com/4246925.git
+# https://gist.github.com/4248145.git
+# https://gist.github.com/4248146.git
+# https://gist.github.com/4254963.git
+# https://gist.github.com/4260668.git
+# https://gist.github.com/4265100.git
+# https://gist.github.com/4281513.git
+# https://gist.github.com/4282586.git
+# https://gist.github.com/4289018.git
+# https://gist.github.com/4292338.git
+# https://gist.github.com/4310087.git
+# https://gist.github.com/4315896.git
+# https://gist.github.com/4318672.git
+# https://gist.github.com/4319903.git
+# https://gist.github.com/4323929.git
+# https://gist.github.com/4324236.git
+# https://gist.github.com/4329423.git
+# https://gist.github.com/4330486.git
+# https://gist.github.com/4331208.git
+# https://gist.github.com/4333610.git
+# https://gist.github.com/4339083.git
+# https://gist.github.com/4339162.git
+# https://gist.github.com/4339184.git
+# https://gist.github.com/4339607.git
+# https://gist.github.com/4340039.git
+# https://gist.github.com/4341134.git
+# https://gist.github.com/4341156.git
+# https://gist.github.com/4341417.git
+# https://gist.github.com/4341574.git
+# https://gist.github.com/4341699.git
+# https://gist.github.com/4341954.git
+# https://gist.github.com/4342045.git
+# https://gist.github.com/4342190.git
+# https://gist.github.com/4343153.git
+# https://gist.github.com/4343214.git
+# https://gist.github.com/4347473.git
+# https://gist.github.com/4348024.git
+# https://gist.github.com/4348373.git
+# https://gist.github.com/4349166.git
+# https://gist.github.com/4349187.git
+# https://gist.github.com/4349486.git
+# https://gist.github.com/4349509.git
+# https://gist.github.com/4349545.git
+# https://gist.github.com/4360892.git
+# https://gist.github.com/4362031.git
+# https://gist.github.com/4362310.git
+# https://gist.github.com/4364903.git
+# https://gist.github.com/4370043.git
+# https://gist.github.com/4390054.git
+# https://gist.github.com/4403522.git
+# https://gist.github.com/4408297.git
+# https://gist.github.com/4414107.git
+# https://gist.github.com/4425979.git
+# https://gist.github.com/4431123.git
+# https://gist.github.com/4433918.git
+# https://gist.github.com/4436875.git
+# https://gist.github.com/4444770.git
+# https://gist.github.com/4448162.git
+# https://gist.github.com/4448587.git
+# https://gist.github.com/4454550.git
+# https://gist.github.com/4458497.git
+# https://gist.github.com/4458680.git
+# https://gist.github.com/4458991.git
+# https://gist.github.com/4459071.git
+# https://gist.github.com/4459130.git
+# https://gist.github.com/4459466.git
+# https://gist.github.com/4459716.git
+# https://gist.github.com/4463049.git
+# https://gist.github.com/4463127.git
+# https://gist.github.com/4463155.git
+# https://gist.github.com/4463175.git
+# https://gist.github.com/4463237.git
+# https://gist.github.com/4465109.git
+# https://gist.github.com/4465118.git
+# https://gist.github.com/4465130.git
+# https://gist.github.com/4465137.git
+# https://gist.github.com/4465140.git
+# https://gist.github.com/4476279.git
+# https://gist.github.com/4476487.git
+# https://gist.github.com/4476496.git
+# https://gist.github.com/4479477.git
+# https://gist.github.com/4479513.git
+# https://gist.github.com/4479547.git
+# https://gist.github.com/4481220.git
+# https://gist.github.com/4481265.git
+# https://gist.github.com/4481520.git
+# https://gist.github.com/4481531.git
+# https://gist.github.com/4482115.git
+# https://gist.github.com/4485778.git
+# https://gist.github.com/4487674.git
+# https://gist.github.com/4487695.git
+# https://gist.github.com/4489342.git
+# https://gist.github.com/4489365.git
+# https://gist.github.com/4491174.git
+# https://gist.github.com/4496212.git
+# https://gist.github.com/4498187.git
+# https://gist.github.com/4498292.git
+# https://gist.github.com/4503672.git
+# https://gist.github.com/4519926.git
+# https://gist.github.com/4519975.git
+# https://gist.github.com/4522565.git
+# https://gist.github.com/4525362.git
+# https://gist.github.com/4526201.git
+# https://gist.github.com/4548858.git
+# https://gist.github.com/4557698.git
+# https://gist.github.com/4560481.git
+# https://gist.github.com/4565798.git
+# https://gist.github.com/4566102.git
+# https://gist.github.com/4573883.git
+# https://gist.github.com/4583749.git
+# https://gist.github.com/458648.git
+# https://gist.github.com/4589092.git
+# https://gist.github.com/4597134.git
+# https://gist.github.com/4600693.git
+# https://gist.github.com/4613663.git
+# https://gist.github.com/4616231.git
+# https://gist.github.com/4618602.git
+# https://gist.github.com/4626240.git
+# https://gist.github.com/4629518.git
+# https://gist.github.com/4631136.git
+# https://gist.github.com/4636377.git
+# https://gist.github.com/4645873.git
+# https://gist.github.com/4657115.git
+# https://gist.github.com/4668062.git
+# https://gist.github.com/4670487.git
+# https://gist.github.com/4679202.git
+# https://gist.github.com/4686432.git
+# https://gist.github.com/4686541.git
+# https://gist.github.com/4687713.git
+# https://gist.github.com/4689139.git
+# https://gist.github.com/4695821.git
+# https://gist.github.com/4699389.git
+# https://gist.github.com/4699541.git
+# https://gist.github.com/4704168.git
+# https://gist.github.com/4707858.git
+# https://gist.github.com/4710330.git
+# https://gist.github.com/4710662.git
+# https://gist.github.com/4710879.git
+# https://gist.github.com/4712128.git
+# https://gist.github.com/4718717.git
+# https://gist.github.com/4723857.git
+# https://gist.github.com/4731053.git
+# https://gist.github.com/4731228.git
+# https://gist.github.com/4734864.git
+# https://gist.github.com/4736806.git
+# https://gist.github.com/4751960.git
+# https://gist.github.com/492147.git
+# https://gist.github.com/4946049.git
+# https://gist.github.com/4955504.git
+# https://gist.github.com/4963194.git
+# https://gist.github.com/4963273.git
+# https://gist.github.com/4965422.git
+# https://gist.github.com/4965670.git
+# https://gist.github.com/4968288.git
+# https://gist.github.com/4969007.git
+# https://gist.github.com/4970051.git
+# https://gist.github.com/4970328.git
+# https://gist.github.com/4973620.git
+# https://gist.github.com/4986745.git
+# https://gist.github.com/4987520.git
+# https://gist.github.com/5001347.git
+# https://gist.github.com/5014368.git
+# https://gist.github.com/5023284.git
+# https://gist.github.com/5028304.git
+# https://gist.github.com/5044313.git
+# https://gist.github.com/5044999.git
+# https://gist.github.com/5050136.git
+# https://gist.github.com/5050837.git
+# https://gist.github.com/5073718.git
+# https://gist.github.com/5075497.git
+# https://gist.github.com/5087116.git
+# https://gist.github.com/5091037.git
+# https://gist.github.com/5100636.git
+# https://gist.github.com/5107530.git
+# https://gist.github.com/5117844.git
+# https://gist.github.com/5126418.git
+# https://gist.github.com/5144735.git
+# https://gist.github.com/5149102.git
+# https://gist.github.com/5152233.git
+# https://gist.github.com/5165219.git
+# https://gist.github.com/5166482.git
+# https://gist.github.com/5167276.git
+# https://gist.github.com/5180185.git
+# https://gist.github.com/5194757.git
+# https://gist.github.com/5196687.git
+# https://gist.github.com/5200394.git
+# https://gist.github.com/5230202.git
+# https://gist.github.com/5230564.git
+# https://gist.github.com/5230571.git
+# https://gist.github.com/5230580.git
+# https://gist.github.com/5232838.git
+# https://gist.github.com/5234763.git
+# https://gist.github.com/5244131.git
+# https://gist.github.com/5247027.git
+# https://gist.github.com/5249328.git
+# https://gist.github.com/5288565.git
+# https://gist.github.com/5288571.git
+# https://gist.github.com/5288577.git
+# https://gist.github.com/5288583.git
+# https://gist.github.com/5288590.git
+# https://gist.github.com/5301594.git
+# https://gist.github.com/5322390.git
+# https://gist.github.com/5323061.git
+# https://gist.github.com/5342063.git
+# https://gist.github.com/5342818.git
+# https://gist.github.com/5348789.git
+# https://gist.github.com/5349951.git
+# https://gist.github.com/5369146.git
+# https://gist.github.com/5376764.git
+# https://gist.github.com/5385402.git
+# https://gist.github.com/539589.git
+# https://gist.github.com/5397710.git
+# https://gist.github.com/5398614.git
+# https://gist.github.com/5403383.git
+# https://gist.github.com/5405240.git
+# https://gist.github.com/5408146.git
+# https://gist.github.com/5413933.git
+# https://gist.github.com/5415941.git
+# https://gist.github.com/5416405.git
+# https://gist.github.com/5416440.git
+# https://gist.github.com/5417216.git
+# https://gist.github.com/5423680.git
+# https://gist.github.com/5431779.git
+# https://gist.github.com/5437184.git
+# https://gist.github.com/5441022.git
+# https://gist.github.com/5452290.git
+# https://gist.github.com/5467720.git
+# https://gist.github.com/5479755.git
+# https://gist.github.com/5497403.git
+# https://gist.github.com/5503544.git
+# https://gist.github.com/550849.git
+# https://gist.github.com/5518052.git
+# https://gist.github.com/5519642.git
+# https://gist.github.com/5519819.git
+# https://gist.github.com/5520449.git
+# https://gist.github.com/5522467.git
+# https://gist.github.com/5537671.git
+# https://gist.github.com/5537697.git
+# https://gist.github.com/5538271.git
+# https://gist.github.com/5544008.git
+# https://gist.github.com/5544621.git
+# https://gist.github.com/5545680.git
+# https://gist.github.com/5557726.git
+# https://gist.github.com/5558084.git
+# https://gist.github.com/5562380.git
+# https://gist.github.com/5577023.git
+# https://gist.github.com/5580103.git
+# https://gist.github.com/5586845.git
+# https://gist.github.com/5591116.git
+# https://gist.github.com/5591130.git
+# https://gist.github.com/5593150.git
+# https://gist.github.com/5603250.git
+# https://gist.github.com/5603464.git
+# https://gist.github.com/5606078.git
+# https://gist.github.com/5608230.git
+# https://gist.github.com/5616813.git
+# https://gist.github.com/5617379.git
+# https://gist.github.com/5620764.git
+# https://gist.github.com/5620807.git
+# https://gist.github.com/5625053.git
+# https://gist.github.com/5628329.git
+# https://gist.github.com/5628479.git
+# https://gist.github.com/5629120.git
+# https://gist.github.com/5649592.git
+# https://gist.github.com/5663666.git
+# https://gist.github.com/5669650.git
+# https://gist.github.com/5672200.git
+# https://gist.github.com/5673836.git
+# https://gist.github.com/5681842.git
+# https://gist.github.com/5681974.git
+# https://gist.github.com/5682158.git
+# https://gist.github.com/5683024.git
+# https://gist.github.com/5684816.git
+# https://gist.github.com/5687467.git
+# https://gist.github.com/5695142.git
+# https://gist.github.com/5699934.git
+# https://gist.github.com/5707610.git
+# https://gist.github.com/5707818.git
+# https://gist.github.com/5731578.git
+# https://gist.github.com/5731632.git
+# https://gist.github.com/5731693.git
+# https://gist.github.com/5731808.git
+# https://gist.github.com/5731979.git
+# https://gist.github.com/5732029.git
+# https://gist.github.com/5735623.git
+# https://gist.github.com/5735626.git
+# https://gist.github.com/5735647.git
+# https://gist.github.com/5735649.git
+# https://gist.github.com/5735770.git
+# https://gist.github.com/5737662.git
+# https://gist.github.com/5743979.git
+# https://gist.github.com/5754673.git
+# https://gist.github.com/5779682.git
+# https://gist.github.com/5779690.git
+# https://gist.github.com/5798874.git
+# https://gist.github.com/5808079.git
+# https://gist.github.com/5820393.git
+# https://gist.github.com/5822102.git
+# https://gist.github.com/5827353.git
+# https://gist.github.com/582915.git
+# https://gist.github.com/583229.git
+# https://gist.github.com/583734.git
+# https://gist.github.com/5841683.git
+# https://gist.github.com/584742.git
+# https://gist.github.com/5851933.git
+# https://gist.github.com/5861122.git
+# https://gist.github.com/5866872.git
+# https://gist.github.com/5872848.git
+# https://gist.github.com/587387.git
+# https://gist.github.com/587424.git
+# https://gist.github.com/590163.git
+# https://gist.github.com/590744.git
+# https://gist.github.com/5909708.git
+# https://gist.github.com/5912673.git
+# https://gist.github.com/5914438.git
+# https://gist.github.com/5925375.git
+# https://gist.github.com/592743.git
+# https://gist.github.com/5928813.git
+# https://gist.github.com/592882.git
+# https://gist.github.com/592896.git
+# https://gist.github.com/593875.git
+# https://gist.github.com/5944371.git
+# https://gist.github.com/5947583.git
+# https://gist.github.com/5952814.git
+# https://gist.github.com/5962277.git
+# https://gist.github.com/597287.git
+# https://gist.github.com/597292.git
+# https://gist.github.com/5977197.git
+# https://gist.github.com/5986172.git
+# https://gist.github.com/5988971.git
+# https://gist.github.com/5993342.git
+# https://gist.github.com/5996232.git
+# https://gist.github.com/600164.git
+# https://gist.github.com/6007521.git
+# https://gist.github.com/601639.git
+# https://gist.github.com/601985.git
+# https://gist.github.com/603062.git
+# https://gist.github.com/603148.git
+# https://gist.github.com/6052681.git
+# https://gist.github.com/6059532.git
+# https://gist.github.com/6081914.git
+# https://gist.github.com/609059.git
+# https://gist.github.com/6112167.git
+# https://gist.github.com/6116436.git
+# https://gist.github.com/611840.git
+# https://gist.github.com/6123708.git
+# https://gist.github.com/6140181.git
+# https://gist.github.com/6185526.git
+# https://gist.github.com/6186172.git
+# https://gist.github.com/6187523.git
+# https://gist.github.com/618908.git
+# https://gist.github.com/6216724.git
+# https://gist.github.com/6216797.git
+# https://gist.github.com/6224050.git
+# https://gist.github.com/6224396.git
+# https://gist.github.com/6225662.git
+# https://gist.github.com/6226534.git
+# https://gist.github.com/6232537.git
+# https://gist.github.com/6232620.git
+# https://gist.github.com/6238040.git
+# https://gist.github.com/6242308.git
+# https://gist.github.com/6245977.git
+# https://gist.github.com/6252418.git
+# https://gist.github.com/625531.git
+# https://gist.github.com/625657.git
+# https://gist.github.com/6262722.git
+# https://gist.github.com/6264239.git
+# https://gist.github.com/6287633.git
+# https://gist.github.com/6301817.git
+# https://gist.github.com/6301872.git
+# https://gist.github.com/6312708.git
+# https://gist.github.com/6316349.git
+# https://gist.github.com/6320825.git
+# https://gist.github.com/6392996.git
+# https://gist.github.com/6400988.git
+# https://gist.github.com/6406992.git
+# https://gist.github.com/6408735.git
+# https://gist.github.com/6408918.git
+# https://gist.github.com/6409154.git
+# https://gist.github.com/6409668.git
+# https://gist.github.com/6409844.git
+# https://gist.github.com/6419716.git
+# https://gist.github.com/6420534.git
+# https://gist.github.com/6432815.git
+# https://gist.github.com/6436923.git
+# https://gist.github.com/6452972.git
+# https://gist.github.com/645734.git
+# https://gist.github.com/645758.git
+# https://gist.github.com/6457608.git
+# https://gist.github.com/6459889.git
+# https://gist.github.com/6468148.git
+# https://gist.github.com/6472779.git
+# https://gist.github.com/6476579.git
+# https://gist.github.com/647888.git
+# https://gist.github.com/6506614.git
+# https://gist.github.com/6515478.git
+# https://gist.github.com/6541165.git
+# https://gist.github.com/660054.git
+# https://gist.github.com/6641917.git
+# https://gist.github.com/665906.git
+# https://gist.github.com/667245.git
+# https://gist.github.com/672899.git
+# https://gist.github.com/6738360.git
+# https://gist.github.com/675512.git
+# https://gist.github.com/705856.git
+# https://gist.github.com/7090426.git
+# https://gist.github.com/710387.git
+# https://gist.github.com/7123450.git
+# https://gist.github.com/714554.git
+# https://gist.github.com/7191340.git
+# https://gist.github.com/7880033.git
+# https://gist.github.com/8119685.git
+# https://gist.github.com/843177.git
+# https://gist.github.com/844752.git
+# https://gist.github.com/846688.git
+# https://gist.github.com/846704.git
+# https://gist.github.com/846710.git
+# https://gist.github.com/847677.git
+# https://gist.github.com/849853.git
+# https://gist.github.com/865396.git
+# https://gist.github.com/870118.git
+# https://gist.github.com/881980.git
+# https://gist.github.com/882152.git
+# https://gist.github.com/899649.git
+# https://gist.github.com/899670.git
+# https://gist.github.com/899711.git
+# https://gist.github.com/900050.git
+# https://gist.github.com/906688.git
+# https://gist.github.com/910126.git
+# https://gist.github.com/912735.git
+# https://gist.github.com/929623.git
+# https://gist.github.com/938288.git
+# https://gist.github.com/939927.git
+# https://gist.github.com/940838.git
+# https://gist.github.com/950642.git
+# https://gist.github.com/972398.git
+# https://gist.github.com/993912.git
+# https://gist.github.com/996370.git
+# https://gist.github.com/999346.git
+# https://github.com/Addepar/ember-table.git
+# https://github.com/BertrandDechoux/d3js-sandbox.git
+# https://github.com/Caged/d3-tip.git
+# https://github.com/CrowdStrike/ember-timetree.git
+# https://github.com/MinnPost/simple-map-d3.git
+# https://github.com/MonsieurCactus/hanejs.git
+# https://github.com/NickQiZhu/dc.js.git
+# https://github.com/PatMartin/DexCharts.git
+# https://github.com/Quartz/Chartbuilder.git
+# https://github.com/Swizec/d3.js-book-examples.git
+# https://github.com/alangrafu/radar-chart-d3.git
+# https://github.com/alexandersimoes/d3plus.git
+# https://github.com/alexbbrown/g3plot-1.git
+# https://github.com/anilomanwar/RedialLine.git
+# https://github.com/anilomanwar/d3jsExperiments.git
+# https://github.com/areski/python-nvd3.git
+# https://github.com/artzub/wbgds.git
+# https://github.com/asutherland/d3-threeD.git
+# https://github.com/auchenberg/dependo.git
+# https://github.com/benbjohnson/miniviz.git
+# https://github.com/bjuhn/UrbanDataChallenge.git
+# https://github.com/blog/1360-introducing-contributions.git
+# https://github.com/bollwyvl/blockd3.git
+# https://github.com/boorad/d3-tsline.git
+# https://github.com/caged/d3-tip.git
+# https://github.com/cakey/infro.git
+# https://github.com/calvinmetcalf/k3.git
+# https://github.com/calvinmetcalf/leaflet.demos.git
+# https://github.com/calvinmetcalf/psychic-octo-nemesis.git
+# https://github.com/chelm/jsgeo.git
+# https://github.com/cotrino/experimentos.git
+# https://github.com/cpettitt/dagre.git
+# https://github.com/d3/d3-geo-projection.git
+# https://github.com/d3/d3-plugins.git
+# https://github.com/d3/parallel-coordinates.git
+# https://github.com/danielfrg/copper.git
+# https://github.com/danielgtaylor/bibviz.git
+# https://github.com/dansdom/D3-Builder.git
+# https://github.com/dansdom/plugins-d3-pie.git
+# https://github.com/davidcox/plotsk.git
+# https://github.com/dciarletta/d3-floorplan.git
+# https://github.com/deepakg/waterfall.git
+# https://github.com/dk8996/Gantt-Chart.git
+# https://github.com/dkandalov/delta-flora-for-intellij.git
+# https://github.com/drsm79/Backbone-d3.git
+# https://github.com/dustinlarimer/inkscape-s3-server.git
+# https://github.com/dyninc/d3-smokechart.git
+# https://github.com/enjalot/adventures_in_d3.git
+# https://github.com/enjalot/d34github.git
+# https://github.com/enjalot/dot-append.git
+# https://github.com/enjalot/dot-enter.git
+# https://github.com/enjalot/intro-d3.git
+# https://github.com/exlee/d3-dash-gen.git
+# https://github.com/eyeseast/visible-data.git
+# https://github.com/fod/jobflow.git
+# https://github.com/fullscale/dangle.git
+# https://github.com/gajus/interdependent-interactive-histograms.git
+# https://github.com/gajus/pie-chart.git
+# https://github.com/gameprez/gpdk.git
+# https://github.com/gencay/stackedGroupedChart.git
+# https://github.com/goulu/Goulib.git
+# https://github.com/hadley/r2d3.git
+# https://github.com/hhuuggoo/pushd3.git
+# https://github.com/hughsk/colony.git
+# https://github.com/ignacioola/insights.git
+# https://github.com/ilyabo/remittances.git
+# https://github.com/inlineblock/funnel.js.git
+# https://github.com/interactivethings/d3-comparator.git
+# https://github.com/ipython/jsplugins.git
+# https://github.com/iros/d3.chart.tooltips.git
+# https://github.com/jasondavies/d3-cloud.git
+# https://github.com/jasondavies/d3-parsets.git
+# https://github.com/jazzido/d3micromaps.git
+# https://github.com/jiahuang/d3-timeline.git
+# https://github.com/jllord/sheetsee.js.git
+# https://github.com/johan/d3.git
+# https://github.com/jondot/graphene.git
+# https://github.com/jsundram/d3-choropleth.git
+# https://github.com/k9ert/meteor-deployments.git
+# https://github.com/kbroman/d3examples.git
+# https://github.com/kenhub/giraffe.git
+# https://github.com/kpeng/visionyc.git
+# https://github.com/latentflip/d3.git
+# https://github.com/latentflip/violin.git
+# https://github.com/lbrucher/d3-tree-heatmap.git
+# https://github.com/lgrammel/d3_gwt.git
+# https://github.com/liufly/Dual-scale-D3-Bar-Chart.git
+# https://github.com/markmarkoh/datamaps.git
+# https://github.com/masayuki0812/c3.git
+# https://github.com/mbostock/d3.git
+# https://github.com/mbostock/protovis.git
+# https://github.com/mbostock/queue.git
+# https://github.com/mbostock/smash.git
+# https://github.com/mbostock/topojson.git
+# https://github.com/meloncholy/mt-stats-viewer.git
+# https://github.com/meloncholy/mt-stats.git
+# https://github.com/mhansen/stolen-vehicles-pt2.git
+# https://github.com/mhemesath/r2d3.git
+# https://github.com/migurski/Dymo.git
+# https://github.com/mikedewar/d3py.git
+# https://github.com/milafrerichs/eeg_unternehmen.git
+# https://github.com/milafrerichs/fahrradunfaelle.git
+# https://github.com/mishoo/UglifyJS2.git
+# https://github.com/misoproject/d3.chart.git
+# https://github.com/mlarocca/Dynamic-Charts.git
+# https://github.com/mxcl/homebrew.git
+# https://github.com/nachocab/clickme.git
+# https://github.com/nandayadav/nfldrafts_visualization.git
+# https://github.com/nandayadav/rega.git
+# https://github.com/nowherenearithaca/empires.git
+# https://github.com/nrabinowitz/d3_utils.git
+# https://github.com/nstehr/NHL-Slopegraph.git
+# https://github.com/nstehr/NHL-Trade-Arc.git
+# https://github.com/pnavarrc/earthquake.git
+# https://github.com/prcweb/d3-circularheat.git
+# https://github.com/rameshvs/jsplotlib.git
+# https://github.com/ramnathv/slidifyExamples.git
+# https://github.com/rkirsling/modallogic.git
+# https://github.com/roundrobin/d3.js-Sublime-2-Snippets.git
+# https://github.com/sammyd/blog.git
+# https://github.com/sammyt/see.git
+# https://github.com/saranyan/commerce_wheel.git
+# https://github.com/schnipz/leap-motion-demos.git
+# https://github.com/scottcheng/bj-air-vis.git
+# https://github.com/sdelarquier/rbspd3.git
+# https://github.com/shawnbot/aight.git
+# https://github.com/shawnbot/d3-bootstrap.git
+# https://github.com/shawnbot/d3-cartogram.git
+# https://github.com/shutterstock/rickshaw.git
+# https://github.com/square/crossfilter.git
+# https://github.com/square/cube.git
+# https://github.com/square/cubism.git
+# https://github.com/sympy/sympy.git
+# https://github.com/syntagmatic/parallel-coordinates.git
+# https://github.com/tamc/Sankey.git
+# https://github.com/tenXer/xcharts.git
+# https://github.com/trinary/d3-transform.git
+# https://github.com/turban/d3.slider.git
+# https://github.com/upphiminn/d3.ForceBundle.git
+# https://github.com/vogievetsky/DVL.git
+# https://github.com/vogievetsky/IntroD3.git
+# https://github.com/webholics/talk-munichjs-d3.git
+# https://github.com/webmonarch/d34raphael.git
+# https://github.com/wrobstory/bearcart.git
+# https://github.com/zziuni/d3.git
+# https://github.com/zzolo/d3js-example-presentation.git
+# https://github.com/zzolo/mjc-data-visualization-presentation.git
