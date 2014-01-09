@@ -8,35 +8,45 @@ if ! test -d "./\!descriptions" ; then
 fi
 pwd
 
+function check_github_api_output {
+    if test -s "$1" ; then
+        if $( grep -e "API rate limit exceeded for " "$1"  2> /dev/null   > /dev/null ) ; then
+            echo "github API rate limiting detected..."
+            rm -f "$1"
+        fi
+    fi
+}
+
 function gist_add {
     local full_uri=$( printf "https://gist.github.com/%s.git" "$1" );
     local dir_path=$( printf "gist-%s" "$1" );
     echo "gist: full_uri = ${full_uri}, dir_path = ${dir_path}"
      
-    if test -s "${dir_path}/.git/index" ; then
-        pushd .                                                                                         2> /dev/null   > /dev/null
-        cd ${dir_path}
-        git pull --all
-        popd                                                                                            2> /dev/null   > /dev/null
-    else 
-        rm -rf ${dir_path}                                                                              2> /dev/null   > /dev/null
-        echo git clone ${full_uri} ${dir_path}
-        git clone ${full_uri} ${dir_path}
+    if test "$mode" != "U" ; then
+        if test -s "${dir_path}/.git/index" ; then
+            pushd .                                                                                     2> /dev/null   > /dev/null
+            cd ${dir_path}
+            git pull --all
+            popd                                                                                        2> /dev/null   > /dev/null
+        else 
+            rm -rf ${dir_path}                                                                          2> /dev/null   > /dev/null
+            echo git clone ${full_uri} ${dir_path}
+            git clone ${full_uri} ${dir_path}
+        fi
     fi
     if test "$mode" = "W" ; then
         git_register_remote_for_UnixVM ${full_uri} ${dir_path}
     fi
 
-    echo "<dt>gist:$1 (View: <a href='http://bl.ocks.org/$1'>bl.ocks.org</a> / <a href='${dir_path}/'>local</a>)</dt>" >> examples_index.html
+    check_github_api_output "./\!descriptions/${dir_path}.txt"
     if ! test -s "./\!descriptions/${dir_path}.txt" ; then
         echo curl -o "./\!descriptions/${dir_path}.txt" https://api.github.com/gists/$1 
         curl -o "./\!descriptions/${dir_path}.txt" https://api.github.com/gists/$1 
     fi
+    check_github_api_output "./\!descriptions/${dir_path}.txt"
     touch "./\!descriptions/${dir_path}.txt"
 
-    echo "<dd>" >> examples_index.html
     cat "./\!descriptions/${dir_path}.txt" | gawk -f ./git_clone_all_examples.awk -v gist=$1 >> examples_index.html
-    echo "</dd>" >> examples_index.html
 }
 
 function github_add {
@@ -44,30 +54,31 @@ function github_add {
     local dir_path=$( printf "github.%s" "$1" | sed -e "s/[^a-zA-Z0-9_.-]\+/./g" -e "s/\.\+/./g" );
     echo "github: full_uri = ${full_uri}, dir_path = ${dir_path}"
      
-    if test -s "${dir_path}/.git/index" ; then
-        pushd .                                                                                         2> /dev/null   > /dev/null
-        cd ${dir_path}
-        git pull --all
-        popd                                                                                            2> /dev/null   > /dev/null
-    else 
-        rm -rf ${dir_path}                                                                              2> /dev/null   > /dev/null
-        echo git clone ${full_uri} ${dir_path}
-        git clone ${full_uri} ${dir_path}
+    if test "$mode" != "U" ; then
+        if test -s "${dir_path}/.git/index" ; then
+            pushd .                                                                                     2> /dev/null   > /dev/null
+            cd ${dir_path}
+            git pull --all
+            popd                                                                                        2> /dev/null   > /dev/null
+        else 
+            rm -rf ${dir_path}                                                                          2> /dev/null   > /dev/null
+            echo git clone ${full_uri} ${dir_path}
+            git clone ${full_uri} ${dir_path}
+        fi
     fi
     if test "$mode" = "W" ; then
         git_register_remote_for_UnixVM ${full_uri} ${dir_path}
     fi
 
-    echo "<dt>github:$1 (View: <a href='https://github.com/$1'>github</a> / <a href='${dir_path}/'>local</a>)</dt>" >> examples_index.html
+    check_github_api_output "./\!descriptions/${dir_path}.txt"
     if ! test -s "./\!descriptions/${dir_path}.txt" ; then
         echo curl -o "./\!descriptions/${dir_path}.txt" https://api.github.com/repos/$1 
         curl -o "./\!descriptions/${dir_path}.txt" https://api.github.com/repos/$1 
     fi
+    check_github_api_output "./\!descriptions/${dir_path}.txt"
     touch "./\!descriptions/${dir_path}.txt"
 
-    echo "<dd>" >> examples_index.html
     cat "./\!descriptions/${dir_path}.txt" | gawk -f ./git_clone_all_examples.awk -v github=$1 >> examples_index.html
-    echo "</dd>" >> examples_index.html
 }
 
 
@@ -82,7 +93,7 @@ function git_register_remote_for_UnixVM {
     fi
 }
 
-getopts ":Wh" opt
+getopts ":Wuh" opt
 #echo opt+arg = "$opt$OPTARG"
 case "$opt$OPTARG" in
 W )
@@ -97,6 +108,15 @@ W )
   fi
   ;;
 
+u )
+  echo "--- only updating the index file ---"
+  mode="U"
+  for (( i=OPTIND; i > 1; i-- )) do
+    shift
+  done
+  #echo args: $@
+  ;;
+
 "?" )
   echo "--- registering D3 example git repositories ---"
   mode="R"
@@ -107,6 +127,8 @@ W )
 $0 [-W <optional_remote_path>]
 
 set up all D3 example git repositories.
+
+-u       : only regenerate/update the index HTML file from the already loaded records
 
 -W       : set up 'Win7DEV' remote reference per repository
 
