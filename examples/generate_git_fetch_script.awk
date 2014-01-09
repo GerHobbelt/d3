@@ -105,7 +105,7 @@ BEGIN {
     printf("        if  ! test -s \"./\\!descriptions/${dir_path}.txt\" ; then\n");
     printf("            echo \"sleep $delay\"\n");
     printf("            sleep $delay\n");
-    printf("            delay=$(expr $delay \\* 2)\n");
+    printf("            delay=$(expr \\( $delay \\< 1000 \\) \\* $delay \\* 2 + \\( $delay \\>= 1000 \\) \\* 1000 )\n");
     printf("        fi\n");
     printf("        if test \"$mode\" = \"QU\" ; then\n");
     printf("            break\n");
@@ -146,7 +146,7 @@ BEGIN {
     printf("        if  ! test -s \"./\\!descriptions/${dir_path}.txt\" ; then\n");
     printf("            echo \"sleep $delay\"\n");
     printf("            sleep $delay\n");
-    printf("            delay=$(expr $delay \\* 2)\n");
+    printf("            delay=$(expr \\( $delay \\< 1000 \\) \\* $delay \\* 2 + \\( $delay \\>= 1000 \\) \\* 1000 )\n");
     printf("        fi\n");
     printf("        if test \"$mode\" = \"QU\" ; then\n");
     printf("            break\n");

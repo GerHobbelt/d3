@@ -47,7 +47,7 @@ function gist_add {
         if  ! test -s "./\!descriptions/${dir_path}.txt" ; then
             echo "sleep $delay"
             sleep $delay
-            delay=$(expr $delay \* 2)
+            delay=$(expr \( $delay \< 1000 \) \* $delay \* 2 + \( $delay \>= 1000 \) \* 1000 )
         fi
         if test "$mode" = "QU" ; then
             break
@@ -88,7 +88,7 @@ function github_add {
         if  ! test -s "./\!descriptions/${dir_path}.txt" ; then
             echo "sleep $delay"
             sleep $delay
-            delay=$(expr $delay \* 2)
+            delay=$(expr \( $delay \< 1000 \) \* $delay \* 2 + \( $delay \>= 1000 \) \* 1000 )
         fi
         if test "$mode" = "QU" ; then
             break
