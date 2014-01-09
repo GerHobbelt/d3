@@ -22,7 +22,7 @@ function gist_add {
     local dir_path=$( printf "gist-%s" "$1" );
     echo "gist: full_uri = ${full_uri}, dir_path = ${dir_path}"
      
-    if test "$mode" != "U" ; then
+    if test "$mode" != "U" -a "$mode" != "QU" ; then
         if test -s "${dir_path}/.git/index" ; then
             pushd .                                                                                     2> /dev/null   > /dev/null
             cd ${dir_path}
@@ -49,6 +49,9 @@ function gist_add {
             sleep $delay
             delay=$(expr $delay \* 2)
         fi
+        if test "$mode" = "QU" ; then
+            break
+        fi
     done
     touch "./\!descriptions/${dir_path}.txt"
 
@@ -60,7 +63,7 @@ function github_add {
     local dir_path=$( printf "github.%s" "$1" | sed -e "s/[^a-zA-Z0-9_.-]\+/./g" -e "s/\.\+/./g" );
     echo "github: full_uri = ${full_uri}, dir_path = ${dir_path}"
      
-    if test "$mode" != "U" ; then
+    if test "$mode" != "U" -a "$mode" != "QU" ; then
         if test -s "${dir_path}/.git/index" ; then
             pushd .                                                                                     2> /dev/null   > /dev/null
             cd ${dir_path}
@@ -87,6 +90,9 @@ function github_add {
             sleep $delay
             delay=$(expr $delay \* 2)
         fi
+        if test "$mode" = "QU" ; then
+            break
+        fi
     done
     touch "./\!descriptions/${dir_path}.txt"
 
@@ -105,7 +111,7 @@ function git_register_remote_for_UnixVM {
     fi
 }
 
-getopts ":Wuh" opt
+getopts ":Wufh" opt
 #echo opt+arg = "$opt$OPTARG"
 case "$opt$OPTARG" in
 W )
@@ -129,6 +135,15 @@ u )
   #echo args: $@
   ;;
 
+f )
+  echo "--- only updating the index file ---"
+  mode="QU"
+  for (( i=OPTIND; i > 1; i-- )) do
+    shift
+  done
+  #echo args: $@
+  ;;
+
 "?" )
   echo "--- registering D3 example git repositories ---"
   mode="R"
@@ -141,6 +156,8 @@ $0 [-W <optional_remote_path>]
 set up all D3 example git repositories.
 
 -u       : only regenerate/update the index HTML file from the already loaded records
+
+-u       : like '-u' but does retry fetching metadata from github for each repo
 
 -W       : set up 'Win7DEV' remote reference per repository
 

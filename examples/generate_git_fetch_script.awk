@@ -80,7 +80,7 @@ BEGIN {
     printf("    local dir_path=$( printf \"gist-%%s\" \"$1\" );\n");
     printf("    echo \"gist: full_uri = ${full_uri}, dir_path = ${dir_path}\"\n");
     printf("     \n");
-    printf("    if test \"$mode\" != \"U\" ; then\n");
+    printf("    if test \"$mode\" != \"U\" -a \"$mode\" != \"QU\" ; then\n");
     printf("        if test -s \"${dir_path}/.git/index\" ; then\n");
     printf("            pushd .                                                                                     2> /dev/null   > /dev/null\n");
     printf("            cd ${dir_path}\n");
@@ -107,6 +107,9 @@ BEGIN {
     printf("            sleep $delay\n");
     printf("            delay=$(expr $delay \\* 2)\n");
     printf("        fi\n");
+    printf("        if test \"$mode\" = \"QU\" ; then\n");
+    printf("            break\n");
+    printf("        fi\n");
     printf("    done\n");
     printf("    touch \"./\\!descriptions/${dir_path}.txt\"\n");
     printf("\n");
@@ -118,7 +121,7 @@ BEGIN {
     printf("    local dir_path=$( printf \"github.%%s\" \"$1\" | sed -e \"s/[^a-zA-Z0-9_.-]\\+/./g\" -e \"s/\\.\\+/./g\" );\n");
     printf("    echo \"github: full_uri = ${full_uri}, dir_path = ${dir_path}\"\n");
     printf("     \n");
-    printf("    if test \"$mode\" != \"U\" ; then\n");
+    printf("    if test \"$mode\" != \"U\" -a \"$mode\" != \"QU\" ; then\n");
     printf("        if test -s \"${dir_path}/.git/index\" ; then\n");
     printf("            pushd .                                                                                     2> /dev/null   > /dev/null\n");
     printf("            cd ${dir_path}\n");
@@ -145,6 +148,9 @@ BEGIN {
     printf("            sleep $delay\n");
     printf("            delay=$(expr $delay \\* 2)\n");
     printf("        fi\n");
+    printf("        if test \"$mode\" = \"QU\" ; then\n");
+    printf("            break\n");
+    printf("        fi\n");
     printf("    done\n");
     printf("    touch \"./\\!descriptions/${dir_path}.txt\"\n");
     printf("\n");
@@ -163,7 +169,7 @@ BEGIN {
     printf("    fi\n");
     printf("}\n");
     printf("\n");
-    printf("getopts \":Wuh\" opt\n");
+    printf("getopts \":Wufh\" opt\n");
     printf("#echo opt+arg = \"$opt$OPTARG\"\n");
     printf("case \"$opt$OPTARG\" in\n");
     printf("W )\n");
@@ -187,6 +193,15 @@ BEGIN {
     printf("  #echo args: $@\n");
     printf("  ;;\n");
     printf("\n");
+    printf("f )\n");
+    printf("  echo \"--- only updating the index file ---\"\n");
+    printf("  mode=\"QU\"\n");
+    printf("  for (( i=OPTIND; i > 1; i-- )) do\n");
+    printf("    shift\n");
+    printf("  done\n");
+    printf("  #echo args: $@\n");
+    printf("  ;;\n");
+    printf("\n");
     printf("\"?\" )\n");
     printf("  echo \"--- registering D3 example git repositories ---\"\n");
     printf("  mode=\"R\"\n");
@@ -199,6 +214,8 @@ BEGIN {
     printf("set up all D3 example git repositories.\n");
     printf("\n");
     printf("-u       : only regenerate/update the index HTML file from the already loaded records\n");
+    printf("\n");
+    printf("-u       : like '-u' but does retry fetching metadata from github for each repo\n");
     printf("\n");
     printf("-W       : set up 'Win7DEV' remote reference per repository\n");
     printf("\n");
