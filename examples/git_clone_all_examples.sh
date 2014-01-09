@@ -39,11 +39,17 @@ function gist_add {
     fi
 
     check_github_api_output "./\!descriptions/${dir_path}.txt"
-    if ! test -s "./\!descriptions/${dir_path}.txt" ; then
+    delay=1
+    while ! test -s "./\!descriptions/${dir_path}.txt" ; do
         echo curl -o "./\!descriptions/${dir_path}.txt" https://api.github.com/gists/$1 
         curl -o "./\!descriptions/${dir_path}.txt" https://api.github.com/gists/$1 
-    fi
-    check_github_api_output "./\!descriptions/${dir_path}.txt"
+        check_github_api_output "./\!descriptions/${dir_path}.txt"
+        if  ! test -s "./\!descriptions/${dir_path}.txt" ; then
+            echo "sleep $delay"
+            sleep $delay
+            delay=$(expr $delay \* 2)
+        fi
+    done
     touch "./\!descriptions/${dir_path}.txt"
 
     cat "./\!descriptions/${dir_path}.txt" | gawk -f ./git_clone_all_examples.awk -v gist=$1 >> examples_index.html
@@ -71,11 +77,17 @@ function github_add {
     fi
 
     check_github_api_output "./\!descriptions/${dir_path}.txt"
-    if ! test -s "./\!descriptions/${dir_path}.txt" ; then
+    delay=1
+    while ! test -s "./\!descriptions/${dir_path}.txt" ; do
         echo curl -o "./\!descriptions/${dir_path}.txt" https://api.github.com/repos/$1 
         curl -o "./\!descriptions/${dir_path}.txt" https://api.github.com/repos/$1 
-    fi
-    check_github_api_output "./\!descriptions/${dir_path}.txt"
+        check_github_api_output "./\!descriptions/${dir_path}.txt"
+        if  ! test -s "./\!descriptions/${dir_path}.txt" ; then
+            echo "sleep $delay"
+            sleep $delay
+            delay=$(expr $delay \* 2)
+        fi
+    done
     touch "./\!descriptions/${dir_path}.txt"
 
     cat "./\!descriptions/${dir_path}.txt" | gawk -f ./git_clone_all_examples.awk -v github=$1 >> examples_index.html
