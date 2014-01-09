@@ -98,7 +98,7 @@ BEGIN {
     printf("}\n");
     printf("\n");
     printf("function github_add {\n");
-    printf("    local full_uri=$( printf \"https://github.com/%%s.git\" \"$1\" );\n");
+    printf("    local full_uri=$( printf \"git@github.com:%%s.git\" \"$1\" );\n");
     printf("    local dir_path=$( printf \"github.%%s\" \"$1\" | sed -e \"s/[^a-zA-Z0-9_.-]\\+/./g\" -e \"s/\\.\\+/./g\" );\n");
     printf("    echo \"github: full_uri = ${full_uri}, dir_path = ${dir_path}\"\n");
     printf("     \n");
@@ -266,10 +266,22 @@ BEGIN {
 /\/github.com\/api\//        {
     next;
 }
+/\/github.com\/blog\//        {
+    next;
+}
 /\/api.github.com\//        {
     next;
 }
 /\/raw.github.com\/wiki\//        {
+    next;
+}
+/\/[^\/]+\.github.com\/blog\//        {
+    next;
+}
+/[\/@]github.com\/[^\/]+\/blog\//        {
+    next;
+}
+/[\/@]github.com\/[^\/]+\/blog\.git/        {
     next;
 }
 
@@ -299,6 +311,15 @@ BEGIN {
 # https://github.com/mlarocca/Dynamic-Charts/...
 /\/github.com\/[^\/]+\/[^\/]+/        {
     git_repo = extract_user_and_repo($0, 2);
+
+    push_github_entry(git_repo);
+    next;
+}
+
+# git@github.com:mlarocca/Dynamic-Charts/...
+/git@github\.com:[^\/]+\/[^\/]+/        {
+    str = gensub(/^.*git@github\.com:/, "", 1, $0);
+    git_repo = extract_user_and_repo(str, 1);
 
     push_github_entry(git_repo);
     next;

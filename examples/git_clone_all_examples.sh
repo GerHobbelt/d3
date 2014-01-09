@@ -40,7 +40,7 @@ function gist_add {
 }
 
 function github_add {
-    local full_uri=$( printf "https://github.com/%s.git" "$1" );
+    local full_uri=$( printf "git@github.com:%s.git" "$1" );
     local dir_path=$( printf "github.%s" "$1" | sed -e "s/[^a-zA-Z0-9_.-]\+/./g" -e "s/\.\+/./g" );
     echo "github: full_uri = ${full_uri}, dir_path = ${dir_path}"
      
@@ -1216,7 +1216,6 @@ github_add  asutherland/d3-threeD
 github_add  auchenberg/dependo
 github_add  benbjohnson/miniviz
 github_add  bjuhn/UrbanDataChallenge
-github_add  blog/1360-introducing-contributions
 github_add  bollwyvl/blockd3
 github_add  boorad/d3-tsline
 github_add  caged/d3-tip
@@ -1311,7 +1310,6 @@ github_add  rameshvs/jsplotlib
 github_add  ramnathv/slidifyExamples
 github_add  rkirsling/modallogic
 github_add  roundrobin/d3.js-Sublime-2-Snippets
-github_add  sammyd/blog
 github_add  sammyt/see
 github_add  saranyan/commerce_wheel
 github_add  schnipz/leap-motion-demos
@@ -2440,7 +2438,6 @@ popd                                                                            
 # https://github.com/auchenberg/dependo.git
 # https://github.com/benbjohnson/miniviz.git
 # https://github.com/bjuhn/UrbanDataChallenge.git
-# https://github.com/blog/1360-introducing-contributions.git
 # https://github.com/bollwyvl/blockd3.git
 # https://github.com/boorad/d3-tsline.git
 # https://github.com/caged/d3-tip.git
@@ -2538,7 +2535,6 @@ popd                                                                            
 # https://github.com/ramnathv/slidifyExamples.git
 # https://github.com/rkirsling/modallogic.git
 # https://github.com/roundrobin/d3.js-Sublime-2-Snippets.git
-# https://github.com/sammyd/blog.git
 # https://github.com/sammyt/see.git
 # https://github.com/saranyan/commerce_wheel.git
 # https://github.com/schnipz/leap-motion-demos.git
