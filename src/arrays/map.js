@@ -2,8 +2,15 @@ import "../core/class";
 
 d3.map = function(object) {
   var map = new d3_Map();
-  if (object instanceof d3_Map) object.forEach(function(key, value) { map.set(key, value); });
-  else for (var key in object) map.set(key, object[key]);
+  if (object instanceof d3_Map) {
+    object.forEach(function(key, value) { 
+      map.set(key, value); 
+    });
+  } else {
+    for (var key in object) {
+      map.set(key, object[key]);
+    }
+  }
   return map;
 };
 
@@ -26,12 +33,6 @@ d3_class(d3_Map, {
     key = d3_map_prefix + key;
     if (key in this) this._size--;
     return key in this && delete this[key];
-  },
-  size: function() {
-    return this._size;
-  },
-  empty: function() {
-    return this._size === 0;
   },
   keys: function() {
     var keys = [];
@@ -58,18 +59,20 @@ d3_class(d3_Map, {
     return entries;
   },
   size: function() {
-    var size = 0;
-    for (var key in this) if (key.charCodeAt(0) === d3_map_prefixCode) ++size;
-    return size;
+    return this._size;
   },
   empty: function() {
-    for (var key in this) if (key.charCodeAt(0) === d3_map_prefixCode) return false;
-    return true;
+    return this._size === 0;
   },
   forEach: function(f) {
-    for (var key in this) if (key.charCodeAt(0) === d3_map_prefixCode) f.call(this, key.substring(1), this[key]);
+    for (var key in this) {
+      if (key.charCodeAt(0) === d3_map_prefixCode) {
+        f.call(this, key.substring(1), this[key]);
+      }
+    }
   }
 });
 
 var d3_map_prefix = "\0", // prevent collision with built-ins
     d3_map_prefixCode = d3_map_prefix.charCodeAt(0);
+

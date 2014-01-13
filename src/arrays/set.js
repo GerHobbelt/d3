@@ -3,7 +3,11 @@ import "map";
 
 d3.set = function(array) {
   var set = new d3_Set;
-  if (array) for (var i = 0, n = array.length; i < n; ++i) set.add(array[i]);
+  if (array) {
+    for (var i = 0, n = array.length; i < n; ++i) {
+      set.add(array[i]);
+    }
+  }
   return set;
 };
 
@@ -25,12 +29,6 @@ d3_class(d3_Set, {
     if (value in this) this._size--;
     return value in this && delete this[value];
   },
-  size: function() {
-    return this._size;
-  },
-  empty: function() {
-    return this._size === 0;
-  },
   values: function() {
     var values = [];
     this.forEach(function(value) {
@@ -39,15 +37,16 @@ d3_class(d3_Set, {
     return values;
   },
   size: function() {
-    var size = 0;
-    for (var value in this) if (value.charCodeAt(0) === d3_map_prefixCode) ++size;
-    return size;
+    return this._size;
   },
   empty: function() {
-    for (var value in this) if (value.charCodeAt(0) === d3_map_prefixCode) return false;
-    return true;
+    return this._size === 0;
   },
   forEach: function(f) {
-    for (var value in this) if (value.charCodeAt(0) === d3_map_prefixCode) f.call(this, value.substring(1));
+    for (var value in this) {
+      if (value.charCodeAt(0) === d3_map_prefixCode) {
+        f.call(this, value.substring(1));
+      }
+    }
   }
 });
