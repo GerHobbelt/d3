@@ -8,6 +8,8 @@ if ! test -d "./\!descriptions" ; then
 fi
 pwd
 
+
+
 function check_github_api_output {
     if test -s "$1" ; then
         if $( grep -e "API rate limit exceeded for " "$1"  2> /dev/null   > /dev/null ) ; then
@@ -55,7 +57,7 @@ function gist_add {
     done
     touch "./\!descriptions/${dir_path}.txt"
 
-    cat "./\!descriptions/${dir_path}.txt" | gawk -f ./git_clone_all_examples.awk -v gist=$1 >> examples_index.html
+    cat "./\!descriptions/${dir_path}.txt" | gawk -f ./git_clone_all_examples.awk -v gist=$1 >> htmldestination.html.bak
 }
 
 function github_add {
@@ -96,7 +98,7 @@ function github_add {
     done
     touch "./\!descriptions/${dir_path}.txt"
 
-    cat "./\!descriptions/${dir_path}.txt" | gawk -f ./git_clone_all_examples.awk -v github=$1 >> examples_index.html
+    cat "./\!descriptions/${dir_path}.txt" | gawk -f ./git_clone_all_examples.awk -v github=$1 >> htmldestination.html.bak
 }
 
 
@@ -173,10 +175,10 @@ esac
 
 
 
-echo "<html><body>" > examples_index.html
+echo "<html><body>" > htmldestination.html.bak
 
-echo "<h1>D3 example/test gists and git repositories:</h1>" >> examples_index.html
-echo "<dl>" >> examples_index.html
+echo "<h1>D3 example/test gists and git repositories:</h1>" >> htmldestination.html.bak
+echo "<dl>" >> htmldestination.html.bak
 
 
 
@@ -1393,8 +1395,10 @@ github_add  zzolo/mjc-data-visualization-presentation
 
 
 
-echo "</dl>" >> examples_index.html
-echo "</body></html>" >> examples_index.html
+echo "</dl>" >> htmldestination.html.bak
+echo "</body></html>" >> htmldestination.html.bak
+
+cat htmldestination.html.bak > examples_index.html
 
 popd                                                                                                    2> /dev/null   > /dev/null
 

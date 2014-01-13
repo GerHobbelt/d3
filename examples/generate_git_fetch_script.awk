@@ -66,6 +66,8 @@ BEGIN {
     printf("fi\n");
     printf("pwd\n");
     printf("\n");
+    printf("\n");
+    printf("\n");
     printf("function check_github_api_output {\n");
     printf("    if test -s \"$1\" ; then\n");
     printf("        if $( grep -e \"API rate limit exceeded for \" \"$1\"  2> /dev/null   > /dev/null ) ; then\n");
@@ -113,7 +115,7 @@ BEGIN {
     printf("    done\n");
     printf("    touch \"./\\!descriptions/${dir_path}.txt\"\n");
     printf("\n");
-    printf("    cat \"./\\!descriptions/${dir_path}.txt\" | gawk -f ./git_clone_all_examples.awk -v gist=$1 >> examples_index.html\n");
+    printf("    cat \"./\\!descriptions/${dir_path}.txt\" | gawk -f ./git_clone_all_examples.awk -v gist=$1 >> htmldestination.html.bak\n");
     printf("}\n");
     printf("\n");
     printf("function github_add {\n");
@@ -154,7 +156,7 @@ BEGIN {
     printf("    done\n");
     printf("    touch \"./\\!descriptions/${dir_path}.txt\"\n");
     printf("\n");
-    printf("    cat \"./\\!descriptions/${dir_path}.txt\" | gawk -f ./git_clone_all_examples.awk -v github=$1 >> examples_index.html\n");
+    printf("    cat \"./\\!descriptions/${dir_path}.txt\" | gawk -f ./git_clone_all_examples.awk -v github=$1 >> htmldestination.html.bak\n");
     printf("}\n");
     printf("\n");
     printf("\n");
@@ -231,10 +233,10 @@ BEGIN {
     printf("\n");
     printf("\n");
     printf("\n");
-    printf("echo \"<html><body>\" > examples_index.html\n");
+    printf("echo \"<html><body>\" > htmldestination.html.bak\n");
     printf("\n");
-    printf("echo \"<h1>D3 example/test gists and git repositories:</h1>\" >> examples_index.html\n");
-    printf("echo \"<dl>\" >> examples_index.html\n");
+    printf("echo \"<h1>D3 example/test gists and git repositories:</h1>\" >> htmldestination.html.bak\n");
+    printf("echo \"<dl>\" >> htmldestination.html.bak\n");
     printf("\n");
     printf("\n");
     printf("\n");
@@ -401,8 +403,10 @@ END             {
     printf("\n");
     printf("\n");
     printf("\n");
-    printf("echo \"</dl>\" >> examples_index.html\n");
-    printf("echo \"</body></html>\" >> examples_index.html\n");
+    printf("echo \"</dl>\" >> htmldestination.html.bak\n");
+    printf("echo \"</body></html>\" >> htmldestination.html.bak\n");
+    printf("\n");
+    printf("cat htmldestination.html.bak > examples_index.html\n");
     printf("\n");
     printf("popd                                                                                                    2> /dev/null   > /dev/null\n");
     printf("\n");
