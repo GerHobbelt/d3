@@ -1,4 +1,11 @@
+# See the README for installation instructions.
+
+UGLIFY = node_modules/.bin/uglifyjs
+SMASH = node_modules/.bin/smash
+
+
 GENERATED_FILES = \
+	d3.latest.js \
 	d3.js \
 	d3.min.js \
 	bower.json \
@@ -6,27 +13,46 @@ GENERATED_FILES = \
 
 all: $(GENERATED_FILES)
 
-.PHONY: clean all test
+.PHONY: superclean clean all test benchmark
+
+npm-install:
+	npm install
+	-@touch npm-install
 
 test:
 	@npm test
 
-src/start.js: package.json bin/start
+src/start.js: npm-install package.json bin/start
 	bin/start > $@
 
-d3.js: $(shell node_modules/.bin/smash --ignore-missing --list src/d3.js) package.json
+d3.latest.js: $(SMASH) $(shell $(SMASH) --ignore-missing --list src/d3.js) package.json
 	@rm -f $@
-	node_modules/.bin/smash src/d3.js | node_modules/.bin/uglifyjs - -b indent-level=2 -o $@
+	$(SMASH) src/d3.js > $@
 	@chmod a-w $@
 
-d3.min.js: d3.js bin/uglify
+d3.js: $(UGLIFY) d3.latest.js
 	@rm -f $@
-	bin/uglify $< > $@
+	cat d3.latest.js | $(UGLIFY) - -b indent-level=2 -o $@
+	@chmod a-w $@
 
-%.json: bin/% package.json
+d3.min.js: npm-install d3.js bin/uglify
+	@rm -f $@
+	bin/uglify d3.js > $@
+
+%.json: npm-install bin/% package.json
 	@rm -f $@
 	bin/$* > $@
 	@chmod a-w $@
 
+$(SMASH): npm-install
+
+$(UGLIFY): npm-install
+
+# When you nuke the generated files, smash crashes and does not recover. The 'echo x' and 'touch' lines are a hotfix for that one as it takes too long to fix in smash itself.
 clean:
-	rm -f -- $(GENERATED_FILES)
+	-rm -f -- $(GENERATED_FILES)
+	-rm -f npm-install
+	@touch bin/locale
+
+superclean: clean
+	-find . -type d -name 'node_modules' -exec rm -rf "{}" \;
