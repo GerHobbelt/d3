@@ -1,5 +1,5 @@
 !function(){
-  var d3 = {version: "3.4.5"}; // semver
+  var d3 = {version: "3.4.6"}; // semver
 if (!Date.now) Date.now = function() {
   return +new Date();
 };
@@ -116,17 +116,17 @@ function d3_number(x) {
 }
 
 d3.mean = function(array, f) {
-  var n = array.length,
+  var s = 0,
+      n = array.length,
       a,
-      m = 0,
       i = -1,
-      j = 0;
+      j = n;
   if (arguments.length === 1) {
-    while (++i < n) if (d3_number(a = array[i])) m += (a - m) / ++j;
+    while (++i < n) if (d3_number(a = array[i])) s += a; else --j;
   } else {
-    while (++i < n) if (d3_number(a = f.call(array, array[i], i))) m += (a - m) / ++j;
+    while (++i < n) if (d3_number(a = f.call(array, array[i], i))) s += a; else --j;
   }
-  return j ? m : undefined;
+  return j ? s / j : undefined;
 };
 // R-7 per <http://en.wikipedia.org/wiki/Quantile>
 d3.quantile = function(values, p) {
@@ -1774,29 +1774,29 @@ d3.behavior.zoom = function() {
       var dispatch = event.of(this, arguments),
           view1 = view;
       if (d3_transitionInheritId) {
-          d3.select(this).transition()
-              .each("start.zoom", function() {
-                view = this.__chart__ || {x: 0, y: 0, k: 1}; // pre-transition state
-                zoomstarted(dispatch);
-              })
-              .tween("zoom:zoom", function() {
-                var dx = size[0],
-                    dy = size[1],
-                    cx = dx / 2,
-                    cy = dy / 2,
-                    i = d3.interpolateZoom(
-                      [(cx - view.x) / view.k, (cy - view.y) / view.k, dx / view.k],
-                      [(cx - view1.x) / view1.k, (cy - view1.y) / view1.k, dx / view1.k]
-                    );
-                return function(t) {
-                  var l = i(t), k = dx / l[2];
-                  this.__chart__ = view = {x: cx - l[0] * k, y: cy - l[1] * k, k: k};
-                  zoomed(dispatch);
-                };
-              })
-              .each("end.zoom", function() {
-                zoomended(dispatch);
-              });
+        d3.select(this).transition()
+            .each("start.zoom", function() {
+              view = this.__chart__ || {x: 0, y: 0, k: 1}; // pre-transition state
+              zoomstarted(dispatch);
+            })
+            .tween("zoom:zoom", function() {
+              var dx = size[0],
+                  dy = size[1],
+                  cx = dx / 2,
+                  cy = dy / 2,
+                  i = d3.interpolateZoom(
+                    [(cx - view.x) / view.k, (cy - view.y) / view.k, dx / view.k],
+                    [(cx - view1.x) / view1.k, (cy - view1.y) / view1.k, dx / view1.k]
+                  );
+              return function(t) {
+                var l = i(t), k = dx / l[2];
+                this.__chart__ = view = {x: cx - l[0] * k, y: cy - l[1] * k, k: k};
+                zoomed(dispatch);
+              };
+            })
+            .each("end.zoom", function() {
+              zoomended(dispatch);
+            });
       } else {
         this.__chart__ = view;
         zoomstarted(dispatch);
@@ -3562,7 +3562,7 @@ function d3_time_parseYear(date, string, i) {
 
 function d3_time_parseZone(date, string, i) {
   return /^[+-]\d{4}$/.test(string = string.substring(i, i + 5))
-      ? (date.Z = +string, i + 5)
+      ? (date.Z = -string, i + 5) // sign differs from getTimezoneOffset!
       : -1;
 }
 
@@ -10741,7 +10741,7 @@ function d3_scale_quantile(domain, range) {
 
   scale.domain = function(x) {
     if (!arguments.length) return domain;
-    domain = x.filter(function(d) { return !isNaN(d); }).sort(d3_ascending);
+    domain = x.filter(d3_number).sort(d3_ascending);
     return rescale();
   };
 
