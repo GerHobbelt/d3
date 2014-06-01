@@ -1,3 +1,17 @@
 _site
-node_modules
 .DS_Store
+*.zip
+
+# Editor backup files
+*.bak
+*~
+
+# NodeJS/NPM crud
+node_modules
+npm-debug.log
+npm-install
+
+# Examples directory
+examples/!/
+examples/!descriptions/
+examples/*/
