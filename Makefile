@@ -13,11 +13,11 @@ GENERATED_FILES = \
 
 all: $(GENERATED_FILES)
 
-.PHONY: superclean clean all test benchmark 
+.PHONY: superclean clean all test benchmark
 
-npm-install: 
+npm-install:
 	npm install
-	-@touch npm-install 
+	-@touch npm-install
 
 test:
 	@npm test
@@ -47,7 +47,7 @@ d3.min.js: npm-install d3.js bin/uglify
 $(SMASH): npm-install
 
 $(UGLIFY): npm-install
-	
+
 # When you nuke the generated files, smash crashes and does not recover. The 'echo x' and 'touch' lines are a hotfix for that one as it takes too long to fix in smash itself.
 clean:
 	-rm -f -- $(GENERATED_FILES)

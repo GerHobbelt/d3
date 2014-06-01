@@ -90,11 +90,11 @@ function d3_scale_log(linear, base, positive, domain) {
 
 var d3_scale_logFormat = d3.format(".0E"),
     d3_scale_logNiceNegative = {
-        floor: function(x) { 
-            return -Math.ceil(-x); 
-        }, 
-        ceil: function(x) { 
-            return -Math.floor(-x); 
-        }
+      floor: function(x) {
+        return -Math.ceil(-x);
+      },
+      ceil: function(x) {
+        return -Math.floor(-x);
+      }
     };
-    
+

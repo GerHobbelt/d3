@@ -34,7 +34,7 @@ function trim(v) {
     sub(/^ */, "", v);
     sub(/ *$/, "", v);
     return v;
-} 
+}
 
 BEGIN {
     state = 0;

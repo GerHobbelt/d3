@@ -23,14 +23,14 @@ function gist_add {
     local full_uri=$( printf "https://gist.github.com/%s.git" "$1" );
     local dir_path=$( printf "gist-%s" "$1" );
     echo "gist: full_uri = ${full_uri}, dir_path = ${dir_path}"
-     
+
     if test "$mode" != "U" -a "$mode" != "QU" ; then
         if test -s "${dir_path}/.git/index" ; then
             pushd .                                                                                     2> /dev/null   > /dev/null
             cd ${dir_path}
             git pull --all
             popd                                                                                        2> /dev/null   > /dev/null
-        else 
+        else
             rm -rf ${dir_path}                                                                          2> /dev/null   > /dev/null
             echo git clone ${full_uri} ${dir_path}
             git clone ${full_uri} ${dir_path}
@@ -43,8 +43,8 @@ function gist_add {
     check_github_api_output "./\!descriptions/${dir_path}.txt"
     delay=1
     while ! test -s "./\!descriptions/${dir_path}.txt" ; do
-        echo curl -o "./\!descriptions/${dir_path}.txt" https://api.github.com/gists/$1 
-        curl -o "./\!descriptions/${dir_path}.txt" https://api.github.com/gists/$1 
+        echo curl -o "./\!descriptions/${dir_path}.txt" https://api.github.com/gists/$1
+        curl -o "./\!descriptions/${dir_path}.txt" https://api.github.com/gists/$1
         check_github_api_output "./\!descriptions/${dir_path}.txt"
         if  ! test -s "./\!descriptions/${dir_path}.txt" ; then
             echo "sleep $delay"
@@ -64,14 +64,14 @@ function github_add {
     local full_uri=$( printf "git@github.com:%s.git" "$1" );
     local dir_path=$( printf "github.%s" "$1" | sed -e "s/[^a-zA-Z0-9_.-]\+/./g" -e "s/\.\+/./g" );
     echo "github: full_uri = ${full_uri}, dir_path = ${dir_path}"
-     
+
     if test "$mode" != "U" -a "$mode" != "QU" ; then
         if test -s "${dir_path}/.git/index" ; then
             pushd .                                                                                     2> /dev/null   > /dev/null
             cd ${dir_path}
             git pull --all
             popd                                                                                        2> /dev/null   > /dev/null
-        else 
+        else
             rm -rf ${dir_path}                                                                          2> /dev/null   > /dev/null
             echo git clone ${full_uri} ${dir_path}
             git clone ${full_uri} ${dir_path}
@@ -84,8 +84,8 @@ function github_add {
     check_github_api_output "./\!descriptions/${dir_path}.txt"
     delay=1
     while ! test -s "./\!descriptions/${dir_path}.txt" ; do
-        echo curl -o "./\!descriptions/${dir_path}.txt" https://api.github.com/repos/$1 
-        curl -o "./\!descriptions/${dir_path}.txt" https://api.github.com/repos/$1 
+        echo curl -o "./\!descriptions/${dir_path}.txt" https://api.github.com/repos/$1
+        curl -o "./\!descriptions/${dir_path}.txt" https://api.github.com/repos/$1
         check_github_api_output "./\!descriptions/${dir_path}.txt"
         if  ! test -s "./\!descriptions/${dir_path}.txt" ; then
             echo "sleep $delay"
@@ -1414,7 +1414,7 @@ popd                                                                            
 #
 #
 #
-# 
+#
 # https://gist.github.com/1005090.git
 # https://gist.github.com/1005873.git
 # https://gist.github.com/1009139.git

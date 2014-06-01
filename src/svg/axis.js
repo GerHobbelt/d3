@@ -333,8 +333,8 @@ d3.svg.axis = function() {
         // and so can fade-out in the old scale’s position.
         if (scale1.rangeBand) {
           var x = scale1, dx = x.rangeBand() / 2;
-          scale0 = scale1 = function(d) { 
-            return x(d) + dx; 
+          scale0 = scale1 = function(d) {
+            return x(d) + dx;
           };
         } else if (scale0.rangeBand) {
           scale0 = scale1;

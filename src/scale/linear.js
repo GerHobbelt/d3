@@ -105,7 +105,7 @@ function d3_scale_linearNice(domain, m) {
 
 function d3_scale_linearTickRange(domain, m, subdiv_count) {
   m = m || 10;
-  subdiv_count = subdiv_count || 1;  
+  subdiv_count = subdiv_count || 1;
 
   var extent = d3_scaleExtent(domain),
       span = extent[1] - extent[0],
