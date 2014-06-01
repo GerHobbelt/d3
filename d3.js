@@ -1886,6 +1886,29 @@
     };
   }
   d3.functor = d3_functor;
+  d3.variance = function(array, f) {
+    var n = array.length;
+    if (n < 2) return NaN;
+    var mean = d3.mean(array, f), a, sd = 0, i = -1, j = 0;
+    if (arguments.length === 1) {
+      while (++i < n) {
+        if (d3_number(a = array[i])) {
+          sd += Math.pow(a - mean, 2);
+          ++j;
+        }
+      }
+    } else {
+      var evaluatedArray = [];
+      while (++i < n) if (d3_number(a = f.call(array, array[i], i))) evaluatedArray.push(a);
+      return d3.variance(evaluatedArray);
+    }
+    sd /= j - 1;
+    return j ? sd : NaN;
+  };
+  d3.deviation = function(array, f) {
+    var v = f ? d3.variance(array, f) : d3.variance(array);
+    return v ? Math.sqrt(v) : v;
+  };
   function d3_identity(d) {
     return d;
   }
