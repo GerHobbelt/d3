@@ -45,7 +45,7 @@ d3.layout.force = function() {
 
     distances = new Array(m);
     // for maximum performance, only use the function when there actually is the need for it:
-    if (typeof f === "function") {
+    if (typeof f === 'function') {
       for (i = 0; i < m; ++i) {
         distances[i] = +f.call(this, links[i], i);
       }
@@ -62,7 +62,7 @@ d3.layout.force = function() {
     var f = linkStrength; 
 
     strengths = new Array(m);
-    if (typeof f === "function") {
+    if (typeof f === 'function') {
       for (i = 0; i < m; ++i) {
         strengths[i] = +f.call(this, links[i], i);
       }
@@ -79,7 +79,7 @@ d3.layout.force = function() {
     var f = charge; 
 
     charges = new Array(n);
-    if (typeof f === "function") {
+    if (typeof f === 'function') {
       j = 0;
       for (i = 0; i < n; ++i) {
         charges[i] = o = +f.call(this, nodes[i], i);
@@ -231,7 +231,7 @@ d3.layout.force = function() {
     // to tweak the charges and thus the forces.
     // 
     // Here we let the gravity function adjust the nodes' positions.  
-    if (typeof gravity === "function") {
+    if (typeof gravity === 'function') {
       if (alpha) {
         gravity.call(this, nodes, n, alpha, size);
       }
@@ -254,7 +254,7 @@ d3.layout.force = function() {
     if (charge_abssum < 0 || update_charge_on_every_tick) {
       update_charges.call(this);
     }
-    if (charge_abssum != 0) {
+    if (charge_abssum !== 0) {
       d3_layout_forceAccumulate(q, alpha, charges);
       for (i = 0; i < n; ++i) {
         if (!(o = nodes[i]).fixed) {
@@ -262,12 +262,12 @@ d3.layout.force = function() {
         }
       }
     }
-    if (typeof repulsor === "function") {
+    if (typeof repulsor === 'function') {
       repulsor.call(this, q, charges, distances, strengths);
     }
 
     // position verlet integration
-    if (typeof friction === "function") {
+    if (typeof friction === 'function') {
       for (i = 0; i < n; ++i) {
         o = nodes[i];
         if (o.fixed) {
@@ -323,7 +323,7 @@ d3.layout.force = function() {
 
   force.linkDistance = function(x, update_each_tick) {
     if (!arguments.length) return linkDistance;
-    var has_linkDistance_f = (typeof x === "function");
+    var has_linkDistance_f = (typeof x === 'function');
     linkDistance = (has_linkDistance_f ? x : +x);
     update_linkDistance_on_every_tick = (update_each_tick == null ? has_linkDistance_f : update_each_tick);  
     return force;
@@ -334,7 +334,7 @@ d3.layout.force = function() {
 
   force.linkStrength = function(x, update_each_tick) {
     if (!arguments.length) return linkStrength;
-    var has_linkStrength_f = (typeof x === "function");
+    var has_linkStrength_f = (typeof x === 'function');
     linkStrength = (has_linkStrength_f ? x : +x);
     update_linkStrength_on_every_tick = (update_each_tick == null ? has_linkStrength_f : update_each_tick);  
     return force;
@@ -342,13 +342,13 @@ d3.layout.force = function() {
 
   force.friction = function(x) {
     if (!arguments.length) return friction;
-    friction = typeof x === "function" ? x : +x;
+    friction = typeof x === 'function' ? x : +x;
     return force;
   };
 
   force.charge = function(x, update_each_tick) {
     if (!arguments.length) return charge;
-    var has_charge_f = (typeof x === "function");
+    var has_charge_f = (typeof x === 'function');
     charge = (has_charge_f ? x : +x);
     update_charge_on_every_tick = (update_each_tick == null ? has_charge_f : update_each_tick);  
     charge_abssum = -1;
@@ -363,13 +363,13 @@ d3.layout.force = function() {
 
   force.gravity = function(x) {
     if (!arguments.length) return gravity;
-    gravity = typeof x === "function" ? x : +x;
+    gravity = typeof x === 'function' ? x : +x;
     return force;
   };
 
   force.repulsor = function(x) {
     if (!arguments.length) return repulsor;
-    repulsor = typeof x === "function" ? x : false;
+    repulsor = typeof x === 'function' ? x : false;
     return force;
   };
 
@@ -385,7 +385,7 @@ d3.layout.force = function() {
     // (This is done as a calculation optimization for when rendering the force graph.)
     //
     // When x is a function, we need to do the squaring on every quad on every iteration anyhow.
-    has_theta2_f = (typeof x === "function");
+    has_theta2_f = (typeof x === 'function');
     theta2 = has_theta2_f ? x : x * x;
     return force;
   };
