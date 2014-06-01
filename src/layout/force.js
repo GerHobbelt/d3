@@ -20,27 +20,78 @@ d3.layout.force = function() {
       distances,
       strengths,
       neighbors,
-      epsilon = 0.1, // minimal distance-squared for which the approximation holds; any smaller distance is assumed to be this large to prevent instable approximations
       charges,
       charge_abssum = -1, // negative value signals the need to recalculate this one
-      gravity_f,
-      theta2_f,
+      update_charge_on_every_tick = false,
+      update_linkStrength_on_every_tick = false,
+      update_linkDistance_on_every_tick = false,
+      repulsor = false,
       has_theta2_f = false,
       // These model parameters can be either a function or a direct numeric value:
-      friction = .9,
+      friction = d3_layout_forceFriction,
       linkDistance = d3_layout_forceLinkDistance,
       linkStrength = d3_layout_forceLinkStrength,
-      charge = -30,
+      charge = d3_layout_forceCharge,
       chargeDistance2 = d3_layout_forceChargeDistance2,
-      gravity = .1,
-      theta2 = .64,
-      repulsor = false;
+      gravity = d3_layout_forceGravity,
+      theta2 = d3_layout_forceTheta2,
+      epsilon = d3_layout_forceEpsilon; // minimal distance-squared for which the approximation holds; any smaller distance is assumed to be this large to prevent instable approximations
 
-  setup_model_parameter_functors();
 
-  function setup_model_parameter_functors() {
-    theta2_f = d3_functor(theta2);
-    has_theta2_f = (typeof theta2 === "function");
+  function update_linkDistances() {
+    var i;
+    var m = links.length;
+    var f = linkDistance; 
+
+    distances = new Array(m);
+    // for maximum performance, only use the function when there actually is the need for it:
+    if (typeof f === "function") {
+      for (i = 0; i < m; ++i) {
+        distances[i] = +f.call(this, links[i], i);
+      }
+    } else {
+      for (i = 0; i < m; ++i) {
+        distances[i] = f;
+      }
+    }
+  }
+
+  function update_linkStrengths() {
+    var i;
+    var m = links.length;
+    var f = linkStrength; 
+
+    strengths = new Array(m);
+    if (typeof f === "function") {
+      for (i = 0; i < m; ++i) {
+        strengths[i] = +f.call(this, links[i], i);
+      }
+    } else {
+      for (i = 0; i < m; ++i) {
+        strengths[i] = f;
+      }
+    }
+  }
+
+  function update_charges() {
+    var i, j, o;
+    var n = nodes.length;
+    var f = charge; 
+
+    charges = new Array(n);
+    if (typeof f === "function") {
+      j = 0;
+      for (i = 0; i < n; ++i) {
+        charges[i] = o = +f.call(this, nodes[i], i);
+        j += Math.abs(o);
+      }
+    } else {
+      for (i = 0; i < n; ++i) {
+        charges[i] = f;
+      }
+      j = n * Math.abs(f);
+    }
+    charge_abssum = j;
   }
 
   function repulse(node, i) {
@@ -56,7 +107,7 @@ d3.layout.force = function() {
 
         if (has_theta2_f) {
           // when this is a FUNCTION it calculates theta, NOT theta²!
-          th2 = theta2_f.call(this, node, i, quad, l, x1, x2, k);
+          th2 = theta2.call(this, node, i, quad, l, x1, x2, k);
           th2 *= th2;
         } else {
           th2 = theta2;
@@ -127,6 +178,13 @@ d3.layout.force = function() {
         x, // x-distance
         y; // y-distance
 
+    if (update_linkStrength_on_every_tick) {
+      update_linkStrengths.call(this);
+    }
+    if (update_linkDistance_on_every_tick) {
+      update_linkDistances.call(this);
+    }
+
     // Gauss-Seidel relaxation for links
     for (i = 0; i < m; ++i) {
       o = links[i];
@@ -175,7 +233,7 @@ d3.layout.force = function() {
     // Here we let the gravity function adjust the nodes' positions.  
     if (typeof gravity === "function") {
       if (alpha) {
-        gravity_f.call(this, nodes, n, alpha, size);
+        gravity.call(this, nodes, n, alpha, size);
       }
     } else {
       k = alpha * gravity;
@@ -193,21 +251,8 @@ d3.layout.force = function() {
     // compute quadtree center of mass and apply charge forces
     q = d3.geom.quadtree(nodes);
     // recalculate charges on every tick if need be:
-    if (charge_abssum < 0 || typeof charge === "function" || isFinite(chargeDistance2)) {
-      charges = new Array(n);
-      if (typeof charge === "function") {
-        f = 0;
-        for (i = 0; i < n; ++i) {
-          charges[i] = k = +charge.call(this, nodes[i], i, q);
-          f += Math.abs(k);
-        }
-      } else {
-        for (i = 0; i < n; ++i) {
-          charges[i] = charge;
-        }
-        f = n * Math.abs(charge);
-      }
-      charge_abssum = f;
+    if (charge_abssum < 0 || update_charge_on_every_tick) {
+      update_charges.call(this);
     }
     if (charge_abssum != 0) {
       d3_layout_forceAccumulate(q, alpha, charges);
@@ -253,13 +298,13 @@ d3.layout.force = function() {
 
   force.nodes = function(x) {
     if (!arguments.length) return nodes;
-    nodes = x;
+    nodes = x || [];
     return force;
   };
 
   force.links = function(x) {
     if (!arguments.length) return links;
-    links = x;
+    links = x || [];
     return force;
   };
 
@@ -270,22 +315,28 @@ d3.layout.force = function() {
 
   force.size = function(x) {
     if (!arguments.length) return size;
-    size = x;
+    size = x || [1, 1];
+    if (!size[0]) size[0] = 1;
+    if (!size[1]) size[1] = 1;
     return force;
   };
 
-  force.linkDistance = function(x) {
+  force.linkDistance = function(x, update_each_tick) {
     if (!arguments.length) return linkDistance;
-    linkDistance = typeof x === "function" ? x : +x;
+    var has_linkDistance_f = (typeof x === "function");
+    linkDistance = (has_linkDistance_f ? x : +x);
+    update_linkDistance_on_every_tick = (update_each_tick == null ? has_linkDistance_f : update_each_tick);  
     return force;
   };
 
   // For backwards-compatibility.
   force.distance = force.linkDistance;
 
-  force.linkStrength = function(x) {
+  force.linkStrength = function(x, update_each_tick) {
     if (!arguments.length) return linkStrength;
-    linkStrength = typeof x === "function" ? x : +x;
+    var has_linkStrength_f = (typeof x === "function");
+    linkStrength = (has_linkStrength_f ? x : +x);
+    update_linkStrength_on_every_tick = (update_each_tick == null ? has_linkStrength_f : update_each_tick);  
     return force;
   };
 
@@ -295,9 +346,11 @@ d3.layout.force = function() {
     return force;
   };
 
-  force.charge = function(x) {
+  force.charge = function(x, update_each_tick) {
     if (!arguments.length) return charge;
-    charge = typeof x === "function" ? x : +x;
+    var has_charge_f = (typeof x === "function");
+    charge = (has_charge_f ? x : +x);
+    update_charge_on_every_tick = (update_each_tick == null ? has_charge_f : update_each_tick);  
     charge_abssum = -1;
     return force;
   };
@@ -332,8 +385,8 @@ d3.layout.force = function() {
     // (This is done as a calculation optimization for when rendering the force graph.)
     //
     // When x is a function, we need to do the squaring on every quad on every iteration anyhow.
-    theta2 = typeof x === "function" ? x : x * x;
-    setup_model_parameter_functors();
+    has_theta2_f = (typeof x === "function");
+    theta2 = has_theta2_f ? x : x * x;
     return force;
   };
 
@@ -368,8 +421,8 @@ d3.layout.force = function() {
 
     for (i = 0; i < m; ++i) {
       o = links[i];
-      if (typeof o.source == "number") o.source = nodes[o.source];
-      if (typeof o.target == "number") o.target = nodes[o.target];
+      if (typeof o.source === "number") o.source = nodes[o.source];
+      if (typeof o.target === "number") o.target = nodes[o.target];
       ++o.source.weight;
       ++o.target.weight;
     }
@@ -382,43 +435,9 @@ d3.layout.force = function() {
       if (isNaN(o.py)) o.py = o.y;
     }
 
-    distances = new Array(m);
-    // for maximum performance, only use the function when there actually is the need for it:
-    if (typeof linkDistance === "function") {
-      for (i = 0; i < m; ++i) {
-        distances[i] = +linkDistance.call(this, links[i], i);
-      }
-    } else {
-      for (i = 0; i < m; ++i) {
-        distances[i] = linkDistance;
-      }
-    }
-
-    strengths = new Array(m);
-    if (typeof linkStrength === "function") {
-      for (i = 0; i < m; ++i) {
-        strengths[i] = +linkStrength.call(this, links[i], i);
-      }
-    } else {
-      for (i = 0; i < m; ++i) {
-        strengths[i] = linkStrength;
-      }
-    }
-
-    charges = new Array(n);
-    if (typeof charge === "function") {
-      j = 0;
-      for (i = 0; i < n; ++i) {
-        charges[i] = o = +charge.call(this, nodes[i], i);
-        j += Math.abs(o);
-      }
-    } else {
-      for (i = 0; i < n; ++i) {
-        charges[i] = charge;
-      }
-      j = n * Math.abs(charge);
-    }
-    charge_abssum = j;
+    update_linkDistances.call(this);
+    update_linkStrengths.call(this);
+    update_charges.call(this);
 
     // inherit node position from first neighbor with defined position
     // or if no such neighbors, initialize node position randomly
@@ -446,17 +465,27 @@ d3.layout.force = function() {
   // initialize neighbors lazily
   function neighbor(i) {
     if (!neighbors) {
-      var j,
+      var j, o, dir,
           n = nodes.length,
           m = links.length;
       neighbors = new Array(n);
       for (j = 0; j < n; ++j) {
-        neighbors[j] = { inlinks: [], outlinks: [] };
+        neighbors[j] = { 
+          inlinks: [], 
+          outlinks: [] 
+        };
       }
       for (j = 0; j < m; ++j) {
-        var o = links[j];
-        neighbors[o.source.index].outlinks.push(o);
-        neighbors[o.target.index].inlinks.push(o);
+        o = links[j];
+        dir = o.direction || 1;               // bitfield: 1 (bit 0) = source->target, 2 (bit 1) = target->source.  Default: source->target (unidirectional)             
+        if (dir & 1) {
+          neighbors[o.source.index].outlinks.push(o);
+          neighbors[o.target.index].inlinks.push(o);
+        }
+        if (dir & 2) {
+          neighbors[o.source.index].inlinks.push(o);
+          neighbors[o.target.index].outlinks.push(o);
+        }
       }
     }
     return neighbors[i];
@@ -552,5 +581,9 @@ function d3_layout_forceAccumulate(quad, alpha, charges) {
 
 var d3_layout_forceLinkDistance = 20,
     d3_layout_forceLinkStrength = 1,
-    d3_layout_forceChargeDistance2 = Infinity;
-
+    d3_layout_forceChargeDistance2 = Infinity,
+    d3_layout_forceEpsilon = 0.1, // minimal distance-squared for which the approximation holds; any smaller distance is assumed to be this large to prevent instable approximations
+    d3_layout_forceFriction = .9,
+    d3_layout_forceCharge = -30,
+    d3_layout_forceGravity = .1,
+    d3_layout_forceTheta2 = .64;
