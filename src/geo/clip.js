@@ -24,8 +24,18 @@ function d3_geo_clip(pointVisible, clipLine, interpolate, clipStart) {
         clip.lineStart = lineStart;
         clip.lineEnd = lineEnd;
 
-        d3_geo_clipPolygon(d3.merge(segments), d3_geo_clipSort, d3_geo_pointInPolygon(rotatedClipStart, polygon), d3_geo_clipRingInRing, interpolate, listener);
-
+        segments = d3.merge(segments);
+        var clipStartInside = d3_geo_pointInPolygon(rotatedClipStart, polygon);
+        if (segments.length) {
+          if (!polygonStarted) listener.polygonStart(), polygonStarted = true;
+          d3_geo_clipPolygon(segments, d3_geo_clipSort, clipStartInside, interpolate, listener);
+        } else if (clipStartInside) {
+          if (!polygonStarted) listener.polygonStart(), polygonStarted = true;
+          listener.lineStart();
+          interpolate(null, null, 1, listener);
+          listener.lineEnd();
+        }
+        if (polygonStarted) listener.polygonEnd(), polygonStarted = false;
         segments = polygon = null;
       },
       sphere: function() {
@@ -52,6 +62,7 @@ function d3_geo_clip(pointVisible, clipLine, interpolate, clipStart) {
 
     var buffer = d3_geo_clipBufferListener(),
         ringListener = clipLine(buffer),
+        polygonStarted = false,
         polygon,
         ring;
 
@@ -72,6 +83,7 @@ function d3_geo_clip(pointVisible, clipLine, interpolate, clipStart) {
 
       var clean = ringListener.clean(),
           ringSegments = buffer.buffer(),
+          segment,
           n = ringSegments.length;
 
       ring.pop();
@@ -79,6 +91,21 @@ function d3_geo_clip(pointVisible, clipLine, interpolate, clipStart) {
       ring = null;
 
       if (!n) return;
+
+      // No intersections.
+      if (clean & 1) {
+        segment = ringSegments[0];
+        var n = segment.length - 1,
+            i = -1,
+            point;
+        if (n > 0) {
+          if (!polygonStarted) listener.polygonStart(), polygonStarted = true;
+          listener.lineStart();
+          while (++i < n) listener.point((point = segment[i])[0], point[1]);
+          listener.lineEnd();
+        }
+        return;
+      }
 
       // Rejoin connected segments.
       // TODO reuse bufferListener.rejoin()?
@@ -102,8 +129,6 @@ function d3_geo_clipBufferListener() {
     lineStart: function() { lines.push(line = []); },
     point: function(λ, φ) { line.push([λ, φ]); },
     lineEnd: d3_noop,
-    polygonStart: d3_noop,
-    polygonEnd: d3_noop,
     buffer: function() {
       var buffer = lines;
       lines = [];
@@ -119,12 +144,6 @@ function d3_geo_clipBufferListener() {
 // Intersection points are sorted along the clip edge. For both antimeridian
 // cutting and circle clipping, the same comparison is used.
 function d3_geo_clipSort(a, b) {
-  return ((a = a.point)[0] < 0 ? a[1] - halfπ - ε : halfπ - a[1])
-       - ((b = b.point)[0] < 0 ? b[1] - halfπ - ε : halfπ - b[1]);
-}
-
-function d3_geo_clipRingInRing(a, b) {
-  return a.length < b.length
-      ? d3_geo_pointInPolygon(b[0], [a])
-      : d3_geo_pointInPolygon(a[0], [b]);
+  return ((a = a.x)[0] < 0 ? a[1] - halfπ - ε : halfπ - a[1])
+       - ((b = b.x)[0] < 0 ? b[1] - halfπ - ε : halfπ - b[1]);
 }
