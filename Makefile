@@ -1,3 +1,5 @@
+# See the README for installation instructions.
+
 UGLIFY = node_modules/.bin/uglifyjs
 SMASH = node_modules/.bin/smash
 
