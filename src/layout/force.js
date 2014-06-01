@@ -150,8 +150,7 @@ d3.layout.force = function() {
     if (k = alpha * gravity_f.call(this)) {
       x = size[0] / 2;
       y = size[1] / 2;
-      i = -1;
-      while (++i < n) {
+      for (i = 0; i < n; ++i) {
         o = nodes[i];
         o.x += (x - o.x) * k;
         o.y += (y - o.y) * k;
@@ -415,7 +414,7 @@ d3.layout.force = function() {
       var j,
           n = nodes.length,
           m = links.length;
-      neighbors = [];
+      neighbors = new Array(n);
       for (j = 0; j < n; ++j) {
         neighbors[j] = { inlinks: [], outlinks: [] };
       }
