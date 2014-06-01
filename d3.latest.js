@@ -174,8 +174,8 @@ d3.bisect = d3.bisectRight = d3_bisect.right;
 
 d3.bisector = function(f) {
   return d3_bisector(f.length === 1
-      ? function(d, x) { 
-        return d3_ascending(f(d), x); 
+      ? function(d, x) {
+        return d3_ascending(f(d), x);
       }
       : f);
 };
@@ -298,8 +298,8 @@ function d3_class(ctor, properties) {
 d3.map = function(object) {
   var map = new d3_Map();
   if (object instanceof d3_Map) {
-    object.forEach(function(key, value) { 
-      map.set(key, value); 
+    object.forEach(function(key, value) {
+      map.set(key, value);
     });
   } else {
     for (var key in object) {
@@ -1618,7 +1618,7 @@ d3.behavior.drag = function() {
             dy = p[1] - origin_[1];
 
         dispatch({
-	  type: "dragend",
+          type: "dragend",
           x: p[0] + offset[0],
           y: p[1] + offset[1],
           dx: dx,
@@ -2552,17 +2552,17 @@ d3.functor = d3_functor;
 d3.variance = function(array, f) {
   var n   = array.length;
   if(n < 2) return NaN;
-  
+
   var mean = d3.mean(array, f),
       a,
       sd   = 0,
       i    = -1,
       j    = 0;
-  
+
   if (arguments.length === 1) {
     while (++i < n){
       if (d3_number(a = array[i])){
-        sd += Math.pow(a - mean, 2); 
+        sd += Math.pow(a - mean, 2);
         ++j;
       }
     }
@@ -2571,7 +2571,7 @@ d3.variance = function(array, f) {
     while (++i < n) if (d3_number(a = f.call(array, array[i], i))) evaluatedArray.push(a);
     return d3.variance(evaluatedArray);
   }
-  
+
   sd /= (j - 1);
   return j ? sd : NaN;
 };
@@ -2885,7 +2885,7 @@ var d3_timer_queueHead,
     d3_timer_active, // active timer object
     d3_timer_frame = (typeof d3_window === 'undefined' ? false :
                          d3_window[d3_vendorSymbol(d3_window, "requestAnimationFrame")]) ||
-					 function(callback) { setTimeout(callback, 17); };
+                     function(callback) { setTimeout(callback, 17); };
 
 // The timer will continue to fire until callback returns true.
 d3.timer = function(callback, delay, then) {
@@ -8440,54 +8440,103 @@ d3.layout.force = function() {
       size = [1, 1],
       drag,
       alpha,
-      interval,
       nodes = [],
       links = [],
       distances,
       strengths,
       neighbors,
-      epsilon = 0.1, // minimal distance-squared for which the approximation holds; any smaller distance is assumed to be this large to prevent instable approximations
       charges,
       charge_abssum = -1, // negative value signals the need to recalculate this one
-      gravity_f,
-      theta2_f,
-	  has_theta2_f = false,
+      update_charge_on_every_tick = false,
+      update_linkStrength_on_every_tick = false,
+      update_linkDistance_on_every_tick = false,
+      repulsor = false,
+      has_theta2_f = false,
       // These model parameters can be either a function or a direct numeric value:
-      friction = .9,
+      friction = d3_layout_forceFriction,
       linkDistance = d3_layout_forceLinkDistance,
       linkStrength = d3_layout_forceLinkStrength,
-      charge = -30,
+      charge = d3_layout_forceCharge,
       chargeDistance2 = d3_layout_forceChargeDistance2,
-      gravity = .1,
-      theta2 = .64,
-      repulsor = false;
+      gravity = d3_layout_forceGravity,
+      theta2 = d3_layout_forceTheta2,
+      epsilon = d3_layout_forceEpsilon; // minimal distance-squared for which the approximation holds; any smaller distance is assumed to be this large to prevent instable approximations
 
-  setup_model_parameter_functors();
 
-  function setup_model_parameter_functors() {
-    gravity_f = d3_functor(gravity);
-    theta2_f = d3_functor(theta2);
-	has_theta2_f = (typeof theta2 === "function");
+  function update_linkDistances() {
+    var i;
+    var m = links.length;
+    var f = linkDistance; 
+
+    distances = new Array(m);
+    // for maximum performance, only use the function when there actually is the need for it:
+    if (typeof f === 'function') {
+      for (i = 0; i < m; ++i) {
+        distances[i] = +f.call(this, links[i], i);
+      }
+    } else {
+      for (i = 0; i < m; ++i) {
+        distances[i] = f;
+      }
+    }
+  }
+
+  function update_linkStrengths() {
+    var i;
+    var m = links.length;
+    var f = linkStrength; 
+
+    strengths = new Array(m);
+    if (typeof f === 'function') {
+      for (i = 0; i < m; ++i) {
+        strengths[i] = +f.call(this, links[i], i);
+      }
+    } else {
+      for (i = 0; i < m; ++i) {
+        strengths[i] = f;
+      }
+    }
+  }
+
+  function update_charges() {
+    var i, j, o;
+    var n = nodes.length;
+    var f = charge; 
+
+    charges = new Array(n);
+    if (typeof f === 'function') {
+      j = 0;
+      for (i = 0; i < n; ++i) {
+        charges[i] = o = +f.call(this, nodes[i], i);
+        j += Math.abs(o);
+      }
+    } else {
+      for (i = 0; i < n; ++i) {
+        charges[i] = f;
+      }
+      j = n * Math.abs(f);
+    }
+    charge_abssum = j;
   }
 
   function repulse(node, i) {
+    // x1, y1, x2, y2 define the (squarified) bounds of the area occupied by this `quad` object, as calculated by the quadtree.
     return function(quad, x1, y1, x2, y2) {
       if (quad.point !== node) {
         var dx = quad.cx - node.x,
             dy = quad.cy - node.y,
-            dw = x2 - x1,
             l = dx * dx + dy * dy,
             dn = 1 / Math.max(epsilon, l),
             k = quad.charge * dn,
             th2;
-			
-		if (has_theta2_f) {
-			// when this is a FUNCTION it calculates theta, NOT theta�!
-			th2 = theta2_f.call(this, node, i, quad, l, x1, x2, k);
-			th2 *= th2;
-		} else {
-			th2 = theta2;
-		}
+
+        if (has_theta2_f) {
+          // when this is a FUNCTION it calculates theta, NOT theta�!
+          th2 = theta2.call(this, node, i, quad, l, k, x1, y1, x2, y2);
+          th2 *= th2;
+        } else {
+          th2 = theta2;
+        }
 
         /*
         Based on the Barnes-Hut criterion.
@@ -8510,7 +8559,7 @@ d3.layout.force = function() {
         child nodes.
         */
         if (l * k * k < th2) {
-		  if (l < chargeDistance2) {
+          if (l < chargeDistance2) {
             k *= alpha;
             node.px -= dx * k;
             node.py -= dy * k;
@@ -8554,56 +8603,83 @@ d3.layout.force = function() {
         x, // x-distance
         y; // y-distance
 
-    // gauss-seidel relaxation for links
+    if (update_linkStrength_on_every_tick) {
+      update_linkStrengths.call(this);
+    }
+    if (update_linkDistance_on_every_tick) {
+      update_linkDistances.call(this);
+    }
+
+    // Gauss-Seidel relaxation for links
     for (i = 0; i < m; ++i) {
       o = links[i];
       s = o.source;
       t = o.target;
       x = t.x - s.x;
       y = t.y - s.y;
-      if (l = (x * x + y * y)) {
-        l = alpha * strengths[i] * ((l = Math.sqrt(l)) - distances[i]) / l;
-        x *= l;
-        y *= l;
-        t.x -= x * (k = s.weight / (t.weight + s.weight));
-        t.y -= y * k;
-        s.x += x * (k = 1 - k);
-        s.y += y * k;
-      }
+      l = x * x + y * y;
+      // We are going to assume that *any* link has a distance and that source and target node
+      // being at the exact same location is a (temporary) mistake. This fixes obscure rendering
+      // artifacts for some graphs.
+      //
+      // At the same time we recognize that users MAY want multiple (linked) nodes to exist at
+      // the *exact same position*: 
+      // for those uses the `linkDistance` can be specified as a *function* which 
+      // SHOULD return *zero*(0) for such links which bind two linked-and-at-the-same-position 
+      // nodes together. By having a distance goal of zero the
+      // relaxation code will help you by attempting to keep the nodes at the same location.
+      // Do note that ensuring both such linked nodes having a mutual charge of *zero* will
+      // help you in achieving the goal of keeping them together like that.
+      //
+      // Meanwhile we dampen the craziness that otherwise ensues for very short distances:  
+      l = Math.max(epsilon, l);
+      // and apply *damped* Gauss-Seidel relaxation:
+      k = Math.sqrt(l);
+      l = alpha * strengths[i] * (k - distances[i]) / l;
+      x *= l;
+      y *= l;
+      // and distribute change based on arity
+      k = s.weight / (t.weight + s.weight);
+      t.x -= x * k;
+      t.y -= y * k;
+      k = 1 - k;
+      s.x += x * k;
+      s.y += y * k;
     }
 
     // apply gravity forces
-    if (k = alpha * gravity_f.call(this)) {
-      x = size[0] / 2;
-      y = size[1] / 2;
-      i = -1;
-      while (++i < n) {
-        o = nodes[i];
-        o.x += (x - o.x) * k;
-        o.y += (y - o.y) * k;
+    //
+    // Note that gravity MAY vary for each node when it is specified as a function:
+    // this may sound rather 'SF' but there are benefits to have when nodes are
+    // more or less 'subject to gravity': special force rendering can be accomplished
+    // without having to go to abject lengths in adding 'hidden nodes' or other hacks
+    // to tweak the charges and thus the forces.
+    // 
+    // Here we let the gravity function adjust the nodes' positions.  
+    if (typeof gravity === 'function') {
+      if (alpha) {
+        gravity.call(this, nodes, n, alpha, size);
+      }
+    } else {
+      k = alpha * gravity;
+      if (k) {
+        x = size[0] / 2;
+        y = size[1] / 2;
+        for (i = 0; i < n; ++i) {
+          o = nodes[i];
+          o.x += (x - o.x) * k;
+          o.y += (y - o.y) * k;
+        }
       }
     }
 
     // compute quadtree center of mass and apply charge forces
     q = d3.geom.quadtree(nodes);
     // recalculate charges on every tick if need be:
-    if (charge_abssum < 0 || typeof charge === "function" || isFinite(chargeDistance2)) {
-      charges = [];
-      if (typeof charge === "function") {
-        f = 0;
-        for (i = 0; i < n; ++i) {
-          charges[i] = k = +charge.call(this, nodes[i], i, q);
-          f += Math.abs(k);
-        }
-      } else {
-        for (i = 0; i < n; ++i) {
-          charges[i] = charge;
-        }
-        f = n * Math.abs(charge);
-      }
-      charge_abssum = f;
+    if (charge_abssum < 0 || update_charge_on_every_tick) {
+      update_charges.call(this);
     }
-    if (charge_abssum != 0) {
+    if (charge_abssum !== 0) {
       d3_layout_forceAccumulate(q, alpha, charges);
       for (i = 0; i < n; ++i) {
         if (!(o = nodes[i]).fixed) {
@@ -8611,12 +8687,12 @@ d3.layout.force = function() {
         }
       }
     }
-    if (typeof repulsor === "function") {
+    if (typeof repulsor === 'function') {
       repulsor.call(this, q, charges, distances, strengths);
     }
 
     // position verlet integration
-    if (typeof friction === "function") {
+    if (typeof friction === 'function') {
       for (i = 0; i < n; ++i) {
         o = nodes[i];
         if (o.fixed) {
@@ -8647,13 +8723,13 @@ d3.layout.force = function() {
 
   force.nodes = function(x) {
     if (!arguments.length) return nodes;
-    nodes = x;
+    nodes = x || [];
     return force;
   };
 
   force.links = function(x) {
     if (!arguments.length) return links;
-    links = x;
+    links = x || [];
     return force;
   };
 
@@ -8664,34 +8740,42 @@ d3.layout.force = function() {
 
   force.size = function(x) {
     if (!arguments.length) return size;
-    size = x;
+    size = x || [1, 1];
+    if (!size[0]) size[0] = 1;
+    if (!size[1]) size[1] = 1;
     return force;
   };
 
-  force.linkDistance = function(x) {
+  force.linkDistance = function(x, update_each_tick) {
     if (!arguments.length) return linkDistance;
-    linkDistance = typeof x === "function" ? x : +x;
+    var has_linkDistance_f = (typeof x === 'function');
+    linkDistance = (has_linkDistance_f ? x : +x);
+    update_linkDistance_on_every_tick = (update_each_tick == null ? has_linkDistance_f : update_each_tick);  
     return force;
   };
 
   // For backwards-compatibility.
   force.distance = force.linkDistance;
 
-  force.linkStrength = function(x) {
+  force.linkStrength = function(x, update_each_tick) {
     if (!arguments.length) return linkStrength;
-    linkStrength = typeof x === "function" ? x : +x;
+    var has_linkStrength_f = (typeof x === 'function');
+    linkStrength = (has_linkStrength_f ? x : +x);
+    update_linkStrength_on_every_tick = (update_each_tick == null ? has_linkStrength_f : update_each_tick);  
     return force;
   };
 
   force.friction = function(x) {
     if (!arguments.length) return friction;
-    friction = typeof x === "function" ? x : +x;
+    friction = typeof x === 'function' ? x : +x;
     return force;
   };
 
-  force.charge = function(x) {
+  force.charge = function(x, update_each_tick) {
     if (!arguments.length) return charge;
-    charge = typeof x === "function" ? x : +x;
+    var has_charge_f = (typeof x === 'function');
+    charge = (has_charge_f ? x : +x);
+    update_charge_on_every_tick = (update_each_tick == null ? has_charge_f : update_each_tick);  
     charge_abssum = -1;
     return force;
   };
@@ -8704,29 +8788,30 @@ d3.layout.force = function() {
 
   force.gravity = function(x) {
     if (!arguments.length) return gravity;
-    gravity = typeof x === "function" ? x : +x;
-    setup_model_parameter_functors();
+    gravity = typeof x === 'function' ? x : +x;
     return force;
   };
 
   force.repulsor = function(x) {
     if (!arguments.length) return repulsor;
-    repulsor = typeof x === "function" ? x : false;
+    repulsor = typeof x === 'function' ? x : false;
     return force;
   };
 
   force.theta = function(x) {
     if (!arguments.length) {
-	  if (has_theta2_f) {
-	    return theta2;
-	  } else {
-	    return Math.sqrt(theta2);
-	  }
-	}
-	// set theta2 to x� when x is a value (this is done as a calculation optimization for when rendering the force graph).
-	// When x is a function, we need to do the squaring on every quad on every iteration anyhow.
-    theta2 = typeof x === "function" ? x : x * x;
-    setup_model_parameter_functors();
+      if (has_theta2_f) {
+        return theta2;
+      } else {
+        return Math.sqrt(theta2);
+      }
+    }
+    // Set theta2 to x� when x is a value.
+    // (This is done as a calculation optimization for when rendering the force graph.)
+    //
+    // When x is a function, we need to do the squaring on every quad on every iteration anyhow.
+    has_theta2_f = (typeof x === 'function');
+    theta2 = has_theta2_f ? x : x * x;
     return force;
   };
 
@@ -8734,10 +8819,10 @@ d3.layout.force = function() {
     if (!arguments.length) return alpha;
 
     x = +x;
-    if (alpha) { // if we're already running
-      if (x > 0) alpha = x; // we might keep it hot
-      else alpha = 0; // or, next tick will dispatch "end"
-    } else if (x > 0) { // otherwise, fire it up!
+    if (alpha) {                  // if we're already running
+      if (x > 0) alpha = x;       // we might keep it hot
+      else alpha = 0;             // or, next tick will dispatch "end"
+    } else if (x > 0) {           // otherwise, fire it up!
       event.start({type: "start", alpha: alpha = x});
       d3.timer(force.tick);
     }
@@ -8746,7 +8831,7 @@ d3.layout.force = function() {
   };
 
   force.start = function() {
-    var i, j,
+    var i,
         n = nodes.length,
         m = links.length,
         w = size[0],
@@ -8754,14 +8839,15 @@ d3.layout.force = function() {
         o;
 
     for (i = 0; i < n; ++i) {
-      (o = nodes[i]).index = i;
+      o = nodes[i];
+      o.index = i;
       o.weight = 0;
     }
 
     for (i = 0; i < m; ++i) {
       o = links[i];
-      if (typeof o.source == "number") o.source = nodes[o.source];
-      if (typeof o.target == "number") o.target = nodes[o.target];
+      if (typeof o.source === "number") o.source = nodes[o.source];
+      if (typeof o.target === "number") o.target = nodes[o.target];
       ++o.source.weight;
       ++o.target.weight;
     }
@@ -8774,43 +8860,9 @@ d3.layout.force = function() {
       if (isNaN(o.py)) o.py = o.y;
     }
 
-    distances = [];
-    // for maximum performance, only use the function when there actually is the need for it:
-    if (typeof linkDistance === "function") {
-      for (i = 0; i < m; ++i) {
-        distances[i] = +linkDistance.call(this, links[i], i);
-      }
-    } else {
-      for (i = 0; i < m; ++i) {
-        distances[i] = linkDistance;
-      }
-    }
-
-    strengths = [];
-    if (typeof linkStrength === "function") {
-      for (i = 0; i < m; ++i) {
-        strengths[i] = +linkStrength.call(this, links[i], i);
-      }
-    } else {
-      for (i = 0; i < m; ++i) {
-        strengths[i] = linkStrength;
-      }
-    }
-
-    charges = [];
-    if (typeof charge === "function") {
-      j = 0;
-      for (i = 0; i < n; ++i) {
-        charges[i] = o = +charge.call(this, nodes[i], i);
-        j += Math.abs(o);
-      }
-    } else {
-      for (i = 0; i < n; ++i) {
-        charges[i] = charge;
-      }
-      j = n * Math.abs(charge);
-    }
-    charge_abssum = j;
+    update_linkDistances.call(this);
+    update_linkStrengths.call(this);
+    update_charges.call(this);
 
     // inherit node position from first neighbor with defined position
     // or if no such neighbors, initialize node position randomly
@@ -8838,17 +8890,27 @@ d3.layout.force = function() {
   // initialize neighbors lazily
   function neighbor(i) {
     if (!neighbors) {
-      var j,
+      var j, o, dir,
           n = nodes.length,
           m = links.length;
-      neighbors = [];
+      neighbors = new Array(n);
       for (j = 0; j < n; ++j) {
-        neighbors[j] = { inlinks: [], outlinks: [] };
+        neighbors[j] = { 
+          inlinks: [], 
+          outlinks: [] 
+        };
       }
       for (j = 0; j < m; ++j) {
-        var o = links[j];
-        neighbors[o.source.index].outlinks.push(o);
-        neighbors[o.target.index].inlinks.push(o);
+        o = links[j];
+        dir = o.direction || 1;               // bitfield: 1 (bit 0) = source->target, 2 (bit 1) = target->source.  Default: source->target (unidirectional)             
+        if (dir & 1) {
+          neighbors[o.source.index].outlinks.push(o);
+          neighbors[o.target.index].inlinks.push(o);
+        }
+        if (dir & 2) {
+          neighbors[o.source.index].inlinks.push(o);
+          neighbors[o.target.index].outlinks.push(o);
+        }
       }
     }
     return neighbors[i];
@@ -8944,8 +9006,12 @@ function d3_layout_forceAccumulate(quad, alpha, charges) {
 
 var d3_layout_forceLinkDistance = 20,
     d3_layout_forceLinkStrength = 1,
-    d3_layout_forceChargeDistance2 = Infinity;
-
+    d3_layout_forceChargeDistance2 = Infinity,
+    d3_layout_forceEpsilon = 0.1, // minimal distance-squared for which the approximation holds; any smaller distance is assumed to be this large to prevent instable approximations
+    d3_layout_forceFriction = .9,
+    d3_layout_forceCharge = -30,
+    d3_layout_forceGravity = .1,
+    d3_layout_forceTheta2 = .64;
 
 d3.layout.hierarchy = function() {
   var sort = d3_layout_hierarchySort,
@@ -10533,7 +10599,7 @@ function d3_scale_linearNice(domain, m) {
 
 function d3_scale_linearTickRange(domain, m, subdiv_count) {
   m = m || 10;
-  subdiv_count = subdiv_count || 1;  
+  subdiv_count = subdiv_count || 1;
 
   var extent = d3_scaleExtent(domain),
       span = extent[1] - extent[0],
@@ -10743,14 +10809,14 @@ function d3_scale_log(linear, base, positive, domain) {
 
 var d3_scale_logFormat = d3.format(".0E"),
     d3_scale_logNiceNegative = {
-        floor: function(x) { 
-            return -Math.ceil(-x); 
-        }, 
-        ceil: function(x) { 
-            return -Math.floor(-x); 
-        }
+      floor: function(x) {
+        return -Math.ceil(-x);
+      },
+      ceil: function(x) {
+        return -Math.floor(-x);
+      }
     };
-    
+
 
 d3.scale.pow = function() {
   return d3_scale_pow(d3.scale.linear(), 1, [0, 1]);
@@ -12874,8 +12940,8 @@ d3.svg.axis = function() {
         // and so can fade-out in the old scale’s position.
         if (scale1.rangeBand) {
           var x = scale1, dx = x.rangeBand() / 2;
-          scale0 = scale1 = function(d) { 
-            return x(d) + dx; 
+          scale0 = scale1 = function(d) {
+            return x(d) + dx;
           };
         } else if (scale0.rangeBand) {
           scale0 = scale1;

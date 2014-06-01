@@ -6335,19 +6335,62 @@
     return chord;
   };
   d3.layout.force = function() {
-    var force = {}, event = d3.dispatch("start", "tick", "end"), size = [ 1, 1 ], drag, alpha, interval, nodes = [], links = [], distances, strengths, neighbors, epsilon = .1, charges, charge_abssum = -1, gravity_f, theta2_f, has_theta2_f = false, friction = .9, linkDistance = d3_layout_forceLinkDistance, linkStrength = d3_layout_forceLinkStrength, charge = -30, chargeDistance2 = d3_layout_forceChargeDistance2, gravity = .1, theta2 = .64, repulsor = false;
-    setup_model_parameter_functors();
-    function setup_model_parameter_functors() {
-      gravity_f = d3_functor(gravity);
-      theta2_f = d3_functor(theta2);
-      has_theta2_f = typeof theta2 === "function";
+    var force = {}, event = d3.dispatch("start", "tick", "end"), size = [ 1, 1 ], drag, alpha, nodes = [], links = [], distances, strengths, neighbors, charges, charge_abssum = -1, update_charge_on_every_tick = false, update_linkStrength_on_every_tick = false, update_linkDistance_on_every_tick = false, repulsor = false, has_theta2_f = false, friction = d3_layout_forceFriction, linkDistance = d3_layout_forceLinkDistance, linkStrength = d3_layout_forceLinkStrength, charge = d3_layout_forceCharge, chargeDistance2 = d3_layout_forceChargeDistance2, gravity = d3_layout_forceGravity, theta2 = d3_layout_forceTheta2, epsilon = d3_layout_forceEpsilon;
+    function update_linkDistances() {
+      var i;
+      var m = links.length;
+      var f = linkDistance;
+      distances = new Array(m);
+      if (typeof f === "function") {
+        for (i = 0; i < m; ++i) {
+          distances[i] = +f.call(this, links[i], i);
+        }
+      } else {
+        for (i = 0; i < m; ++i) {
+          distances[i] = f;
+        }
+      }
+    }
+    function update_linkStrengths() {
+      var i;
+      var m = links.length;
+      var f = linkStrength;
+      strengths = new Array(m);
+      if (typeof f === "function") {
+        for (i = 0; i < m; ++i) {
+          strengths[i] = +f.call(this, links[i], i);
+        }
+      } else {
+        for (i = 0; i < m; ++i) {
+          strengths[i] = f;
+        }
+      }
+    }
+    function update_charges() {
+      var i, j, o;
+      var n = nodes.length;
+      var f = charge;
+      charges = new Array(n);
+      if (typeof f === "function") {
+        j = 0;
+        for (i = 0; i < n; ++i) {
+          charges[i] = o = +f.call(this, nodes[i], i);
+          j += Math.abs(o);
+        }
+      } else {
+        for (i = 0; i < n; ++i) {
+          charges[i] = f;
+        }
+        j = n * Math.abs(f);
+      }
+      charge_abssum = j;
     }
     function repulse(node, i) {
       return function(quad, x1, y1, x2, y2) {
         if (quad.point !== node) {
-          var dx = quad.cx - node.x, dy = quad.cy - node.y, dw = x2 - x1, l = dx * dx + dy * dy, dn = 1 / Math.max(epsilon, l), k = quad.charge * dn, th2;
+          var dx = quad.cx - node.x, dy = quad.cy - node.y, l = dx * dx + dy * dy, dn = 1 / Math.max(epsilon, l), k = quad.charge * dn, th2;
           if (has_theta2_f) {
-            th2 = theta2_f.call(this, node, i, quad, l, x1, x2, k);
+            th2 = theta2.call(this, node, i, quad, l, k, x1, y1, x2, y2);
             th2 *= th2;
           } else {
             th2 = theta2;
@@ -6378,50 +6421,52 @@
         return true;
       }
       var n = nodes.length, m = links.length, q, f, i, o, s, t, l, k, x, y;
+      if (update_linkStrength_on_every_tick) {
+        update_linkStrengths.call(this);
+      }
+      if (update_linkDistance_on_every_tick) {
+        update_linkDistances.call(this);
+      }
       for (i = 0; i < m; ++i) {
         o = links[i];
         s = o.source;
         t = o.target;
         x = t.x - s.x;
         y = t.y - s.y;
-        if (l = x * x + y * y) {
-          l = alpha * strengths[i] * ((l = Math.sqrt(l)) - distances[i]) / l;
-          x *= l;
-          y *= l;
-          t.x -= x * (k = s.weight / (t.weight + s.weight));
-          t.y -= y * k;
-          s.x += x * (k = 1 - k);
-          s.y += y * k;
-        }
+        l = x * x + y * y;
+        l = Math.max(epsilon, l);
+        k = Math.sqrt(l);
+        l = alpha * strengths[i] * (k - distances[i]) / l;
+        x *= l;
+        y *= l;
+        k = s.weight / (t.weight + s.weight);
+        t.x -= x * k;
+        t.y -= y * k;
+        k = 1 - k;
+        s.x += x * k;
+        s.y += y * k;
       }
-      if (k = alpha * gravity_f.call(this)) {
-        x = size[0] / 2;
-        y = size[1] / 2;
-        i = -1;
-        while (++i < n) {
-          o = nodes[i];
-          o.x += (x - o.x) * k;
-          o.y += (y - o.y) * k;
+      if (typeof gravity === "function") {
+        if (alpha) {
+          gravity.call(this, nodes, n, alpha, size);
+        }
+      } else {
+        k = alpha * gravity;
+        if (k) {
+          x = size[0] / 2;
+          y = size[1] / 2;
+          for (i = 0; i < n; ++i) {
+            o = nodes[i];
+            o.x += (x - o.x) * k;
+            o.y += (y - o.y) * k;
+          }
         }
       }
       q = d3.geom.quadtree(nodes);
-      if (charge_abssum < 0 || typeof charge === "function" || isFinite(chargeDistance2)) {
-        charges = [];
-        if (typeof charge === "function") {
-          f = 0;
-          for (i = 0; i < n; ++i) {
-            charges[i] = k = +charge.call(this, nodes[i], i, q);
-            f += Math.abs(k);
-          }
-        } else {
-          for (i = 0; i < n; ++i) {
-            charges[i] = charge;
-          }
-          f = n * Math.abs(charge);
-        }
-        charge_abssum = f;
+      if (charge_abssum < 0 || update_charge_on_every_tick) {
+        update_charges.call(this);
       }
-      if (charge_abssum != 0) {
+      if (charge_abssum !== 0) {
         d3_layout_forceAccumulate(q, alpha, charges);
         for (i = 0; i < n; ++i) {
           if (!(o = nodes[i]).fixed) {
@@ -6465,12 +6510,12 @@
     };
     force.nodes = function(x) {
       if (!arguments.length) return nodes;
-      nodes = x;
+      nodes = x || [];
       return force;
     };
     force.links = function(x) {
       if (!arguments.length) return links;
-      links = x;
+      links = x || [];
       return force;
     };
     force.neighbors = function() {
@@ -6479,18 +6524,24 @@
     };
     force.size = function(x) {
       if (!arguments.length) return size;
-      size = x;
+      size = x || [ 1, 1 ];
+      if (!size[0]) size[0] = 1;
+      if (!size[1]) size[1] = 1;
       return force;
     };
-    force.linkDistance = function(x) {
+    force.linkDistance = function(x, update_each_tick) {
       if (!arguments.length) return linkDistance;
-      linkDistance = typeof x === "function" ? x : +x;
+      var has_linkDistance_f = typeof x === "function";
+      linkDistance = has_linkDistance_f ? x : +x;
+      update_linkDistance_on_every_tick = update_each_tick == null ? has_linkDistance_f : update_each_tick;
       return force;
     };
     force.distance = force.linkDistance;
-    force.linkStrength = function(x) {
+    force.linkStrength = function(x, update_each_tick) {
       if (!arguments.length) return linkStrength;
-      linkStrength = typeof x === "function" ? x : +x;
+      var has_linkStrength_f = typeof x === "function";
+      linkStrength = has_linkStrength_f ? x : +x;
+      update_linkStrength_on_every_tick = update_each_tick == null ? has_linkStrength_f : update_each_tick;
       return force;
     };
     force.friction = function(x) {
@@ -6498,9 +6549,11 @@
       friction = typeof x === "function" ? x : +x;
       return force;
     };
-    force.charge = function(x) {
+    force.charge = function(x, update_each_tick) {
       if (!arguments.length) return charge;
-      charge = typeof x === "function" ? x : +x;
+      var has_charge_f = typeof x === "function";
+      charge = has_charge_f ? x : +x;
+      update_charge_on_every_tick = update_each_tick == null ? has_charge_f : update_each_tick;
       charge_abssum = -1;
       return force;
     };
@@ -6512,7 +6565,6 @@
     force.gravity = function(x) {
       if (!arguments.length) return gravity;
       gravity = typeof x === "function" ? x : +x;
-      setup_model_parameter_functors();
       return force;
     };
     force.repulsor = function(x) {
@@ -6528,8 +6580,8 @@
           return Math.sqrt(theta2);
         }
       }
-      theta2 = typeof x === "function" ? x : x * x;
-      setup_model_parameter_functors();
+      has_theta2_f = typeof x === "function";
+      theta2 = has_theta2_f ? x : x * x;
       return force;
     };
     force.alpha = function(x) {
@@ -6547,15 +6599,16 @@
       return force;
     };
     force.start = function() {
-      var i, j, n = nodes.length, m = links.length, w = size[0], h = size[1], o;
+      var i, n = nodes.length, m = links.length, w = size[0], h = size[1], o;
       for (i = 0; i < n; ++i) {
-        (o = nodes[i]).index = i;
+        o = nodes[i];
+        o.index = i;
         o.weight = 0;
       }
       for (i = 0; i < m; ++i) {
         o = links[i];
-        if (typeof o.source == "number") o.source = nodes[o.source];
-        if (typeof o.target == "number") o.target = nodes[o.target];
+        if (typeof o.source === "number") o.source = nodes[o.source];
+        if (typeof o.target === "number") o.target = nodes[o.target];
         ++o.source.weight;
         ++o.target.weight;
       }
@@ -6566,40 +6619,9 @@
         if (isNaN(o.px)) o.px = o.x;
         if (isNaN(o.py)) o.py = o.y;
       }
-      distances = [];
-      if (typeof linkDistance === "function") {
-        for (i = 0; i < m; ++i) {
-          distances[i] = +linkDistance.call(this, links[i], i);
-        }
-      } else {
-        for (i = 0; i < m; ++i) {
-          distances[i] = linkDistance;
-        }
-      }
-      strengths = [];
-      if (typeof linkStrength === "function") {
-        for (i = 0; i < m; ++i) {
-          strengths[i] = +linkStrength.call(this, links[i], i);
-        }
-      } else {
-        for (i = 0; i < m; ++i) {
-          strengths[i] = linkStrength;
-        }
-      }
-      charges = [];
-      if (typeof charge === "function") {
-        j = 0;
-        for (i = 0; i < n; ++i) {
-          charges[i] = o = +charge.call(this, nodes[i], i);
-          j += Math.abs(o);
-        }
-      } else {
-        for (i = 0; i < n; ++i) {
-          charges[i] = charge;
-        }
-        j = n * Math.abs(charge);
-      }
-      charge_abssum = j;
+      update_linkDistances.call(this);
+      update_linkStrengths.call(this);
+      update_charges.call(this);
       function position(dimension, size, i) {
         var candidates = neighbor(i), j, m = candidates.outlinks.length, x;
         for (j = 0; j < m; ++j) {
@@ -6615,8 +6637,8 @@
     };
     function neighbor(i) {
       if (!neighbors) {
-        var j, n = nodes.length, m = links.length;
-        neighbors = [];
+        var j, o, dir, n = nodes.length, m = links.length;
+        neighbors = new Array(n);
         for (j = 0; j < n; ++j) {
           neighbors[j] = {
             inlinks: [],
@@ -6624,9 +6646,16 @@
           };
         }
         for (j = 0; j < m; ++j) {
-          var o = links[j];
-          neighbors[o.source.index].outlinks.push(o);
-          neighbors[o.target.index].inlinks.push(o);
+          o = links[j];
+          dir = o.direction || 1;
+          if (dir & 1) {
+            neighbors[o.source.index].outlinks.push(o);
+            neighbors[o.target.index].inlinks.push(o);
+          }
+          if (dir & 2) {
+            neighbors[o.source.index].inlinks.push(o);
+            neighbors[o.target.index].outlinks.push(o);
+          }
         }
       }
       return neighbors[i];
@@ -6688,7 +6717,7 @@
     quad.cx = cx / quad.charge;
     quad.cy = cy / quad.charge;
   }
-  var d3_layout_forceLinkDistance = 20, d3_layout_forceLinkStrength = 1, d3_layout_forceChargeDistance2 = Infinity;
+  var d3_layout_forceLinkDistance = 20, d3_layout_forceLinkStrength = 1, d3_layout_forceChargeDistance2 = Infinity, d3_layout_forceEpsilon = .1, d3_layout_forceFriction = .9, d3_layout_forceCharge = -30, d3_layout_forceGravity = .1, d3_layout_forceTheta2 = .64;
   d3.layout.hierarchy = function() {
     var sort = d3_layout_hierarchySort, children = d3_layout_hierarchyChildren, value = d3_layout_hierarchyValue;
     function hierarchy(root) {
