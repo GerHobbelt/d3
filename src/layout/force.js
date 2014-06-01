@@ -39,7 +39,6 @@ d3.layout.force = function() {
   setup_model_parameter_functors();
 
   function setup_model_parameter_functors() {
-    gravity_f = d3_functor(gravity);
     theta2_f = d3_functor(theta2);
     has_theta2_f = (typeof theta2 === "function");
   }
@@ -128,32 +127,66 @@ d3.layout.force = function() {
         x, // x-distance
         y; // y-distance
 
-    // gauss-seidel relaxation for links
+    // Gauss-Seidel relaxation for links
     for (i = 0; i < m; ++i) {
       o = links[i];
       s = o.source;
       t = o.target;
       x = t.x - s.x;
       y = t.y - s.y;
-      if (l = (x * x + y * y)) {
-        l = alpha * strengths[i] * ((l = Math.sqrt(l)) - distances[i]) / l;
-        x *= l;
-        y *= l;
-        t.x -= x * (k = s.weight / (t.weight + s.weight));
-        t.y -= y * k;
-        s.x += x * (k = 1 - k);
-        s.y += y * k;
-      }
+      l = x * x + y * y;
+      // We are going to assume that *any* link has a distance and that source and target node
+      // being at the exact same location is a (temporary) mistake. This fixes obscure rendering
+      // artifacts for some graphs.
+      //
+      // At the same time we recognize that users MAY want multiple (linked) nodes to exist at
+      // the *exact same position*: 
+      // for those uses the `linkDistance` can be specified as a *function* which 
+      // SHOULD return *zero*(0) for such links which bind two linked-and-at-the-same-position 
+      // nodes together. By having a distance goal of zero the
+      // relaxation code will help you by attempting to keep the nodes at the same location.
+      // Do note that ensuring both such linked nodes having a mutual charge of *zero* will
+      // help you in achieving the goal of keeping them together like that.
+      //
+      // Meanwhile we dampen the craziness that otherwise ensues for very short distances:  
+      l = Math.max(epsilon, l);
+      // and apply *damped* Gauss-Seidel relaxation:
+      k = Math.sqrt(l);
+      l = alpha * strengths[i] * (k - distances[i]) / l;
+      x *= l;
+      y *= l;
+      // and distribute change based on arity
+      k = s.weight / (t.weight + s.weight);
+      t.x -= x * k;
+      t.y -= y * k;
+      k = 1 - k;
+      s.x += x * k;
+      s.y += y * k;
     }
 
     // apply gravity forces
-    if (k = alpha * gravity_f.call(this)) {
-      x = size[0] / 2;
-      y = size[1] / 2;
-      for (i = 0; i < n; ++i) {
-        o = nodes[i];
-        o.x += (x - o.x) * k;
-        o.y += (y - o.y) * k;
+    //
+    // Note that gravity MAY vary for each node when it is specified as a function:
+    // this may sound rather 'SF' but there are benefits to have when nodes are
+    // more or less 'subject to gravity': special force rendering can be accomplished
+    // without having to go to abject lengths in adding 'hidden nodes' or other hacks
+    // to tweak the charges and thus the forces.
+    // 
+    // Here we let the gravity function adjust the nodes' positions.  
+    if (typeof gravity === "function") {
+      if (alpha) {
+        gravity_f.call(this, nodes, n, alpha, size);
+      }
+    } else {
+      k = alpha * gravity;
+      if (k) {
+        x = size[0] / 2;
+        y = size[1] / 2;
+        for (i = 0; i < n; ++i) {
+          o = nodes[i];
+          o.x += (x - o.x) * k;
+          o.y += (y - o.y) * k;
+        }
       }
     }
 
@@ -161,7 +194,7 @@ d3.layout.force = function() {
     q = d3.geom.quadtree(nodes);
     // recalculate charges on every tick if need be:
     if (charge_abssum < 0 || typeof charge === "function" || isFinite(chargeDistance2)) {
-      charges = [];
+      charges = new Array(n);
       if (typeof charge === "function") {
         f = 0;
         for (i = 0; i < n; ++i) {
@@ -278,7 +311,6 @@ d3.layout.force = function() {
   force.gravity = function(x) {
     if (!arguments.length) return gravity;
     gravity = typeof x === "function" ? x : +x;
-    setup_model_parameter_functors();
     return force;
   };
 
@@ -309,10 +341,10 @@ d3.layout.force = function() {
     if (!arguments.length) return alpha;
 
     x = +x;
-    if (alpha) { // if we're already running
-      if (x > 0) alpha = x; // we might keep it hot
-      else alpha = 0; // or, next tick will dispatch "end"
-    } else if (x > 0) { // otherwise, fire it up!
+    if (alpha) {                  // if we're already running
+      if (x > 0) alpha = x;       // we might keep it hot
+      else alpha = 0;             // or, next tick will dispatch "end"
+    } else if (x > 0) {           // otherwise, fire it up!
       event.start({type: "start", alpha: alpha = x});
       d3.timer(force.tick);
     }
@@ -329,7 +361,8 @@ d3.layout.force = function() {
         o;
 
     for (i = 0; i < n; ++i) {
-      (o = nodes[i]).index = i;
+      o = nodes[i];
+      o.index = i;
       o.weight = 0;
     }
 
@@ -349,7 +382,7 @@ d3.layout.force = function() {
       if (isNaN(o.py)) o.py = o.y;
     }
 
-    distances = [];
+    distances = new Array(m);
     // for maximum performance, only use the function when there actually is the need for it:
     if (typeof linkDistance === "function") {
       for (i = 0; i < m; ++i) {
@@ -361,7 +394,7 @@ d3.layout.force = function() {
       }
     }
 
-    strengths = [];
+    strengths = new Array(m);
     if (typeof linkStrength === "function") {
       for (i = 0; i < m; ++i) {
         strengths[i] = +linkStrength.call(this, links[i], i);
@@ -372,7 +405,7 @@ d3.layout.force = function() {
       }
     }
 
-    charges = [];
+    charges = new Array(n);
     if (typeof charge === "function") {
       j = 0;
       for (i = 0; i < n; ++i) {
