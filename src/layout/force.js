@@ -14,7 +14,6 @@ d3.layout.force = function() {
       size = [1, 1],
       drag,
       alpha,
-      interval,
       nodes = [],
       links = [],
       distances,
@@ -95,11 +94,11 @@ d3.layout.force = function() {
   }
 
   function repulse(node, i) {
+    // x1, y1, x2, y2 define the (squarified) bounds of the area occupied by this `quad` object, as calculated by the quadtree.
     return function(quad, x1, y1, x2, y2) {
       if (quad.point !== node) {
         var dx = quad.cx - node.x,
             dy = quad.cy - node.y,
-            dw = x2 - x1,
             l = dx * dx + dy * dy,
             dn = 1 / Math.max(epsilon, l),
             k = quad.charge * dn,
@@ -107,7 +106,7 @@ d3.layout.force = function() {
 
         if (has_theta2_f) {
           // when this is a FUNCTION it calculates theta, NOT theta²!
-          th2 = theta2.call(this, node, i, quad, l, x1, x2, k);
+          th2 = theta2.call(this, node, i, quad, l, k, x1, y1, x2, y2);
           th2 *= th2;
         } else {
           th2 = theta2;
@@ -406,7 +405,7 @@ d3.layout.force = function() {
   };
 
   force.start = function() {
-    var i, j,
+    var i,
         n = nodes.length,
         m = links.length,
         w = size[0],

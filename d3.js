@@ -6084,7 +6084,7 @@
     return chord;
   };
   d3.layout.force = function() {
-    var force = {}, event = d3.dispatch("start", "tick", "end"), size = [ 1, 1 ], drag, alpha, interval, nodes = [], links = [], distances, strengths, neighbors, charges, charge_abssum = -1, update_charge_on_every_tick = false, update_linkStrength_on_every_tick = false, update_linkDistance_on_every_tick = false, repulsor = false, has_theta2_f = false, friction = d3_layout_forceFriction, linkDistance = d3_layout_forceLinkDistance, linkStrength = d3_layout_forceLinkStrength, charge = d3_layout_forceCharge, chargeDistance2 = d3_layout_forceChargeDistance2, gravity = d3_layout_forceGravity, theta2 = d3_layout_forceTheta2, epsilon = d3_layout_forceEpsilon;
+    var force = {}, event = d3.dispatch("start", "tick", "end"), size = [ 1, 1 ], drag, alpha, nodes = [], links = [], distances, strengths, neighbors, charges, charge_abssum = -1, update_charge_on_every_tick = false, update_linkStrength_on_every_tick = false, update_linkDistance_on_every_tick = false, repulsor = false, has_theta2_f = false, friction = d3_layout_forceFriction, linkDistance = d3_layout_forceLinkDistance, linkStrength = d3_layout_forceLinkStrength, charge = d3_layout_forceCharge, chargeDistance2 = d3_layout_forceChargeDistance2, gravity = d3_layout_forceGravity, theta2 = d3_layout_forceTheta2, epsilon = d3_layout_forceEpsilon;
     function update_linkDistances() {
       var i;
       var m = links.length;
@@ -6137,9 +6137,9 @@
     function repulse(node, i) {
       return function(quad, x1, y1, x2, y2) {
         if (quad.point !== node) {
-          var dx = quad.cx - node.x, dy = quad.cy - node.y, dw = x2 - x1, l = dx * dx + dy * dy, dn = 1 / Math.max(epsilon, l), k = quad.charge * dn, th2;
+          var dx = quad.cx - node.x, dy = quad.cy - node.y, l = dx * dx + dy * dy, dn = 1 / Math.max(epsilon, l), k = quad.charge * dn, th2;
           if (has_theta2_f) {
-            th2 = theta2.call(this, node, i, quad, l, x1, x2, k);
+            th2 = theta2.call(this, node, i, quad, l, k, x1, y1, x2, y2);
             th2 *= th2;
           } else {
             th2 = theta2;
@@ -6215,7 +6215,7 @@
       if (charge_abssum < 0 || update_charge_on_every_tick) {
         update_charges.call(this);
       }
-      if (charge_abssum != 0) {
+      if (charge_abssum !== 0) {
         d3_layout_forceAccumulate(q, alpha, charges);
         for (i = 0; i < n; ++i) {
           if (!(o = nodes[i]).fixed) {
@@ -6348,7 +6348,7 @@
       return force;
     };
     force.start = function() {
-      var i, j, n = nodes.length, m = links.length, w = size[0], h = size[1], o;
+      var i, n = nodes.length, m = links.length, w = size[0], h = size[1], o;
       for (i = 0; i < n; ++i) {
         o = nodes[i];
         o.index = i;
