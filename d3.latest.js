@@ -8466,7 +8466,7 @@ d3.layout.force = function() {
   function update_linkDistances() {
     var i;
     var m = links.length;
-    var f = linkDistance; 
+    var f = linkDistance;
 
     distances = new Array(m);
     // for maximum performance, only use the function when there actually is the need for it:
@@ -8484,7 +8484,7 @@ d3.layout.force = function() {
   function update_linkStrengths() {
     var i;
     var m = links.length;
-    var f = linkStrength; 
+    var f = linkStrength;
 
     strengths = new Array(m);
     if (typeof f === 'function') {
@@ -8501,7 +8501,7 @@ d3.layout.force = function() {
   function update_charges() {
     var i, j, o;
     var n = nodes.length;
-    var f = charge; 
+    var f = charge;
 
     charges = new Array(n);
     if (typeof f === 'function') {
@@ -8623,15 +8623,15 @@ d3.layout.force = function() {
       // artifacts for some graphs.
       //
       // At the same time we recognize that users MAY want multiple (linked) nodes to exist at
-      // the *exact same position*: 
-      // for those uses the `linkDistance` can be specified as a *function* which 
-      // SHOULD return *zero*(0) for such links which bind two linked-and-at-the-same-position 
+      // the *exact same position*:
+      // for those uses the `linkDistance` can be specified as a *function* which
+      // SHOULD return *zero*(0) for such links which bind two linked-and-at-the-same-position
       // nodes together. By having a distance goal of zero the
       // relaxation code will help you by attempting to keep the nodes at the same location.
       // Do note that ensuring both such linked nodes having a mutual charge of *zero* will
       // help you in achieving the goal of keeping them together like that.
       //
-      // Meanwhile we dampen the craziness that otherwise ensues for very short distances:  
+      // Meanwhile we dampen the craziness that otherwise ensues for very short distances:
       l = Math.max(epsilon, l);
       // and apply *damped* Gauss-Seidel relaxation:
       k = Math.sqrt(l);
@@ -8654,8 +8654,8 @@ d3.layout.force = function() {
     // more or less 'subject to gravity': special force rendering can be accomplished
     // without having to go to abject lengths in adding 'hidden nodes' or other hacks
     // to tweak the charges and thus the forces.
-    // 
-    // Here we let the gravity function adjust the nodes' positions.  
+    //
+    // Here we let the gravity function adjust the nodes' positions.
     if (typeof gravity === 'function') {
       if (alpha) {
         gravity.call(this, nodes, n, alpha, size);
@@ -8750,7 +8750,7 @@ d3.layout.force = function() {
     if (!arguments.length) return linkDistance;
     var has_linkDistance_f = (typeof x === 'function');
     linkDistance = (has_linkDistance_f ? x : +x);
-    update_linkDistance_on_every_tick = (update_each_tick == null ? has_linkDistance_f : update_each_tick);  
+    update_linkDistance_on_every_tick = (update_each_tick == null ? has_linkDistance_f : update_each_tick);
     return force;
   };
 
@@ -8761,7 +8761,7 @@ d3.layout.force = function() {
     if (!arguments.length) return linkStrength;
     var has_linkStrength_f = (typeof x === 'function');
     linkStrength = (has_linkStrength_f ? x : +x);
-    update_linkStrength_on_every_tick = (update_each_tick == null ? has_linkStrength_f : update_each_tick);  
+    update_linkStrength_on_every_tick = (update_each_tick == null ? has_linkStrength_f : update_each_tick);
     return force;
   };
 
@@ -8775,7 +8775,7 @@ d3.layout.force = function() {
     if (!arguments.length) return charge;
     var has_charge_f = (typeof x === 'function');
     charge = (has_charge_f ? x : +x);
-    update_charge_on_every_tick = (update_each_tick == null ? has_charge_f : update_each_tick);  
+    update_charge_on_every_tick = (update_each_tick == null ? has_charge_f : update_each_tick);
     charge_abssum = -1;
     return force;
   };
@@ -8895,14 +8895,14 @@ d3.layout.force = function() {
           m = links.length;
       neighbors = new Array(n);
       for (j = 0; j < n; ++j) {
-        neighbors[j] = { 
-          inlinks: [], 
-          outlinks: [] 
+        neighbors[j] = {
+          inlinks: [],
+          outlinks: []
         };
       }
       for (j = 0; j < m; ++j) {
         o = links[j];
-        dir = o.direction || 1;               // bitfield: 1 (bit 0) = source->target, 2 (bit 1) = target->source.  Default: source->target (unidirectional)             
+        dir = o.direction || 1;               // bitfield: 1 (bit 0) = source->target, 2 (bit 1) = target->source.  Default: source->target (unidirectional)
         if (dir & 1) {
           neighbors[o.source.index].outlinks.push(o);
           neighbors[o.target.index].inlinks.push(o);
