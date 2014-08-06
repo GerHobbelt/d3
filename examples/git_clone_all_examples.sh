@@ -1238,16 +1238,55 @@ gist_add    6459889
 gist_add    6468148
 gist_add    6472779
 gist_add    6476579
+gist_add    6498000
+gist_add    6498580
+gist_add    6499018
 gist_add    6506614
 gist_add    6515478
 gist_add    6541165
+gist_add    6618724
 gist_add    6641917
 gist_add    6738360
+gist_add    6909318
 gist_add    7090426
 gist_add    7123450
 gist_add    7191340
+gist_add    7367177
+gist_add    7555321
+gist_add    7607535
+gist_add    7607999
+gist_add    7621155
+gist_add    7809166
+gist_add    7833311
 gist_add    7880033
+gist_add    7881887
+gist_add    7882658
 gist_add    8119685
+gist_add    8411383
+gist_add    9078690
+gist_add    9377340
+gist_add    9490313
+gist_add    9490516
+gist_add    9742980
+gist_add    9764126
+gist_add    9927735
+gist_add   10342273
+gist_add   10343037
+gist_add   10395901
+gist_add   10520338
+gist_add   10591444
+gist_add   11337491
+gist_add   11413789
+gist_add   11415064
+
+
+gist_add 6928381c7b61714da59e
+gist_add 81443f83a3e342f9ab2f
+gist_add d8e15a0ab7f85818a5bd
+gist_add e65d9895da07c57e94bd
+gist_add eb3bf12a9d02d78480c2
+
+
 github_add  Addepar/ember-table
 github_add  BertrandDechoux/d3js-sandbox
 github_add  Caged/d3-tip
