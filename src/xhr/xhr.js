@@ -31,7 +31,9 @@ function d3_xhr(url, mimeType, response, callback) {
   "onload" in request
       ? request.onload = request.onerror = respond
       : request.onreadystatechange = function() {
-          request.readyState > 3 && respond();
+          if (request.readyState > 3) { 
+            respond();
+          }
         };
 
   function respond() {
