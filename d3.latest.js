@@ -2754,15 +2754,23 @@ d3.dsv = function(delimiter, mimeType) {
   }
 
   dsv.parse = function(text, f) {
-    var o;
+    var header, prototype = type.prototype;
+
+    if (!f) f = d3_identity;
+
+    function type() {}
 
     function process(text) {
       return dsv.parseRows(text, function(row, i) {
-        if (o) return o(row, i - 1);
-        var a = new Function("d", "return {" + row.map(function(name, i) {
-          return JSON.stringify(name) + ": d[" + i + "]";
-        }).join(",") + "}");
-        o = f ? function(row, i) { return f(a(row), i); } : a;
+        var j = -1, m = row.length;
+        if (i) {
+          var t = new type();
+          while (++j < m) t[header[j]] = row[j];
+          return f(t, i - 1);
+        } else {
+          header = row;
+          while (++j < m) prototype[header[j]] = null;
+        }
       });
     }
 
@@ -12072,6 +12080,18 @@ function d3_transition_tween(groups, name, value, tween) {
 d3_transitionPrototype.attr = function(nameNS, value) {
   if (arguments.length < 2) {
 
+    // For attr(string), if the first node is being transitioned, return its
+    // target attribute value; otherwise return its current attribute value.
+    if (typeof nameNS === "string") {
+      var node = this.node(),
+          tween = node.__transition__[this.id].tween.get("attr." + nameNS);
+      return tween ?
+          tween.$
+          : (name = d3.ns.qualify(nameNS), name.local
+          ? node.getAttributeNS(name.space, name.local)
+          : node.getAttribute(name));
+    }
+
     // For attr(object), the object specifies the names and values of the
     // attributes to transition. The values may be functions that are
     // evaluated for each element.
@@ -12089,19 +12109,22 @@ d3_transitionPrototype.attr = function(nameNS, value) {
   function attrNullNS() {
     this.removeAttributeNS(name.space, name.local);
   }
+  attrNull.$ = attrNullNS.$ = null;
 
   // For attr(string, string), set the attribute with the specified name.
   function attrTween(b) {
-    return b == null ? attrNull : (b += "", function() {
+    var f;
+    return b == null ? attrNull : (f = function() {
       var a = this.getAttribute(name), i;
       return a !== b && (i = interpolate(a, b), function(t) { this.setAttribute(name, i(t)); });
-    });
+    }, f.$ = b += "", f);
   }
   function attrTweenNS(b) {
-    return b == null ? attrNullNS : (b += "", function() {
+    var f;
+    return b == null ? attrNullNS : (f = function() {
       var a = this.getAttributeNS(name.space, name.local), i;
       return a !== b && (i = interpolate(a, b), function(t) { this.setAttributeNS(name.space, name.local, i(t)); });
-    });
+    }, f.$ = b += "", f);
   }
 
   return d3_transition_tween(this, "attr." + nameNS, value, name.local ? attrTweenNS : attrTween);
@@ -12126,11 +12149,23 @@ d3_transitionPrototype.style = function(name, value, priority) {
   var n = arguments.length;
   if (n < 3) {
 
+    // For style(string), if the first node is being transitioned, return its
+    // target style value; otherwise return its computed style value.
+    if (typeof name === "string") {
+      if (n < 2) {
+        var node = this.node(),
+            tween = node.__transition__[this.id].tween.get("style." + name);
+        return tween
+            ? tween.$
+            : d3_window.getComputedStyle(node, null).getPropertyValue(name);
+      }
+    }
+
     // For style(object) or style(object, string), the object specifies the
     // names and values of the attributes to set or remove. The values may be
     // functions that are evaluated for each element. The optional string
     // specifies the priority.
-    if (typeof name !== "string") {
+    else {
       if (n < 2) value = "";
       for (priority in name) this.style(priority, name[priority], value);
       return this;
@@ -12146,15 +12181,17 @@ d3_transitionPrototype.style = function(name, value, priority) {
   function styleNull() {
     this.style.removeProperty(name);
   }
+  styleNull.$ = null;
 
   // For style(name, string) or style(name, string, priority), set the style
   // property with the specified name, using the specified priority.
   // Otherwise, a name, value and priority are specified, and handled as below.
   function styleString(b) {
-    return b == null ? styleNull : (b += "", function() {
+    var f;
+    return b == null ? styleNull : (f = function() {
       var a = d3_window.getComputedStyle(this, null).getPropertyValue(name), i;
       return a !== b && (i = d3_interpolate(a, b), function(t) { this.style.setProperty(name, i(t), priority); });
-    });
+    }, f.$ = b += "", f);
   }
 
   return d3_transition_tween(this, "style." + name, value, styleString);
@@ -12172,12 +12209,18 @@ d3_transitionPrototype.styleTween = function(name, tween, priority) {
 };
 
 d3_transitionPrototype.text = function(value) {
-  return d3_transition_tween(this, "text", value, d3_transition_text);
+  if (arguments.length) return d3_transition_tween(this, "text", value, d3_transition_text);
+
+  var node = this.node(),
+      tween = node.__transition__[this.id].tween.get("text");
+  return tween ? tween.$ : node.textContent;
 };
 
 function d3_transition_text(b) {
   if (b == null) b = "";
-  return function() { this.textContent = b; };
+  f.$ = b;
+  return f;
+  function f() { this.textContent = b; }
 }
 
 d3_transitionPrototype.remove = function() {

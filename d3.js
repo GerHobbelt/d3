@@ -2039,16 +2039,20 @@
       };
     }
     dsv.parse = function(text, f) {
-      var o;
+      var header, prototype = type.prototype;
+      if (!f) f = d3_identity;
+      function type() {}
       function process(text) {
         return dsv.parseRows(text, function(row, i) {
-          if (o) return o(row, i - 1);
-          var a = new Function("d", "return {" + row.map(function(name, i) {
-            return JSON.stringify(name) + ": d[" + i + "]";
-          }).join(",") + "}");
-          o = f ? function(row, i) {
-            return f(a(row), i);
-          } : a;
+          var j = -1, m = row.length;
+          if (i) {
+            var t = new type();
+            while (++j < m) t[header[j]] = row[j];
+            return f(t, i - 1);
+          } else {
+            header = row;
+            while (++j < m) prototype[header[j]] = null;
+          }
         });
       }
       return arguments.length ? process(text) : process;

@@ -25,6 +25,10 @@ test:
 src/start.js: npm-install package.json bin/start
 	bin/start > $@
 
+test/data/sample-big.csv:
+	echo 'a,b,c,d,e,f,g,h,i,j' > $@
+	for i in {1..100000}; do echo '0,1,2,3,4,5,6,7,8,9' >> $@; done
+
 d3.latest.js: $(SMASH) $(shell $(SMASH) --ignore-missing --list src/d3.js) package.json
 	@rm -f $@
 	$(SMASH) src/d3.js > $@
