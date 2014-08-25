@@ -9117,15 +9117,19 @@
     bottom: 1,
     left: 1
   };
-  function d3_svg_axisX(selection, x) {
-    selection.attr("transform", function(d) {
-      return "translate(" + x(d) + ",0)";
-    });
-  }
-  function d3_svg_axisY(selection, y) {
-    selection.attr("transform", function(d) {
-      return "translate(0," + y(d) + ")";
-    });
+  var d3_svg_axisX = d3_svg_axisTickTransform(function(d) {
+    return "translate(" + d + ",0)";
+  }), d3_svg_axisY = d3_svg_axisTickTransform(function(d) {
+    return "translate(0," + d + ")";
+  });
+  function d3_svg_axisTickTransform(translate) {
+    return function(selection, scale) {
+      selection.each(function(d) {
+        if (isFinite(d = scale(d))) {
+          d3.transition(d3.select(this)).attr("transform", translate(d));
+        }
+      });
+    };
   }
   d3.svg.brush = function() {
     var event = d3_eventDispatch(brush, "brushstart", "brush", "brushend"), x = null, y = null, xExtent = [ 0, 0 ], yExtent = [ 0, 0 ], xExtentDomain, yExtentDomain, xClamp = true, yClamp = true, resizes = d3_svg_brushResizes[0];

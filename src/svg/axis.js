@@ -175,10 +175,15 @@ d3.svg.axis = function() {
 var d3_svg_axisDefaultOrient = "bottom",
     d3_svg_axisOrients = {top: 1, right: 1, bottom: 1, left: 1};
 
-function d3_svg_axisX(selection, x) {
-  selection.attr("transform", function(d) { return "translate(" + x(d) + ",0)"; });
-}
+var d3_svg_axisX = d3_svg_axisTickTransform(function(d) { return "translate(" + d + ",0)"; }),
+    d3_svg_axisY = d3_svg_axisTickTransform(function(d) { return "translate(0," + d + ")"; });
 
-function d3_svg_axisY(selection, y) {
-  selection.attr("transform", function(d) { return "translate(0," + y(d) + ")"; });
+function d3_svg_axisTickTransform(translate) {
+  return function(selection, scale) {
+    selection.each(function(d) {
+      if (isFinite(d = scale(d))) {
+        d3.transition(d3.select(this)).attr("transform", translate(d));
+      }
+    });
+  };
 }
