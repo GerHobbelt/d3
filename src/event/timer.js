@@ -7,8 +7,8 @@ var d3_timer_queueHead,
     d3_timer_timeout, // is a timeout active?
     d3_timer_active, // active timer object
     d3_timer_frame = (typeof d3_window === 'undefined' ? false :
-                         d3_window[d3_vendorSymbol(d3_window, "requestAnimationFrame")]) || 
-					 function(callback) { setTimeout(callback, 17); };
+                         d3_window[d3_vendorSymbol(d3_window, "requestAnimationFrame")]) ||
+                     function(callback) { setTimeout(callback, 17); };
 
 // The timer will continue to fire until callback returns true.
 d3.timer = function(callback, delay, then) {

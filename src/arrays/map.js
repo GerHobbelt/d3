@@ -66,8 +66,8 @@ function d3_map_remove(key) {
 
 function d3_map_keys() {
   var keys = [];
-  this.forEach(function(key) { 
-    keys.push(key); 
+  this.forEach(function(key) {
+    keys.push(key);
   });
   return keys;
 }

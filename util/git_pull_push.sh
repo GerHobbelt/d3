@@ -192,8 +192,8 @@ pull & push all git repositories in the current path.
            error 'does not point to valid object'
 -s       : setup/reset all upstream (remote:origin) references for each
            submodule and push the local repo. This one ensures a 'git push --all'
-           will succeed for each local branch the next time you run that 
-           command directly or indirectly via, e.g. 'util/git_pull_push.sh -f' 
+           will succeed for each local branch the next time you run that
+           command directly or indirectly via, e.g. 'util/git_pull_push.sh -f'
 
 -R       : HARD RESET this git repository and the git submodules. This is useful
            to sync the working directories after you ran the VM_push/pull script

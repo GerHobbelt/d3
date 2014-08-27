@@ -348,9 +348,9 @@ suite.addBatch({
 
       // Testcases custom crafted to test proper format operation at fringe cases (string input, boolean input).
       assert.strictEqual(f("1e3"), "1,000");
-      assert.strictEqual(f("-100000e3"), "-100,000,000");     
+      assert.strictEqual(f("-100000e3"), "-100,000,000");
       assert.strictEqual(f(true), "1");
-      assert.strictEqual(f(false), "0");     
+      assert.strictEqual(f(false), "0");
     },
     "can display integers in fixed-point notation": function(format) {
       assert.strictEqual(format("f")(42), "42");

@@ -74,7 +74,7 @@ d3.behavior.drag = function() {
             dy = p[1] - origin_[1];
 
         dispatch({
-	  type: "dragend",
+          type: "dragend",
           x: p[0] + offset[0],
           y: p[1] + offset[1],
           dx: dx,

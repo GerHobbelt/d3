@@ -31,8 +31,8 @@ d3.bisect = d3.bisectRight = d3_bisect.right;
 
 d3.bisector = function(f) {
   return d3_bisector(f.length === 1
-      ? function(d, x) { 
-        return d3_ascending(f(d), x); 
+      ? function(d, x) {
+        return d3_ascending(f(d), x);
       }
       : f);
 };

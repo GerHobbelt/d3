@@ -174,8 +174,8 @@ d3.bisect = d3.bisectRight = d3_bisect.right;
 
 d3.bisector = function(f) {
   return d3_bisector(f.length === 1
-      ? function(d, x) { 
-        return d3_ascending(f(d), x); 
+      ? function(d, x) {
+        return d3_ascending(f(d), x);
       }
       : f);
 };
@@ -361,8 +361,8 @@ function d3_map_remove(key) {
 
 function d3_map_keys() {
   var keys = [];
-  this.forEach(function(key) { 
-    keys.push(key); 
+  this.forEach(function(key) {
+    keys.push(key);
   });
   return keys;
 }
@@ -1527,7 +1527,7 @@ d3.mouse = function(container) {
 };
 
 // https://bugs.webkit.org/show_bug.cgi?id=44083
-var d3_mouse_bug44083 = /WebKit/.test(d3_window.navigator.userAgent) ? -1 : 0;
+var d3_mouse_bug44083 = (typeof d3_window !== 'undefined' && d3_window.navigator && /WebKit/.test(d3_window.navigator.userAgent)) ? -1 : 0;
 
 function d3_mousePoint(container, e) {
   if (e.changedTouches) e = e.changedTouches[0];
@@ -1633,7 +1633,7 @@ d3.behavior.drag = function() {
             dy = p[1] - origin_[1];
 
         dispatch({
-	  type: "dragend",
+          type: "dragend",
           x: p[0] + offset[0],
           y: p[1] + offset[1],
           dx: dx,
@@ -2543,17 +2543,17 @@ d3.functor = d3_functor;
 d3.variance = function(array, f) {
   var n   = array.length;
   if(n < 2) return NaN;
-  
+
   var mean = d3.mean(array, f),
       a,
       sd   = 0,
       i    = -1,
       j    = 0;
-  
+
   if (arguments.length === 1) {
     while (++i < n){
       if (d3_number(a = array[i])){
-        sd += Math.pow(a - mean, 2); 
+        sd += Math.pow(a - mean, 2);
         ++j;
       }
     }
@@ -2562,7 +2562,7 @@ d3.variance = function(array, f) {
     while (++i < n) if (d3_number(a = f.call(array, array[i], i))) evaluatedArray.push(a);
     return d3.variance(evaluatedArray);
   }
-  
+
   sd /= (j - 1);
   return j ? sd : NaN;
 };
@@ -2601,7 +2601,7 @@ function d3_xhr(url, mimeType, response, callback) {
   "onload" in request
       ? request.onload = request.onerror = respond
       : request.onreadystatechange = function() {
-          if (request.readyState > 3) { 
+          if (request.readyState > 3) {
             respond();
           }
         };
@@ -2883,8 +2883,8 @@ var d3_timer_queueHead,
     d3_timer_timeout, // is a timeout active?
     d3_timer_active, // active timer object
     d3_timer_frame = (typeof d3_window === 'undefined' ? false :
-                         d3_window[d3_vendorSymbol(d3_window, "requestAnimationFrame")]) || 
-					 function(callback) { setTimeout(callback, 17); };
+                         d3_window[d3_vendorSymbol(d3_window, "requestAnimationFrame")]) ||
+                     function(callback) { setTimeout(callback, 17); };
 
 // The timer will continue to fire until callback returns true.
 d3.timer = function(callback, delay, then) {
@@ -3038,7 +3038,7 @@ function d3_locale_numberFormat(locale) {
       case "o":
       case "x":
       case "X": if (symbol === "#") { prefix = "0" + type.toLowerCase(); } comma = false; // & fall through...
-      case "c": // & fall through...
+      case "c":
       case "d": integer = true; precision = 0; break;
       case "s": scale = -1; type = "r"; break;
     }
@@ -3059,7 +3059,7 @@ function d3_locale_numberFormat(locale) {
     var zcomma = zfill && comma;
 
     // This regex is meant to catch both the [eE] of a scientific notation value (e.g. 4e7)
-    // and any type='s' or custom format non-decimal-integer-numeric value part (e.g. 100M).
+    // and any type='s' or other format non-decimal-integer-numeric value part (e.g. 100M).
     var afterStartRe = /[^0-9-]/;
 
     return function(value) {
@@ -3087,10 +3087,11 @@ function d3_locale_numberFormat(locale) {
       // Break the value into the integer part (before) and decimal part (after).
       // Break the value into mantissa and power when this is a 'scientific notation' value string
       // without a decimal dot, e.g. '4e+9'.
-      // 
-      // Note: It is no problem that hexadecimal numbers are broken up arbitrarily 
-      //       (on first 'e' in their value) as their formatGroup function is 
-      //       the d3_identity function. Hence we can use one flow for all types.
+      //
+      // Note: It is no problem that binary/octal/hexadecimal numbers are
+      //       broken up arbitrarily (on first 'e/alpha' in their value)
+      //       as they skip the formatGroup action anyway.
+      //       Hence we can use one flow for all types.
       var i = value.lastIndexOf(".") + 1,
           scm = afterStartRe.exec(value),
           scp = scm && scm.index,
@@ -8425,7 +8426,7 @@ d3.layout.force = function() {
       charge_abssum = -1, // negative value signals the need to recalculate this one
       gravity_f,
       theta2_f,
-	  has_theta2_f = false,
+      has_theta2_f = false,
       // These model parameters can be either a function or a direct numeric value:
       friction = .9,
       linkDistance = d3_layout_forceLinkDistance,
@@ -8440,7 +8441,7 @@ d3.layout.force = function() {
   function setup_model_parameter_functors() {
     gravity_f = d3_functor(gravity);
     theta2_f = d3_functor(theta2);
-	has_theta2_f = (typeof theta2 === "function");
+    has_theta2_f = (typeof theta2 === "function");
   }
 
   function repulse(node, i) {
@@ -8453,14 +8454,14 @@ d3.layout.force = function() {
             dn = 1 / Math.max(epsilon, l),
             k = quad.charge * dn,
             th2;
-			
-		if (has_theta2_f) {
-			// when this is a FUNCTION it calculates theta, NOT theta�!
-			th2 = theta2_f.call(this, node, i, quad, l, x1, x2, k);
-			th2 *= th2;
-		} else {
-			th2 = theta2;
-		}
+
+        if (has_theta2_f) {
+            // when this is a FUNCTION it calculates theta, NOT theta�!
+            th2 = theta2_f.call(this, node, i, quad, l, x1, x2, k);
+            th2 *= th2;
+        } else {
+            th2 = theta2;
+        }
 
         /*
         Based on the Barnes-Hut criterion.
@@ -8483,7 +8484,7 @@ d3.layout.force = function() {
         child nodes.
         */
         if (l * k * k < th2) {
-		  if (l < chargeDistance2) {
+          if (l < chargeDistance2) {
             k *= alpha;
             node.px -= dx * k;
             node.py -= dy * k;
@@ -8676,14 +8677,14 @@ d3.layout.force = function() {
 
   force.theta = function(x) {
     if (!arguments.length) {
-	  if (has_theta2_f) {
-	    return theta2;
-	  } else {
-	    return Math.sqrt(theta2);
-	  }
-	}
-	// set theta2 to x� when x is a value (this is done as a calculation optimization for when rendering the force graph).
-	// When x is a function, we need to do the squaring on every quad on every iteration anyhow.
+      if (has_theta2_f) {
+        return theta2;
+      } else {
+        return Math.sqrt(theta2);
+      }
+    }
+    // set theta2 to x� when x is a value (this is done as a calculation optimization for when rendering the force graph).
+    // When x is a function, we need to do the squaring on every quad on every iteration anyhow.
     theta2 = typeof x === "function" ? x : x * x;
     setup_model_parameter_functors();
     return force;
@@ -8794,9 +8795,9 @@ d3.layout.force = function() {
           x;
       for (j = 0; j < m; ++j) {
         if (!isNaN(x = candidates[j][dimension])) {
-		  return x;
-		}
-	  }
+          return x;
+        }
+      }
       return Math.random() * size;
     }
 

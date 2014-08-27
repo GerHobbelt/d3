@@ -102,10 +102,10 @@ function d3_locale_numberFormat(locale) {
       // Break the value into the integer part (before) and decimal part (after).
       // Break the value into mantissa and power when this is a 'scientific notation' value string
       // without a decimal dot, e.g. '4e+9'.
-      // 
-      // Note: It is no problem that binary/octal/hexadecimal numbers are 
-      //       broken up arbitrarily (on first 'e/alpha' in their value) 
-      //       as they skip the formatGroup action anyway. 
+      //
+      // Note: It is no problem that binary/octal/hexadecimal numbers are
+      //       broken up arbitrarily (on first 'e/alpha' in their value)
+      //       as they skip the formatGroup action anyway.
       //       Hence we can use one flow for all types.
       var i = value.lastIndexOf(".") + 1,
           scm = afterStartRe.exec(value),
