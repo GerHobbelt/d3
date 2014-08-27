@@ -60,7 +60,7 @@
     "seedrandom": ">=2.3.1"
   },
   "scripts": {
-    "test": "node_modules/.bin/vows -i"
+    "test": "node_modules/.bin/vows -v"
   },
   "licenses": [
     {

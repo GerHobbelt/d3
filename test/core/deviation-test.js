@@ -1,7 +1,6 @@
-require("../env");
-
 var vows = require("vows"),
-    assert = require("assert");
+    load = require("../load"),
+    assert = require("../assert");
 
 var suite = vows.describe("d3.deviation");
 
