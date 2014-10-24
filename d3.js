@@ -1,6 +1,6 @@
 !function() {
   var d3 = {
-    version: "3.4.13-gka1"
+    version: "3.4.13-gka2"
   };
   if (!Date.now) Date.now = function() {
     return +new Date();
@@ -36,8 +36,22 @@
   function d3_ascending(a, b) {
     return a < b ? -1 : a > b ? 1 : a >= b ? 0 : NaN;
   }
+  d3.ascendingKey = function(key) {
+    return typeof key == "function" ? function(a, b) {
+      return key(a) < key(b) ? -1 : key(a) > key(b) ? 1 : key(a) >= key(b) ? 0 : NaN;
+    } : function(a, b) {
+      return a[key] < b[key] ? -1 : a[key] > b[key] ? 1 : a[key] >= b[key] ? 0 : NaN;
+    };
+  };
   d3.descending = function(a, b) {
     return b < a ? -1 : b > a ? 1 : b >= a ? 0 : NaN;
+  };
+  d3.descendingKey = function(key) {
+    return typeof key == "function" ? function(a, b) {
+      return key(b) < key(a) ? -1 : key(b) > key(a) ? 1 : key(b) >= key(a) ? 0 : NaN;
+    } : function(a, b) {
+      return b[key] < a[key] ? -1 : b[key] > a[key] ? 1 : b[key] >= a[key] ? 0 : NaN;
+    };
   };
   d3.min = function(array, f) {
     var i = -1, n = array.length, a, b;
