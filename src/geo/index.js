@@ -31,3 +31,4 @@ import "mercator";
 import "orthographic";
 import "stereographic";
 import "transverse-mercator";
+import "natural-earth";
