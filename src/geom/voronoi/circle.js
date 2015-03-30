@@ -32,10 +32,10 @@ function d3_geom_voronoiAttachCircle(arc) {
   var ha = ax * ax + ay * ay,
       hc = cx * cx + cy * cy,
       x = (cy * ha - ay * hc) / d,
-      y = (ax * hc - cx * ha) / d,
-      cy = y + by;
+      y = (ax * hc - cx * ha) / d;
+  cy = y + by;
 
-  var circle = d3_geom_voronoiCirclePool.pop() || new d3_geom_voronoiCircle;
+  var circle = d3_geom_voronoiCirclePool.pop() || new d3_geom_voronoiCircle();
   circle.arc = arc;
   circle.site = cSite;
   circle.x = x + bx;

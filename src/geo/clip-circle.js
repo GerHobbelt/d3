@@ -168,11 +168,11 @@ function d3_geo_clipCircle(radius) {
   // the small circle's bounding box.
   function code(λ, φ) {
     var r = smallRadius ? radius : π - radius,
-        code = 0;
-    if (λ < -r) code |= 1; // left
-    else if (λ > r) code |= 2; // right
-    if (φ < -r) code |= 4; // below
-    else if (φ > r) code |= 8; // above
-    return code;
+        bitvec = 0;
+    if (λ < -r) bitvec |= 1; // left
+    else if (λ > r) bitvec |= 2; // right
+    if (φ < -r) bitvec |= 4; // below
+    else if (φ > r) bitvec |= 8; // above
+    return bitvec;
   }
 }

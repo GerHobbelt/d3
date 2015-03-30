@@ -67,7 +67,7 @@ d3.layout.hierarchy = function() {
       d3_layout_hierarchyVisitAfter(root, function(node) {
         var parent;
         if (!node.children) node.value = +value.call(hierarchy, node, node.depth) || 0;
-        if (parent = node.parent) parent.value += node.value;
+        if ((parent = node.parent)) parent.value += node.value;
       });
     }
     return root;

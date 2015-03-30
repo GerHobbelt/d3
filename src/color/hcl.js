@@ -13,7 +13,7 @@ function d3_hcl(h, c, l) {
       : new d3_hcl(h, c, l);
 }
 
-var d3_hclPrototype = d3_hcl.prototype = new d3_color;
+var d3_hclPrototype = d3_hcl.prototype = new d3_color();
 
 d3_hclPrototype.brighter = function(k) {
   return new d3_hcl(this.h, this.c, Math.min(100, this.l + d3_lab_K * (arguments.length ? k : 1)));

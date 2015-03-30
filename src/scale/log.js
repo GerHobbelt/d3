@@ -53,14 +53,15 @@ function d3_scale_log(linear, base, positive, domain) {
         v = extent[1],
         i = Math.floor(log(u)),
         j = Math.ceil(log(v)),
-        n = base % 1 ? 2 : base;
+        n = base % 1 ? 2 : base,
+        k;
     if (isFinite(j - i)) {
       if (positive) {
-        for (; i < j; i++) for (var k = 1; k < n; k++) ticks.push(pow(i) * k);
+        for (; i < j; i++) for (k = 1; k < n; k++) ticks.push(pow(i) * k);
         ticks.push(pow(i));
       } else {
         ticks.push(pow(i));
-        for (; i++ < j;) for (var k = n - 1; k > 0; k--) ticks.push(pow(i) * k);
+        for (; i++ < j;) for (k = n - 1; k > 0; k--) ticks.push(pow(i) * k);
       }
       for (i = 0; ticks[i] < u; i++) {} // strip small values
       for (j = ticks.length; ticks[j - 1] > v; j--) {} // strip big values
@@ -73,7 +74,7 @@ function d3_scale_log(linear, base, positive, domain) {
     if (!arguments.length) return d3_scale_logFormat;
     if (arguments.length < 2) format = d3_scale_logFormat;
     else if (typeof format !== "function") format = d3.format(format);
-    var k = Math.max(.1, n / scale.ticks().length),
+    var k = Math.max(0.1, n / scale.ticks().length),
         f = positive ? (e = 1e-12, Math.ceil) : (e = -1e-12, Math.floor),
         e;
     return function(d) {

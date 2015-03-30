@@ -12,7 +12,7 @@ d3_selectionPrototype.data = function(value, key) {
   if (!arguments.length) {
     value = new Array(n = (group = this[0]).length);
     while (++i < n) {
-      if (node = group[i]) {
+      if ((node = group[i])) {
         value[i] = node.__data__;
       }
     }
@@ -31,7 +31,7 @@ d3_selectionPrototype.data = function(value, key) {
         nodeData;
 
     if (key) {
-      var nodeByKeyValue = new d3_Map,
+      var nodeByKeyValue = new d3_Map(),
           keyValues = new Array(n),
           keyValue;
 

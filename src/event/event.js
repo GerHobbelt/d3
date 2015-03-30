@@ -8,7 +8,7 @@ function d3_eventPreventDefault() {
 
 function d3_eventSource() {
   var e = d3.event, s;
-  while (s = e.sourceEvent) e = s;
+  while ((s = e.sourceEvent)) e = s;
   return e;
 }
 
@@ -17,7 +17,7 @@ function d3_eventSource() {
 // the svg:g element containing the brush) and the standard arguments `d` (the
 // target element's data) and `i` (the selection index of the target element).
 function d3_eventDispatch(target) {
-  var dispatch = new d3_dispatch,
+  var dispatch = new d3_dispatch(),
       i = 0,
       n = arguments.length;
 
@@ -34,9 +34,9 @@ function d3_eventDispatch(target) {
   // for the duration of the notification.
   dispatch.of = function(thiz, argumentz) {
     return function(e1) {
+      var e0;
       try {
-        var e0 =
-        e1.sourceEvent = d3.event;
+        e0 = e1.sourceEvent = d3.event;
         e1.target = target;
         d3.event = e1;
         dispatch[e1.type].apply(thiz, argumentz);

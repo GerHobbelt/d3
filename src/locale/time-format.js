@@ -30,7 +30,7 @@ function d3_locale_timeFormat(locale) {
         if (template.charCodeAt(i) === 37) {
           string.push(template.slice(j, i));
           if ((p = d3_time_formatPads[c = template.charAt(++i)]) != null) c = template.charAt(++i);
-          if (f = d3_time_formats[c]) c = f(date, p == null ? (c === "e" ? " " : "0") : p);
+          if ((f = d3_time_formats[c])) c = f(date, p == null ? (c === "e" ? " " : "0") : p);
           string.push(c);
           j = i + 1;
         }
@@ -50,7 +50,7 @@ function d3_locale_timeFormat(locale) {
       // If a time zone is specified, it is always relative to UTC;
       // we need to use d3_date_utc if we aren’t already.
       var localZ = d.Z != null && d3_date !== d3_date_utc,
-          date = new (localZ ? d3_date_utc : d3_date);
+          date = (localZ ? new d3_date_utc() : new d3_date());
 
       // Set year, month, date.
       if ("j" in d) date.setFullYear(d.y, 0, d.j);
@@ -256,7 +256,7 @@ function d3_time_formatRe(names) {
 }
 
 function d3_time_formatLookup(names) {
-  var map = new d3_Map, i = -1, n = names.length;
+  var map = new d3_Map(), i = -1, n = names.length;
   while (++i < n) map.set(names[i].toLowerCase(), i);
   return map;
 }

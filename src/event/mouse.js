@@ -6,7 +6,7 @@ d3.mouse = function(container) {
 };
 
 // https://bugs.webkit.org/show_bug.cgi?id=44083
-var d3_mouse_bug44083 = (typeof d3_window !== 'undefined' && d3_window.navigator && /WebKit/.test(d3_window.navigator.userAgent)) ? -1 : 0;
+var d3_mouse_bug44083 = (typeof this !== "undefined" && this.navigator && /WebKit/.test(this.navigator.userAgent)) ? -1 : 0;
 
 function d3_mousePoint(container, e) {
   if (e.changedTouches) e = e.changedTouches[0];
@@ -36,4 +36,4 @@ function d3_mousePoint(container, e) {
   }
   var rect = container.getBoundingClientRect();
   return [e.clientX - rect.left - container.clientLeft, e.clientY - rect.top - container.clientTop];
-};
+}

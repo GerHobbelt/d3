@@ -41,6 +41,8 @@ d3.svg.arc = function() {
         y2,
         x3,
         y3,
+        l0,
+        l1,
         path = [];
 
     // The recommended minimum inner radius when using padding is outerRadius *
@@ -49,7 +51,7 @@ d3.svg.arc = function() {
     // is 0.02 radians, a reasonable θ is 0.04 radians, and a reasonable
     // innerRadius is 100 pixels.
 
-    if (ap = (+padAngle.apply(this, arguments) || 0) / 2) {
+    if ((ap = (+padAngle.apply(this, arguments) || 0) / 2)) {
       rp = padRadius === d3_svg_arcAuto ? Math.sqrt(r0 * r0 + r1 * r1) : +padRadius.apply(this, arguments);
       if (!cw) p1 *= -1;
       if (r1) p1 = d3_asin(rp / r1 * Math.sin(ap));
@@ -64,7 +66,7 @@ d3.svg.arc = function() {
       y1 = r1 * Math.sin(a1 - p1);
 
       // Detect whether the outer corners are collapsed.
-      var l1 = Math.abs(a1 - a0 - 2 * p1) <= π ? 0 : 1;
+      l1 = Math.abs(a1 - a0 - 2 * p1) <= π ? 0 : 1;
       if (p1 && d3_svg_arcSweep(x0, y0, x1, y1) === cw ^ l1) {
         var h1 = (a0 + a1) / 2;
         x0 = r1 * Math.cos(h1);
@@ -83,7 +85,7 @@ d3.svg.arc = function() {
       y3 = r0 * Math.sin(a0 + p0);
 
       // Detect whether the inner corners are collapsed.
-      var l0 = Math.abs(a0 - a1 + 2 * p0) <= π ? 0 : 1;
+      l0 = Math.abs(a0 - a1 + 2 * p0) <= π ? 0 : 1;
       if (p0 && d3_svg_arcSweep(x2, y2, x3, y3) === (1 - cw) ^ l0) {
         var h0 = (a0 + a1) / 2;
         x2 = r0 * Math.cos(h0);

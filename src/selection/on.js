@@ -58,7 +58,7 @@ function d3_selection_on(type, listener, capture) {
     var re = new RegExp("^__on([^.]+)" + d3.requote(type) + "$"),
         match;
     for (var name in this) {
-      if (match = name.match(re)) {
+      if ((match = name.match(re))) {
         var l = this[name];
         this.removeEventListener(match[1], l, l.$);
         delete this[name];

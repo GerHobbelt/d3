@@ -20,13 +20,13 @@ function d3_xhr(url, mimeType, response, callback) {
   var xhr = {},
       dispatch = d3.dispatch("beforesend", "progress", "load", "error"),
       headers = {},
-      request = new XMLHttpRequest,
+      request = new XMLHttpRequest(),
       responseType = null;
 
   // If IE does not support CORS, use XDomainRequest.
   if (this.XDomainRequest
       && !("withCredentials" in request)
-      && /^(http(s)?:)?\/\//.test(url)) request = new XDomainRequest;
+      && /^(http(s)?:)?\/\//.test(url)) request = new XDomainRequest();
 
   "onload" in request
       ? request.onload = request.onerror = respond
@@ -141,7 +141,7 @@ function d3_xhr(url, mimeType, response, callback) {
   d3.rebind(xhr, dispatch, "on");
 
   return callback == null ? xhr : xhr.get(d3_xhr_fixCallback(callback));
-};
+}
 
 function d3_xhr_fixCallback(callback) {
   return callback.length === 1

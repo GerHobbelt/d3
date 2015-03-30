@@ -35,4 +35,4 @@ function d3_geo_interpolate(x0, y0, x1, y1) {
   interpolate.distance = d;
 
   return interpolate;
-};
+}

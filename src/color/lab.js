@@ -21,7 +21,7 @@ var d3_lab_X = 0.950470,
     d3_lab_Y = 1,
     d3_lab_Z = 1.088830;
 
-var d3_labPrototype = d3_lab.prototype = new d3_color;
+var d3_labPrototype = d3_lab.prototype = new d3_color();
 
 d3_labPrototype.brighter = function(k) {
   return new d3_lab(Math.min(100, this.l + d3_lab_K * (arguments.length ? k : 1)), this.a, this.b);

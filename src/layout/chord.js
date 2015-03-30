@@ -22,7 +22,8 @@ d3.layout.chord = function() {
         x,
         x0,
         i,
-        j;
+        j,
+        di, dj, v, a0, a1;
 
     chords = [];
     groups = [];
@@ -62,11 +63,11 @@ d3.layout.chord = function() {
     // Note: Opera has a bug reordering object literal properties!
     x = 0, i = -1; while (++i < n) {
       x0 = x, j = -1; while (++j < n) {
-        var di = groupIndex[i],
-            dj = subgroupIndex[di][j],
-            v = matrix[di][dj],
-            a0 = x,
-            a1 = x += v * k;
+        di = groupIndex[i];
+        dj = subgroupIndex[di][j];
+        v = matrix[di][dj];
+        a0 = x;
+        a1 = x += v * k;
         subgroups[di + "-" + dj] = {
           index: di,
           subindex: dj,

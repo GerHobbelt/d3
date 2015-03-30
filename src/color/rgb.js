@@ -21,7 +21,7 @@ function d3_rgbString(value) {
   return d3_rgbNumber(value) + "";
 }
 
-var d3_rgbPrototype = d3_rgb.prototype = new d3_color;
+var d3_rgbPrototype = d3_rgb.prototype = new d3_color();
 
 d3_rgbPrototype.brighter = function(k) {
   k = Math.pow(0.7, arguments.length ? k : 1);
@@ -86,7 +86,7 @@ function d3_rgb_parse(format, rgb, hsl) {
   }
 
   /* Named colors. */
-  if (color = d3_rgb_names.get(format.toLowerCase())) {
+  if ((color = d3_rgb_names.get(format.toLowerCase()))) {
     return rgb(color.r, color.g, color.b);
   }
 
@@ -114,7 +114,7 @@ function d3_rgb_hsl(r, g, b) {
       s,
       l = (max + min) / 2;
   if (d) {
-    s = l < .5 ? d / (max + min) : d / (2 - max - min);
+    s = l < 0.5 ? d / (max + min) : d / (2 - max - min);
     if (r == max) h = (g - b) / d + (g < b ? 6 : 0);
     else if (g == max) h = (b - r) / d + 2;
     else h = (r - g) / d + 4;

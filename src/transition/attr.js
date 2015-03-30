@@ -5,8 +5,9 @@ import "transition";
 import "tween";
 
 d3_transitionPrototype.attr = function(nameNS, value) {
-  if (arguments.length < 2) {
+  var name;
 
+  if (arguments.length < 2) {
     // For attr(string), if the first node is being transitioned, return its
     // target attribute value; otherwise return its current attribute value.
     if (typeof nameNS === "string") {
@@ -26,8 +27,8 @@ d3_transitionPrototype.attr = function(nameNS, value) {
     return this;
   }
 
-  var interpolate = nameNS == "transform" ? d3_interpolateTransform : d3_interpolate,
-      name = d3.ns.qualify(nameNS);
+  var interpolate = nameNS == "transform" ? d3_interpolateTransform : d3_interpolate;
+  name = d3.ns.qualify(nameNS);
 
   // For attr(string, null), remove the attribute with the specified name.
   function attrNull() {

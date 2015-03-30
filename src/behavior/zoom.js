@@ -82,7 +82,7 @@ d3.behavior.zoom = function() {
         zoomended(dispatch);
       }
     });
-  }
+  };
 
   zoom.translate = function(_) {
     if (!arguments.length) return [view.x, view.y];
@@ -173,7 +173,7 @@ d3.behavior.zoom = function() {
   }
 
   function zoomstarted(dispatch) {
-    if (!zooming++) dispatch({type: "zoomstart"});
+    if (!(zooming++)) dispatch({type: "zoomstart"});
   }
 
   function zoomed(dispatch) {
@@ -244,7 +244,6 @@ d3.behavior.zoom = function() {
 
     // Temporarily override touchstart while gesture is active.
     function started() {
-
       // Listen for touchmove and touchend on the target of touchstart.
       var target = d3.event.target;
       d3.select(target).on(touchmove, moved).on(touchend, ended);
@@ -257,18 +256,21 @@ d3.behavior.zoom = function() {
       }
 
       var touches = relocate(),
-          now = Date.now();
+          now = Date.now(),
+          p, q, dx, dy;
 
       if (touches.length === 1) {
         if (now - touchtime < 500) { // dbltap
-          var p = touches[0];
+          p = touches[0];
           zoomTo(that, p, locations0[p.identifier], Math.floor(Math.log(view.k) / Math.LN2) + 1);
           d3_eventPreventDefault();
         }
         touchtime = now;
       } else if (touches.length > 1) {
-        var p = touches[0], q = touches[1],
-            dx = p[0] - q[0], dy = p[1] - q[1];
+        p = touches[0];
+        q = touches[1];
+        dx = p[0] - q[0];
+        dy = p[1] - q[1];
         distance0 = dx * dx + dy * dy;
       }
     }
@@ -282,7 +284,7 @@ d3.behavior.zoom = function() {
 
       for (var i = 0, n = touches.length; i < n; ++i, l1 = null) {
         p1 = touches[i];
-        if (l1 = locations0[p1.identifier]) {
+        if ((l1 = locations0[p1.identifier])) {
           if (l0) break;
           p0 = p1, l0 = l1;
         }
@@ -329,7 +331,7 @@ d3.behavior.zoom = function() {
     else translate0 = location(center0 = center || d3.mouse(this)), d3_selection_interrupt.call(this), zoomstarted(dispatch);
     mousewheelTimer = setTimeout(function() { mousewheelTimer = null; zoomended(dispatch); }, 50);
     d3_eventPreventDefault();
-    scaleTo(Math.pow(2, d3_behavior_zoomDelta() * .002) * view.k);
+    scaleTo(Math.pow(2, d3_behavior_zoomDelta() * 0.002) * view.k);
     translateTo(center0, translate0);
     zoomed(dispatch);
   }

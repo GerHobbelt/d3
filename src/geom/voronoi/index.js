@@ -23,8 +23,8 @@ function d3_geom_voronoi(sites, bbox) {
 
   d3_geom_voronoiEdges = [];
   d3_geom_voronoiCells = new Array(sites.length);
-  d3_geom_voronoiBeaches = new d3_geom_voronoiRedBlackTree;
-  d3_geom_voronoiCircles = new d3_geom_voronoiRedBlackTree;
+  d3_geom_voronoiBeaches = new d3_geom_voronoiRedBlackTree();
+  d3_geom_voronoiCircles = new d3_geom_voronoiRedBlackTree();
 
   while (true) {
     circle = d3_geom_voronoiFirstCircle;
@@ -52,7 +52,7 @@ function d3_geom_voronoi(sites, bbox) {
   d3_geom_voronoiCells = null;
 
   return diagram;
-};
+}
 
 function d3_geom_voronoiVertexOrder(a, b) {
   return b.y - a.y || b.x - a.x;

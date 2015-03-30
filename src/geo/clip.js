@@ -48,12 +48,12 @@ function d3_geo_clip(pointVisible, clipLine, interpolate, clipStart) {
     };
 
     function point(λ, φ) {
-      var point = rotate(λ, φ);
-      if (pointVisible(λ = point[0], φ = point[1])) listener.point(λ, φ);
+      var coord = rotate(λ, φ);
+      if (pointVisible(λ = coord[0], φ = coord[1])) listener.point(λ, φ);
     }
     function pointLine(λ, φ) {
-      var point = rotate(λ, φ);
-      line.point(point[0], point[1]);
+      var coord = rotate(λ, φ);
+      line.point(coord[0], coord[1]);
     }
     function lineStart() { clip.point = pointLine; line.lineStart(); }
     function lineEnd() { clip.point = point; line.lineEnd(); }
@@ -68,8 +68,8 @@ function d3_geo_clip(pointVisible, clipLine, interpolate, clipStart) {
 
     function pointRing(λ, φ) {
       ring.push([λ, φ]);
-      var point = rotate(λ, φ);
-      ringListener.point(point[0], point[1]);
+      var coord = rotate(λ, φ);
+      ringListener.point(coord[0], coord[1]);
     }
 
     function ringStart() {
@@ -84,7 +84,9 @@ function d3_geo_clip(pointVisible, clipLine, interpolate, clipStart) {
       var clean = ringListener.clean(),
           ringSegments = buffer.buffer(),
           segment,
-          n = ringSegments.length;
+          n = ringSegments.length,
+          i,
+          coord;
 
       ring.pop();
       polygon.push(ring);
@@ -95,13 +97,12 @@ function d3_geo_clip(pointVisible, clipLine, interpolate, clipStart) {
       // No intersections.
       if (clean & 1) {
         segment = ringSegments[0];
-        var n = segment.length - 1,
-            i = -1,
-            point;
+        n = segment.length - 1;
+        i = -1;
         if (n > 0) {
           if (!polygonStarted) listener.polygonStart(), polygonStarted = true;
           listener.lineStart();
-          while (++i < n) listener.point((point = segment[i])[0], point[1]);
+          while (++i < n) listener.point((coord = segment[i])[0], coord[1]);
           listener.lineEnd();
         }
         return;

@@ -51,7 +51,7 @@ function d3_geo_pointInPolygon(point, polygon) {
           winding += antimeridian ^ dλ >= 0 ? 1 : -1;
         }
       }
-      if (!j++) break;
+      if (!(j++)) break;
       λ0 = λ, sinφ0 = sinφ, cosφ0 = cosφ, point0 = point;
     }
   }

@@ -9,7 +9,7 @@ d3.geom.quadtree = function(points, x1, y1, x2, y2) {
       compat;
 
   // For backwards-compatibility.
-  if (compat = arguments.length) {
+  if ((compat = arguments.length)) {
     x = d3_geom_quadtreeCompatX;
     y = d3_geom_quadtreeCompatY;
     if (compat === 3) {
@@ -78,7 +78,7 @@ d3.geom.quadtree = function(points, x1, y1, x2, y2) {
           // point we are adding, we leave the point associated with the
           // internal node while adding the new point to a child node. This
           // avoids infinite recursion.
-          if ((abs(nx - x) + abs(ny - y)) < .01) {
+          if ((abs(nx - x) + abs(ny - y)) < 0.01) {
             insertChild(n, d, x, y, x1, y1, x2, y2);
           } else {
             var nPoint = n.point;
@@ -98,8 +98,8 @@ d3.geom.quadtree = function(points, x1, y1, x2, y2) {
     // n. The bounds are defined by [x1, x2] and [y1, y2].
     function insertChild(n, d, x, y, x1, y1, x2, y2) {
       // Compute the split point, and the quadrant in which to insert p.
-      var xm = (x1 + x2) * .5,
-          ym = (y1 + y2) * .5,
+      var xm = (x1 + x2) * 0.5,
+          ym = (y1 + y2) * 0.5,
           right = x >= xm,
           below = y >= ym,
           i = below << 1 | right;
@@ -188,8 +188,8 @@ function d3_geom_quadtreeNode() {
 
 function d3_geom_quadtreeVisit(f, node, x1, y1, x2, y2) {
   if (!f(node, x1, y1, x2, y2)) {
-    var sx = (x1 + x2) * .5,
-        sy = (y1 + y2) * .5,
+    var sx = (x1 + x2) * 0.5,
+        sy = (y1 + y2) * 0.5,
         children = node.nodes;
     if (children[0]) d3_geom_quadtreeVisit(f, children[0], x1, y1, sx, sy);
     if (children[1]) d3_geom_quadtreeVisit(f, children[1], sx, y1, x2, sy);
@@ -208,7 +208,7 @@ function d3_geom_quadtreeFind(root, x, y, x0, y0, x3, y3) {
     if (x1 > x3 || y1 > y3 || x2 < x0 || y2 < y0) return;
 
     // visit this point
-    if (point = node.point) {
+    if ((point = node.point)) {
       var point,
           dx = x - node.x,
           dy = y - node.y,
@@ -223,18 +223,20 @@ function d3_geom_quadtreeFind(root, x, y, x0, y0, x3, y3) {
 
     // bisect the current node
     var children = node.nodes,
-        xm = (x1 + x2) * .5,
-        ym = (y1 + y2) * .5,
+        xm = (x1 + x2) * 0.5,
+        ym = (y1 + y2) * 0.5,
         right = x >= xm,
         below = y >= ym;
 
     // visit closest cell first
     for (var i = below << 1 | right, j = i + 4; i < j; ++i) {
-      if (node = children[i & 3]) switch (i & 3) {
+      if ((node = children[i & 3])) { 
+        switch (i & 3) {
         case 0: find(node, x1, y1, xm, ym); break;
         case 1: find(node, xm, y1, x2, ym); break;
         case 2: find(node, x1, ym, xm, y2); break;
         case 3: find(node, xm, ym, x2, y2); break;
+        }
       }
     }
   })(root, x0, y0, x3, y3);

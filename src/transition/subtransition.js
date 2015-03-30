@@ -8,12 +8,13 @@ d3_transitionPrototype.transition = function() {
       subgroup,
       group,
       node,
-      transition;
+      transition,
+      j, m, i, n;
 
-  for (var j = 0, m = this.length; j < m; j++) {
+  for (j = 0, m = this.length; j < m; j++) {
     subgroups.push(subgroup = []);
-    for (var group = this[j], i = 0, n = group.length; i < n; i++) {
-      if (node = group[i]) {
+    for (group = this[j], i = 0, n = group.length; i < n; i++) {
+      if ((node = group[i])) {
         transition = node[ns][id0];
         d3_transitionNode(node, i, ns, id1, {time: transition.time, ease: transition.ease, delay: transition.delay + transition.duration, duration: transition.duration});
       }

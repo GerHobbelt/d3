@@ -10,7 +10,7 @@ function d3_hsl(h, s, l) {
       : new d3_hsl(h, s, l);
 }
 
-var d3_hslPrototype = d3_hsl.prototype = new d3_color;
+var d3_hslPrototype = d3_hsl.prototype = new d3_color();
 
 d3_hslPrototype.brighter = function(k) {
   k = Math.pow(0.7, arguments.length ? k : 1);
@@ -36,7 +36,7 @@ function d3_hsl_rgb(h, s, l) {
   l = l < 0 ? 0 : l > 1 ? 1 : l;
 
   /* From FvD 13.37, CSS Color Module Level 3 */
-  m2 = l <= .5 ? l * (1 + s) : l + s - l * s;
+  m2 = l <= 0.5 ? l * (1 + s) : l + s - l * s;
   m1 = 2 * l - m2;
 
   function v(h) {

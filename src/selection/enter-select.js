@@ -14,7 +14,7 @@ d3_selection_enterPrototype.select = function(selector) {
     subgroups.push(subgroup = []);
     subgroup.parentNode = group.parentNode;
     for (var i = -1, n = group.length; ++i < n;) {
-      if (node = group[i]) {
+      if ((node = group[i])) {
         subgroup.push(upgroup[i] = subnode = selector.call(group.parentNode, node.__data__, i, j));
         subnode.__data__ = node.__data__;
       } else {

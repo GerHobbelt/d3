@@ -6,11 +6,12 @@ import "spherical";
 // clip edge.
 function d3_geo_clipPolygon(segments, compare, clipStartInside, interpolate, listener) {
   var subject = [],
-      clip = [];
+      clip = [],
+      i, n, entry;
 
   segments.forEach(function(segment) {
     if ((n = segment.length - 1) <= 0) return;
-    var n, p0 = segment[0], p1 = segment[n];
+    var p0 = segment[0], p1 = segment[n];
 
     // If the first and last points of a segment are coincident, then treat as
     // a closed ring.
@@ -39,7 +40,7 @@ function d3_geo_clipPolygon(segments, compare, clipStartInside, interpolate, lis
   d3_geo_clipPolygonLinkCircular(clip);
   if (!subject.length) return;
 
-  for (var i = 0, entry = clipStartInside, n = clip.length; i < n; ++i) {
+  for (i = 0, entry = clipStartInside, n = clip.length; i < n; ++i) {
     clip[i].e = entry = !entry;
   }
 
@@ -57,7 +58,7 @@ function d3_geo_clipPolygon(segments, compare, clipStartInside, interpolate, lis
       current.v = current.o.v = true;
       if (current.e) {
         if (isSubject) {
-          for (var i = 0, n = points.length; i < n; ++i) listener.point((point = points[i])[0], point[1]);
+          for (i = 0, n = points.length; i < n; ++i) listener.point((point = points[i])[0], point[1]);
         } else {
           interpolate(current.x, current.n.x, 1, listener);
         }
@@ -65,7 +66,7 @@ function d3_geo_clipPolygon(segments, compare, clipStartInside, interpolate, lis
       } else {
         if (isSubject) {
           points = current.p.z;
-          for (var i = points.length - 1; i >= 0; --i) listener.point((point = points[i])[0], point[1]);
+          for (i = points.length - 1; i >= 0; --i) listener.point((point = points[i])[0], point[1]);
         } else {
           interpolate(current.x, current.p.x, -1, listener);
         }

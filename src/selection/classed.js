@@ -12,7 +12,7 @@ d3_selectionPrototype.classed = function(name, value) {
       var node = this.node(),
           n = (name = d3_selection_classes(name)).length,
           i = -1;
-      if (value = node.classList) {
+      if ((value = node.classList)) {
         while (++i < n) if (!value.contains(name[i])) return false;
       } else {
         value = node.getAttribute("class");
@@ -64,7 +64,7 @@ function d3_selection_classed(name, value) {
 function d3_selection_classedName(name) {
   var re = d3_selection_classedRe(name);
   return function(node, value) {
-    if (c = node.classList) return value ? c.add(name) : c.remove(name);
+    if ((c = node.classList)) return value ? c.add(name) : c.remove(name);
     var c = node.getAttribute("class") || "";
     if (value) {
       re.lastIndex = 0;

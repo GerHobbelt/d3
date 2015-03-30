@@ -64,12 +64,16 @@ d3.dsv = function(delimiter, mimeType) {
 
     function token() {
       if (I >= N) return EOF; // special case: end of file
-      if (eol) return eol = false, EOL; // special case: end of line
+      if (eol) {
+        eol = false;
+        return EOL; // special case: end of line
+      }
+      var c, k, i, j;
 
       // special case: quotes
-      var j = I;
+      j = I;
       if (text.charCodeAt(j) === 34) {
-        var i = j;
+        i = j;
         while (i++ < N) {
           if (text.charCodeAt(i) === 34) {
             if (text.charCodeAt(i + 1) !== 34) break;
@@ -77,7 +81,7 @@ d3.dsv = function(delimiter, mimeType) {
           }
         }
         I = i + 2;
-        var c = text.charCodeAt(i + 1);
+        c = text.charCodeAt(i + 1);
         if (c === 13) {
           eol = true;
           if (text.charCodeAt(i + 2) === 10) ++I;
@@ -89,7 +93,8 @@ d3.dsv = function(delimiter, mimeType) {
 
       // common case: find next delimiter or newline
       while (I < N) {
-        var c = text.charCodeAt(I++), k = 1;
+        c = text.charCodeAt(I++);
+        k = 1;
         if (c === 10) eol = true; // \n
         else if (c === 13) { eol = true; if (text.charCodeAt(I) === 10) ++I, ++k; } // \r|\r\n
         else if (c !== delimiterCode) continue;
@@ -115,7 +120,7 @@ d3.dsv = function(delimiter, mimeType) {
 
   dsv.format = function(rows) {
     if (Array.isArray(rows[0])) return dsv.formatRows(rows); // deprecated; use formatRows
-    var fieldSet = new d3_Set, fields = [];
+    var fieldSet = new d3_Set(), fields = [];
 
     // Compute unique fields in order of discovery.
     rows.forEach(function(row) {

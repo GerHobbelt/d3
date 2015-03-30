@@ -27,10 +27,10 @@ d3.svg.chord = function() {
   }
 
   function subgroup(self, f, d, i) {
-    var subgroup = f.call(self, d, i),
-        r = radius.call(self, subgroup, i),
-        a0 = startAngle.call(self, subgroup, i) - halfπ,
-        a1 = endAngle.call(self, subgroup, i) - halfπ;
+    var subgroup_f = f.call(self, d, i),
+        r = radius.call(self, subgroup_f, i),
+        a0 = startAngle.call(self, subgroup_f, i) - halfπ,
+        a1 = endAngle.call(self, subgroup_f, i) - halfπ;
     return {
       r: r,
       a0: a0,

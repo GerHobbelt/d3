@@ -1,7 +1,7 @@
 import "../arrays/map";
 
 d3.dispatch = function() {
-  var dispatch = new d3_dispatch,
+  var dispatch = new d3_dispatch(),
       i = -1,
       n = arguments.length;
   while (++i < n) {
@@ -36,7 +36,7 @@ d3_dispatch.prototype.on = function(type, listener) {
 
 function d3_dispatch_event(dispatch) {
   var listeners = [],
-      listenerByName = new d3_Map;
+      listenerByName = new d3_Map();
 
   function event() {
     var z = listeners, // defensive reference
@@ -44,7 +44,7 @@ function d3_dispatch_event(dispatch) {
         n = z.length,
         l;
     while (++i < n) {
-      if (l = z[i].on) {
+      if ((l = z[i].on)) {
         l.apply(this, arguments);
       }
     }

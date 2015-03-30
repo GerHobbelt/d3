@@ -76,7 +76,7 @@ d3.layout.treemap = function() {
           row = [];
       scale(remaining, rect.dx * rect.dy / node.value);
       row.area = 0;
-      while (child = remaining.pop()) {
+      while ((child = remaining.pop())) {
         row.push(child);
         row.area += child.area;
         if (child.z != null) {

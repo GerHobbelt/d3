@@ -61,7 +61,7 @@ function d3_transitionNode(node, i, ns, id, inherit) {
     var time = inherit.time;
 
     transition = lock[id] = {
-      tween: new d3_Map,
+      tween: new d3_Map(),
       time: time,
       delay: inherit.delay,
       duration: inherit.duration,
@@ -99,7 +99,7 @@ function d3_transitionNode(node, i, ns, id, inherit) {
         transition.event && transition.event.start.call(node, node.__data__, i);
 
         transition.tween.forEach(function(key, value) {
-          if (value = value.call(node, node.__data__, i)) {
+          if ((value = value.call(node, node.__data__, i))) {
             tweened.push(value);
           }
         });

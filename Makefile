@@ -2,6 +2,7 @@
 
 UGLIFY = node_modules/.bin/uglifyjs
 SMASH = node_modules/.bin/smash
+JSHINT = node_modules/.bin/jshint
 
 GENERATED_FILES = \
 	d3.latest.js \
@@ -13,14 +14,20 @@ GENERATED_FILES = \
 
 all: $(GENERATED_FILES)
 
-.PHONY: superclean clean all test benchmark publish
+.PHONY: superclean clean all test benchmark publish lint
 
 npm-install:
 	npm install
 	-@touch npm-install
 
-test:
+test: npm-install
 	@npm test
+
+lint-all: npm-install
+	$(JSHINT) $(shell $(SMASH) --ignore-missing --list src/d3.js) 
+
+lint: npm-install d3.latest.js
+	$(JSHINT) d3.latest.js 
 
 src/start.js: npm-install package.json bin/start
 	bin/start > $@

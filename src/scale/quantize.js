@@ -44,7 +44,7 @@ function d3_scale_quantize(x0, x1, range) {
 
   scale.rangeBand = function() {
     return kx;
-  }
+  };
 
   scale.invertExtent = function(y) {
     y = range.indexOf(y);

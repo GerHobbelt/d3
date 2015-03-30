@@ -25,7 +25,7 @@ d3_adder.prototype = {
   }
 };
 
-var d3_adderTemp = new d3_adder;
+var d3_adderTemp = new d3_adder();
 
 function d3_adderSum(a, b, o) {
   var x = o.s = a + b, // a + b

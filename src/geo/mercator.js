@@ -30,7 +30,7 @@ function d3_geo_mercatorProjection(project) {
   m.clipExtent = function(_) {
     var v = clipExtent.apply(m, arguments);
     if (v === m) {
-      if (clipAuto = _ == null) {
+      if ((clipAuto = (_ == null))) {
         var k = π * scale(), t = translate();
         clipExtent([[t[0] - k, t[1] - k], [t[0] + k, t[1] + k]]);
       }

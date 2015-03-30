@@ -3,8 +3,8 @@ import "../core/class";
 d3.map = function(object, f) {
   var map = new d3_Map();
   if (object instanceof d3_Map) {
-    object.forEach(function(key, value) { 
-      map.set(key, value); 
+    object.forEach(function(key, value) {
+      map.set(key, value);
     });
   } else if (Array.isArray(object)) {
     var i = -1,
@@ -40,7 +40,8 @@ d3_class(d3_Map, {
     return this._[d3_map_escape(key)];
   },
   set: function(key, value) {
-    return this._[d3_map_escape(key)] = value;
+    this._[d3_map_escape(key)] = value;
+    return value;
   },
   remove: d3_map_remove,
   keys: d3_map_keys,
@@ -58,7 +59,7 @@ d3_class(d3_Map, {
         key: d3_map_unescape(key),
         value: this._[key]
       });
-    });
+    }
     return entries;
   },
   size: d3_map_size,
@@ -90,7 +91,7 @@ function d3_map_keys() {
   var keys = [];
   for (var key in this._) {
     keys.push(d3_map_unescape(key));
-  });
+  }
   return keys;
 }
 

@@ -26,13 +26,13 @@ d3.layout.force = function() {
       theta2_f,
       has_theta2_f = false,
       // These model parameters can be either a function or a direct numeric value:
-      friction = .9,
+      friction = 0.9,
       linkDistance = d3_layout_forceLinkDistance,
       linkStrength = d3_layout_forceLinkStrength,
       charge = -30,
       chargeDistance2 = d3_layout_forceChargeDistance2,
-      gravity = .1,
-      theta2 = .64;
+      gravity = 0.1,
+      theta2 = 0.64;
 
   setup_model_parameter_functors();
 
@@ -54,7 +54,7 @@ d3.layout.force = function() {
             th2;
 
         if (has_theta2_f) {
-            // when this is a FUNCTION it calculates theta, NOT theta²!
+            // when this is a FUNCTION it calculates theta, NOT thetaÂ²!
             th2 = theta2_f.call(this, node, i, quad, l, x1, x2, k);
             th2 *= th2;
         } else {
@@ -108,7 +108,7 @@ d3.layout.force = function() {
 
   force.tick = function() {
     // simulated annealing, basically
-    if ((alpha *= .99) < .005) {
+    if ((alpha *= 0.99) < 0.005) {
       event.end({type: "end", alpha: alpha = 0});
       return true;
     }
@@ -133,7 +133,7 @@ d3.layout.force = function() {
       t = o.target;
       x = t.x - s.x;
       y = t.y - s.y;
-      if (l = (x * x + y * y)) {
+      if ((l = (x * x + y * y))) {
         l = alpha * strengths[i] * ((l = Math.sqrt(l)) - distances[i]) / l;
         x *= l;
         y *= l;
@@ -145,7 +145,7 @@ d3.layout.force = function() {
     }
 
     // apply gravity forces
-    if (k = alpha * gravity_f.call(this)) {
+    if ((k = alpha * gravity_f.call(this))) {
       x = size[0] / 2;
       y = size[1] / 2;
       i = -1;
@@ -175,7 +175,7 @@ d3.layout.force = function() {
       }
       charge_abssum = f;
     }
-    if (charge_abssum != 0) {
+    if (charge_abssum !== 0) {
       d3_layout_forceAccumulate(q, alpha, charges);
       for (i = 0; i < n; ++i) {
         if (!(o = nodes[i]).fixed) {
@@ -281,7 +281,7 @@ d3.layout.force = function() {
         return Math.sqrt(theta2);
       }
     }
-    // set theta2 to x² when x is a value (this is done as a calculation optimization for when rendering the force graph).
+    // set theta2 to xÂ² when x is a value (this is done as a calculation optimization for when rendering the force graph).
     // When x is a function, we need to do the squaring on every quad on every iteration anyhow.
     theta2 = typeof x === "function" ? x : x * x;
     setup_model_parameter_functors();
@@ -388,7 +388,6 @@ d3.layout.force = function() {
         }
       }
       var candidates = neighbors[i],
-          j,
           l = candidates.length,
           x;
       for (j = 0; j < l; ++j) {
@@ -403,7 +402,7 @@ d3.layout.force = function() {
   };
 
   force.resume = function() {
-    return force.alpha(.1);
+    return force.alpha(0.1);
   };
 
   force.stop = function() {
@@ -478,8 +477,8 @@ function d3_layout_forceAccumulate(quad, alpha, charges) {
   if (quad.point) {
     // jitter internal nodes that are coincident
     if (!quad.leaf) {
-      quad.point.x += Math.random() - .5;
-      quad.point.y += Math.random() - .5;
+      quad.point.x += Math.random() - 0.5;
+      quad.point.y += Math.random() - 0.5;
     }
     var k = charges[quad.point.index];
     quad.charge += quad.pointCharge = k;

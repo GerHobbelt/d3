@@ -16,7 +16,7 @@ function d3_selection_interruptNS(ns) {
     if ((lock = this[ns]) && (active = lock[lock.active])) {
       if (--lock.count) delete lock[lock.active];
       else delete this[ns];
-      lock.active += .5;
+      lock.active += 0.5;
       active.event && active.event.interrupt.call(this, this.__data__, active.index);
     }
   };

@@ -91,13 +91,13 @@ function d3_scale_formulaTickRange(domain, m) {
       err = m / span * step;
 
   // Filter ticks to get closer to the desired count.
-  if (err <= .15) step *= 10;
-  else if (err <= .35) step *= 5;
-  else if (err <= .75) step *= 2;
+  if (err <= 0.15) step *= 10;
+  else if (err <= 0.35) step *= 5;
+  else if (err <= 0.75) step *= 2;
 
   // Round start and stop values to step interval.
   extent[0] = Math.ceil(extent[0] / step) * step;
-  extent[1] = Math.floor(extent[1] / step) * step + step * .5; // inclusive
+  extent[1] = Math.floor(extent[1] / step) * step + step * 0.5; // inclusive
   extent[2] = step;
   return extent;
 }
@@ -107,5 +107,5 @@ function d3_scale_formulaTicks(domain, m) {
 }
 
 function d3_scale_formulaTickFormat(domain, m) {
-  return d3.format(",." + Math.max(0, -Math.floor(Math.log(d3_scale_formulaTickRange(domain, m)[2]) / Math.LN10 + .01)) + "f");
+  return d3.format(",." + Math.max(0, -Math.floor(Math.log(d3_scale_formulaTickRange(domain, m)[2]) / Math.LN10 + 0.01)) + "f");
 }
