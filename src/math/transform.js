@@ -11,8 +11,7 @@ d3.transform = function(string) {
     }
     return new d3_transform(t ? t.matrix : d3_transformIdentity);
   }
-  var o = d3.transform = d3_transform_interface_patcher(string);
-  return o;
+  return d3_transform_interface_patcher(string);
 };
 
 // Compute x-scale and normalize the first row.

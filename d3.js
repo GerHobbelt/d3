@@ -6123,8 +6123,7 @@
       }
       return new d3_transform(t ? t.matrix : d3_transformIdentity);
     }
-    var o = d3.transform = d3_transform_interface_patcher(string);
-    return o;
+    return d3_transform_interface_patcher(string);
   };
   function d3_transform(m) {
     var r0 = [ m.a, m.b ], r1 = [ m.c, m.d ], kx = d3_transformNormalize(r0), kz = d3_transformDot(r0, r1), ky = d3_transformNormalize(d3_transformCombine(r1, r0, -kz)) || 0;
