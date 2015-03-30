@@ -5,9 +5,6 @@ import "arrays/";
 import "behavior/";
 import "color/";
 import "core/";
-// for some odd reason SMASH doesn't want to load these two from the core directory:
-import "core/variance";
-import "core/deviation";
 import "dsv/";
 import "event/";
 import "format/";
