@@ -129,8 +129,8 @@ d3.geom.quadtree = function(points, x1, y1, x2, y2) {
     // TODO allow the initial search extent to be specified?
     // TODO allow the initial minimum distance to be specified?
     // TODO allow searching below any node?
-    root.find = function(x, y) {
-      return d3_geom_quadtreeFind(root, x, y, x1_, y1_, x2_, y2_);
+    root.find = function(point) {
+      return d3_geom_quadtreeFind(root, point[0], point[1], x1_, y1_, x2_, y2_);
     };
 
     // Insert all points.
@@ -210,8 +210,8 @@ function d3_geom_quadtreeFind(root, x, y, x0, y0, x3, y3) {
     // visit this point
     if (point = node.point) {
       var point,
-          dx = x - point[0],
-          dy = y - point[1],
+          dx = x - node.x,
+          dy = y - node.y,
           distance2 = dx * dx + dy * dy;
       if (distance2 < minDistance2) {
         var distance = Math.sqrt(minDistance2 = distance2);

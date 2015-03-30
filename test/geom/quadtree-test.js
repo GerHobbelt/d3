@@ -43,10 +43,18 @@ suite.addBatch({
         var dx = 17, dy = 17,
             points = _.range(dx * dy).map(function(i) { return [i % dx, i / dx | 0]; });
         q = q(points);
-        assert.deepEqual(q.find(.1, .1), [0, 0]);
-        assert.deepEqual(q.find(7.5, 7.5), [7, 7]);
-        assert.deepEqual(q.find(.1, 15.9), [0, 16]);
-        assert.deepEqual(q.find(15.9, 15.9), [16, 16]);
+        assert.deepEqual(q.find([.1, .1]), [0, 0]);
+        assert.deepEqual(q.find([7.5, 7.5]), [7, 7]);
+        assert.deepEqual(q.find([.1, 15.9]), [0, 16]);
+        assert.deepEqual(q.find([15.9, 15.9]), [16, 16]);
+      },
+      "can find with accessors": function(q) {
+        q.x(function(d) { return d.x; });
+        q.y(function(d) { return d.y; });
+
+        var point = {x: 0, y: 0, arbitrary: 1};
+        q = q([point]);
+        assert.deepEqual(q.find([0, 0]), point);
       }
     },
     "the quadtree applied directly": {

@@ -3,13 +3,13 @@
 UGLIFY = node_modules/.bin/uglifyjs
 SMASH = node_modules/.bin/smash
 
-
 GENERATED_FILES = \
 	d3.latest.js \
 	d3.js \
 	d3.min.js \
 	bower.json \
-	component.json
+	component.json \
+	package.js
 
 all: $(GENERATED_FILES)
 
@@ -25,6 +25,9 @@ test:
 src/start.js: npm-install package.json bin/start
 	bin/start > $@
 
+d3.zip: LICENSE d3.js d3.min.js
+	zip $@ $^
+
 test/data/sample-big.csv:
 	echo 'a,b,c,d,e,f,g,h,i,j' > $@
 	for i in {1..100000}; do echo '0,1,2,3,4,5,6,7,8,9' >> $@; done
@@ -39,13 +42,18 @@ d3.js: $(UGLIFY) d3.latest.js
 	cat d3.latest.js | $(UGLIFY) - -b indent-level=2 -o $@
 	@chmod a-w $@
 
-d3.min.js: npm-install d3.js bin/uglify
+d3.min.js: d3.js bin/uglify
 	@rm -f $@
 	bin/uglify d3.js > $@
 
 %.json: npm-install bin/% package.json
 	@rm -f $@
 	bin/$* > $@
+	@chmod a-w $@
+
+package.js: npm-install bin/meteor package.json
+	@rm -f $@
+	bin/meteor > package.js
 	@chmod a-w $@
 
 $(SMASH): npm-install
@@ -60,3 +68,4 @@ clean:
 
 superclean: clean
 	-find . -type d -name 'node_modules' -exec rm -rf "{}" \;
+
