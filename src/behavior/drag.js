@@ -41,8 +41,8 @@ d3.behavior.drag = function() {
 
       dispatch({
         type: "dragstart",
-        x: origin_[0] + offset[0],
-        y: origin_[1] + offset[1],
+        x: position0[0] + dragOffset[0],
+        y: position0[1] + dragOffset[1],
         dx: 0,
         dy: 0
       });
@@ -71,13 +71,13 @@ d3.behavior.drag = function() {
         dragSubject.on(move + dragName, null).on(end + dragName, null);
         dragRestore(dragged && d3.event.target === target);
 
-        var dx = p[0] - origin_[0],
-            dy = p[1] - origin_[1];
+        var dx = p[0] - position0[0],
+            dy = p[1] - position0[1];
 
         dispatch({
           type: "dragend",
-          x: p[0] + offset[0],
-          y: p[1] + offset[1],
+          x: p[0] + dragOffset[0],
+          y: p[1] + dragOffset[1],
           dx: dx,
           dy: dy
         });
