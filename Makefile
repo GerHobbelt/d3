@@ -13,7 +13,7 @@ GENERATED_FILES = \
 
 all: $(GENERATED_FILES)
 
-.PHONY: superclean clean all test benchmark
+.PHONY: superclean clean all test benchmark publish
 
 npm-install:
 	npm install
@@ -55,6 +55,10 @@ package.js: npm-install bin/meteor package.json
 	@rm -f $@
 	bin/meteor > package.js
 	@chmod a-w $@
+
+publish: npm-install
+	npm publish
+	meteor publish && rm -- .versions
 
 $(SMASH): npm-install
 
