@@ -3,13 +3,16 @@ import "../core/ns";
 
 d3.transform = function(string) {
   var g = d3_document.createElementNS(d3.ns.prefix.svg, "g");
-  return (d3.transform = function(string) {
+  function d3_transform_interface_patcher(string) {
+    var t;
     if (string != null) {
       g.setAttribute("transform", string);
-      var t = g.transform.baseVal.consolidate();
+      t = g.transform.baseVal.consolidate();
     }
     return new d3_transform(t ? t.matrix : d3_transformIdentity);
-  })(string);
+  }
+  var o = d3.transform = d3_transform_interface_patcher(string);
+  return o;
 };
 
 // Compute x-scale and normalize the first row.
@@ -32,7 +35,7 @@ function d3_transform(m) {
   this.translate = [m.e, m.f];
   this.scale = [kx, ky];
   this.skew = ky ? Math.atan2(kz, ky) * d3_degrees : 0;
-};
+}
 
 d3_transform.prototype.toString = function() {
   return "translate(" + this.translate
