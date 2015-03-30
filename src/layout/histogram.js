@@ -10,11 +10,11 @@ d3.layout.histogram = function() {
       ranger = d3_layout_histogramRange,
       binner = d3_layout_histogramBinSturges;
 
-  function histogram(data, i) {
+  function histogram(data, index) {
     var bins = [],
         values = data.map(valuer, this),
-        range = ranger.call(this, values, i),
-        thresholds = binner.call(this, range, values, i),
+        range = ranger.call(this, values, index),
+        thresholds = binner.call(this, range, values, index),
         bin,
         i = -1,
         n = values.length,
