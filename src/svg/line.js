@@ -13,7 +13,7 @@ function d3_svg_line(projection) {
       defined = d3_true,
       interpolate = d3_svg_lineLinear,
       interpolateKey = interpolate.key,
-      tension = .7;
+      tension = 0.7;
 
   function line(data) {
     var segments = [],
@@ -214,7 +214,7 @@ function d3_svg_lineHermite(points, tangents) {
   return path;
 }
 
-// Cubic polynomial spline construction; generates "C" commands.
+// Cubic Polynomial spline construction; generates "C" commands.
 function d3_svg_lineCubicPolynomialSpline(points, tangents) {
   if (tangents.length < 1
       || (points.length != tangents.length
@@ -232,43 +232,6 @@ function d3_svg_lineCubicPolynomialSpline(points, tangents) {
       dx = points[1][0] - points[0][0],
       tp, pp;
 
-  if (quad) {
-    path += "Q" + (p[0] - (dx / 2)) + "," + (p[1] - t0[1]/t0[0] * (dx / 2))
-        + "," + p[0] + "," + p[1];
-    p0 = points[1];
-    pi = 1;
-  }
-
-  if (tangents.length > 1) {
-    tp = tangents[0];
-    pp = points[pi];
-    pi++;
-    for (var i = 1; i < tangents.length; i++, pi++) {
-      p = points[pi]; t = tangents[i];
-      dx = p[0] - pp[0];
-      path += "C" + (pp[0] + (dx / 3)) + "," + (pp[1] + (tp[1]/tp[0]) * (dx / 3))
-        + "," + (p[0] - (dx / 3)) + "," + (p[1] - (t[1]/t[0]) * (dx / 3))
-        + "," + p[0] + "," + p[1];
-      pp = p; tp = t;
-    }
-  }
-
-  if (quad) {
-    var lp = points[pi];
-    dx = lp[0] - p[0];
-    path += "Q" + (p[0] + (dx / 2)) + "," + (p[1] + t[1]/t[0] * (dx / 2))
-        + "," + lp[0] + "," + lp[1];
-  }
-
-  return path;
-}
-
-// Cubic Polynomial spline construction; generates "C" commands.
-function d3_svg_lineCubicPolynomialSpline(points, tangents) {
-  if (tangents.length < 1 || points.length != tangents.length && points.length != tangents.length + 2) {
-    return d3_svg_lineLinear(points);
-  }
-  var quad = points.length != tangents.length, path = "", p0 = points[0], p = points[1], t0 = tangents[0], t = t0, pi = 0, dx = points[1][0] - points[0][0], tp, pp;
   if (quad) {
     path += "Q" + (p[0] - dx / 2) + "," + (p[1] - t0[1] / t0[0] * (dx / 2)) + "," + p[0] + "," + p[1];
     p0 = points[1];
