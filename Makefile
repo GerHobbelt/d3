@@ -8,12 +8,12 @@ GENERATED_FILES = \
 	d3.latest.js \
 	d3.js \
 	d3.min.js \
-	bower.json \
-	component.json
+	component.json \
+	package.js
 
 all: $(GENERATED_FILES)
 
-.PHONY: superclean clean all test benchmark
+.PHONY: superclean clean all test benchmark publish
 
 npm-install:
 	npm install
@@ -24,6 +24,9 @@ test:
 
 src/start.js: npm-install package.json bin/start
 	bin/start > $@
+
+d3.zip: LICENSE d3.js d3.min.js
+	zip $@ $^
 
 d3.latest.js: $(SMASH) $(shell $(SMASH) --ignore-missing --list src/d3.js) package.json
 	@rm -f $@
@@ -44,6 +47,15 @@ d3.min.js: npm-install d3.js bin/uglify
 	bin/$* > $@
 	@chmod a-w $@
 
+package.js: bin/meteor package.json
+	@rm -f $@
+	bin/meteor > package.js
+	@chmod a-w $@
+
+publish:
+	npm publish
+	meteor publish && rm -- .versions
+
 $(SMASH): npm-install
 
 $(UGLIFY): npm-install
@@ -56,3 +68,4 @@ clean:
 
 superclean: clean
 	-find . -type d -name 'node_modules' -exec rm -rf "{}" \;
+
