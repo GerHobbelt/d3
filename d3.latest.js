@@ -1,5 +1,5 @@
 !function(){
-  var d3 = {version: "3.5.5"}; // semver
+  var d3 = {version: "3.5.6-kiln"}; // semver
 var d3_arraySlice = [].slice,
     d3_array = function(list) { return d3_arraySlice.call(list); }; // conversion for NodeLists
 var d3_document = this.document;
@@ -1465,7 +1465,7 @@ d3.selectAll = function(nodes) {
     group = d3_array(d3_selectAll(nodes, d3_document));
     group.parentNode = d3_document.documentElement;
   } else {
-    group = nodes;
+    group = d3_array(nodes);
     group.parentNode = null;
   }
   return d3_selection([group]);
@@ -1603,15 +1603,18 @@ function d3_event_dragSuppress(node) {
   };
 }
 
-d3.mouse = function(container) {
-  return d3_mousePoint(container, d3_eventSource());
+d3.mouse = function(container, identifier) {
+  var event = d3_eventSource();
+  if (arguments.length < 2) identifier = event.pointerId; // ok if undefined
+  return d3_mousePoint(container, event, identifier);
 };
 
 // https://bugs.webkit.org/show_bug.cgi?id=44083
 var d3_mouse_bug44083 = (typeof this !== "undefined" && this.navigator && /WebKit/.test(this.navigator.userAgent)) ? -1 : 0;
 
-function d3_mousePoint(container, e) {
+function d3_mousePoint(container, e, id) {
   if (e.changedTouches) e = e.changedTouches[0];
+  if (e.pointerId !== id) return;
   var svg = container.ownerSVGElement || container;
   if (svg.createSVGPoint) {
     var point = svg.createSVGPoint();
@@ -1652,12 +1655,21 @@ d3.touch = function(container, touches, identifier) {
 d3.behavior.drag = function() {
   var event = d3_eventDispatch(drag, "drag", "dragstart", "dragend"),
       origin = null,
+      ptrdown = dragstart(d3_behavior_dragPointerId, d3.mouse, d3_window, "pointermove", "pointerup"),
       mousedown = dragstart(d3_noop, d3.mouse, d3_window, "mousemove", "mouseup"),
       touchstart = dragstart(d3_behavior_dragTouchId, d3.touch, d3_identity, "touchmove", "touchend");
 
   function drag() {
-    this.on("mousedown.drag", mousedown)
-        .on("touchstart.drag", touchstart);
+    if (navigator.pointerEnabled) {
+      if (this.style("touch-action") === "auto") {
+          // disable intrisic behaviors to get events
+          this.style("touch-action", "none");
+      }
+      this.on("pointerdown.drag", ptrdown);
+    } else {
+      this.on("mousedown.drag", mousedown)
+          .on("touchstart.drag", touchstart);
+    }
   }
 
   function dragstart(id, position, subject, move, end) {
@@ -1744,6 +1756,10 @@ d3.behavior.drag = function() {
 // tearing the fabric of spacetime, we allow the first touch to win.
 function d3_behavior_dragTouchId() {
   return d3.event.changedTouches[0].identifier;
+}
+
+function d3_behavior_dragPointerId() {
+  return d3.event.pointerId;
 }
 
 d3.touches = function(container, touches) {
@@ -12569,8 +12585,14 @@ function d3_transition_text(b) {
 d3_transitionPrototype.remove = function() {
   var ns = this.namespace;
   return this.each("end.transition", function() {
+    var lock = this[ns];
     var p;
-    if (this[ns].count < 2 && (p = this.parentNode)) p.removeChild(this);
+    if (lock.count > 1) {
+        for (var n in lock) {
+            if (n.match(/^\d+$/) && parseInt(n) > lock.active) return;
+        }
+    }
+    if (p = this.parentNode) p.removeChild(this);
   });
 };
 
