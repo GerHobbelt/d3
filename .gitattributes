@@ -1,0 +1,17 @@
+*.sh            text eol=lf
+*.php           text eol=lf
+*.inc           text eol=lf
+*.html          text eol=lf
+*.js            text eol=lf
+*.css           text eol=lf
+*.ini           text eol=lf
+*.txt           text eol=lf
+*.xml           text eol=lf
+*.md            text eol=lf
+*.markdown      text eol=lf
+
+bower.json -diff merge=ours
+component.json -diff merge=ours
+d3.js -diff merge=ours
+d3.min.js -diff merge=ours
+package.js -diff merge=ours
