@@ -102,7 +102,10 @@ function d3_geo_clip(pointVisible, clipLine, interpolate, clipStart) {
         if (n > 0) {
           if (!polygonStarted) listener.polygonStart(), polygonStarted = true;
           listener.lineStart();
-          while (++i < n) listener.point((coord = segment[i])[0], coord[1]);
+          while (++i < n) {
+            coord = segment[i];
+            listener.point(coord[0], coord[1]);
+          }
           listener.lineEnd();
         }
         return;

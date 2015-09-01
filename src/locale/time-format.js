@@ -29,8 +29,11 @@ function d3_locale_timeFormat(locale) {
       while (++i < n) {
         if (template.charCodeAt(i) === 37) {
           string.push(template.slice(j, i));
-          if ((p = d3_time_formatPads[c = template.charAt(++i)]) != null) c = template.charAt(++i);
-          if ((f = d3_time_formats[c])) c = f(date, p == null ? (c === "e" ? " " : "0") : p);
+          c = template.charAt(++i);
+          p = d3_time_formatPads[c];
+          if (p != null) c = template.charAt(++i);
+          f = d3_time_formats[c];
+          if (f) c = f(date, p == null ? (c === "e" ? " " : "0") : p);
           string.push(c);
           j = i + 1;
         }

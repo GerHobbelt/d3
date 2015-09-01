@@ -23,7 +23,10 @@ d3.nest = function() {
         values;
 
     while (++i < n) {
-      if ((values = valuesByKey.get(keyValue = key(object = array[i])))) {
+      object = array[i];
+      keyValue = key(object);
+      values = valuesByKey.get(keyValue);
+      if (values) {
         values.push(object);
       } else {
         valuesByKey.set(keyValue, [object]);

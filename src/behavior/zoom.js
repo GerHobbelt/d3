@@ -283,9 +283,11 @@ d3.behavior.zoom = function() {
 
       for (var i = 0, n = touches.length; i < n; ++i, l1 = null) {
         p1 = touches[i];
-        if ((l1 = locations0[p1.identifier])) {
+        l1 = locations0[p1.identifier];
+        if (l1) {
           if (l0) break;
-          p0 = p1, l0 = l1;
+          p0 = p1;
+          l0 = l1;
         }
       }
 

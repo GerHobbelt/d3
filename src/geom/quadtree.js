@@ -9,7 +9,8 @@ d3.geom.quadtree = function(points, x1, y1, x2, y2) {
       compat;
 
   // For backwards-compatibility.
-  if ((compat = arguments.length)) {
+  compat = arguments.length;
+  if (compat) {
     x = d3_geom_quadtreeCompatX;
     y = d3_geom_quadtreeCompatY;
     if (compat === 3) {
@@ -208,7 +209,8 @@ function d3_geom_quadtreeFind(root, x, y, x0, y0, x3, y3) {
     if (x1 > x3 || y1 > y3 || x2 < x0 || y2 < y0) return;
 
     // visit this point
-    if ((point = node.point)) {
+    point = node.point;
+    if (point) {
       var point,
           dx = x - node.x,
           dy = y - node.y,
@@ -230,7 +232,8 @@ function d3_geom_quadtreeFind(root, x, y, x0, y0, x3, y3) {
 
     // visit closest cell first
     for (var i = below << 1 | right, j = i + 4; i < j; ++i) {
-      if ((node = children[i & 3])) { 
+      node = children[i & 3];
+      if (node) { 
         switch (i & 3) {
         case 0: find(node, x1, y1, xm, ym); break;
         case 1: find(node, xm, y1, x2, ym); break;
