@@ -1,5 +1,5 @@
 !function(){
-  var d3 = {version: "3.5.6-kiln"}; // semver
+  var d3 = {version: "3.5.6"}; // semver
 var d3_arraySlice = [].slice,
     d3_array = function(list) { return d3_arraySlice.call(list); }; // conversion for NodeLists
 var d3_document = this.document;
@@ -2035,8 +2035,7 @@ d3.behavior.zoom = function() {
   }
 
   function zoomended(dispatch) {
-    if (!--zooming) dispatch({type: "zoomend"});
-    center0 = null;
+    if (!--zooming) dispatch({type: "zoomend"}), center0 = null;
   }
 
   function mousedowned() {
@@ -2181,7 +2180,7 @@ d3.behavior.zoom = function() {
   function mousewheeled() {
     var dispatch = event.of(this, arguments);
     if (mousewheelTimer) clearTimeout(mousewheelTimer);
-    else translate0 = location(center0 = center || d3.mouse(this)), d3_selection_interrupt.call(this), zoomstarted(dispatch);
+    else d3_selection_interrupt.call(this), translate0 = location(center0 = center || d3.mouse(this)), zoomstarted(dispatch);
     mousewheelTimer = setTimeout(function() { mousewheelTimer = null; zoomended(dispatch); }, 50);
     d3_eventPreventDefault();
     scaleTo(Math.pow(2, d3_behavior_zoomDelta() * 0.002) * view.k);
@@ -2417,7 +2416,8 @@ function d3_rgb_parse(format, rgb, hsl) {
       color;
 
   /* Handle hsl, rgb. */
-  m1 = /([a-z]+)\((.*)\)/i.exec(format);
+  format = format.toLowerCase();
+  m1 = /([a-z]+)\((.*)\)/.exec(format);
   if (m1) {
     m2 = m1[2].split(",");
     switch (m1[1]) {
@@ -2439,7 +2439,8 @@ function d3_rgb_parse(format, rgb, hsl) {
   }
 
   /* Named colors. */
-  if ((color = d3_rgb_names.get(format.toLowerCase()))) {
+  color = d3_rgb_names.get(format);
+  if (color) {
     return rgb(color.r, color.g, color.b);
   }
 
@@ -7967,7 +7968,7 @@ function d3_interpolate(a, b) {
 d3.interpolators = [
   function(a, b) {
     var t = typeof b;
-    return (t === "string" ? (d3_rgb_names.has(b) || /^(#|rgb\(|hsl\()/.test(b) ? d3_interpolateRgb : d3_interpolateString)
+    return (t === "string" ? (d3_rgb_names.has(b.toLowerCase()) || /^(#|rgb\(|hsl\()/i.test(b) ? d3_interpolateRgb : d3_interpolateString)
         : b instanceof d3_color ? d3_interpolateRgb
         : Array.isArray(b) ? d3_interpolateArray
         : t === "object" && isNaN(b) ? d3_interpolateObject
@@ -12285,7 +12286,7 @@ d3_selectionPrototype.transition = function(name) {
   for (var j = -1, m = this.length; ++j < m;) {
     subgroups.push(subgroup = []);
     for (var group = this[j], i = -1, n = group.length; ++i < n;) {
-      if ((node = group[i])) d3_transitionNode(node, i, ns, id, transition);
+      if ((node = group[i])) d3_transitionNode(node, i, j, ns, id, transition);
       subgroup.push(node);
     }
   }
@@ -12359,7 +12360,7 @@ d3_transitionPrototype.select = function(selector) {
     for (var group = this[j], i = -1, n = group.length; ++i < n;) {
       if ((node = group[i]) && (subnode = selector.call(node, node.__data__, i, j))) {
         if ("__data__" in node) subnode.__data__ = node.__data__;
-        d3_transitionNode(subnode, i, ns, id, node[ns][id]);
+        d3_transitionNode(subnode, i, j, ns, id, node[ns][id]);
         subgroup.push(subnode);
       } else {
         subgroup.push(null);
@@ -12389,7 +12390,7 @@ d3_transitionPrototype.selectAll = function(selector) {
         subnodes = selector.call(node, node.__data__, i, j);
         subgroups.push(subgroup = []);
         for (var k = -1, o = subnodes.length; ++k < o;) {
-          if ((subnode = subnodes[k])) d3_transitionNode(subnode, k, ns, id, transition);
+          if ((subnode = subnodes[k])) d3_transitionNode(subnode, k, i, ns, id, transition);
           subgroup.push(subnode);
         }
       }
@@ -12659,7 +12660,7 @@ d3_transitionPrototype.transition = function() {
     for (group = this[j], i = 0, n = group.length; i < n; i++) {
       if ((node = group[i])) {
         transition = node[ns][id0];
-        d3_transitionNode(node, i, ns, id1, {time: transition.time, ease: transition.ease, delay: transition.delay + transition.duration, duration: transition.duration});
+        d3_transitionNode(node, i, j, ns, id1, {time: transition.time, ease: transition.ease, delay: transition.delay + transition.duration, duration: transition.duration});
       }
       subgroup.push(node);
     }
@@ -12672,7 +12673,7 @@ function d3_transitionNamespace(name) {
   return name == null ? "__transition__" : "__transition_" + name + "__";
 }
 
-function d3_transitionNode(node, i, ns, id, inherit) {
+function d3_transitionNode(node, i, j, ns, id, inherit) {
   var lock = node[ns] || (node[ns] = {active: 0, count: 0}),
       transition = lock[id];
 
@@ -12685,7 +12686,8 @@ function d3_transitionNode(node, i, ns, id, inherit) {
       delay: inherit.delay,
       duration: inherit.duration,
       ease: inherit.ease,
-      index: i
+      groupIndex: j,
+      nodeIndex: i
     };
 
     inherit = null; // allow gc
@@ -12710,15 +12712,15 @@ function d3_transitionNode(node, i, ns, id, inherit) {
         if (active) {
           --lock.count;
           delete lock[lock.active];
-          active.event && active.event.interrupt.call(node, node.__data__, active.index);
+          active.event && active.event.interrupt.call(node, node.__data__, active.nodeIndex, active.groupIndex);
         }
 
         lock.active = id;
 
-        transition.event && transition.event.start.call(node, node.__data__, i);
+        transition.event && transition.event.start.call(node, node.__data__, i, j);
 
         transition.tween.forEach(function(key, value) {
-          if ((value = value.call(node, node.__data__, i))) {
+          if ((value = value.call(node, node.__data__, i, j))) {
             tweened.push(value);
           }
         });
@@ -12745,7 +12747,7 @@ function d3_transitionNode(node, i, ns, id, inherit) {
         }
 
         if (t >= 1) {
-          transition.event && transition.event.end.call(node, node.__data__, i);
+          transition.event && transition.event.end.call(node, node.__data__, i, j);
           return stop();
         }
       }

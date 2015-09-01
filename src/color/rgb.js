@@ -64,7 +64,8 @@ function d3_rgb_parse(format, rgb, hsl) {
       color;
 
   /* Handle hsl, rgb. */
-  m1 = /([a-z]+)\((.*)\)/i.exec(format);
+  format = format.toLowerCase();
+  m1 = /([a-z]+)\((.*)\)/.exec(format);
   if (m1) {
     m2 = m1[2].split(",");
     switch (m1[1]) {
@@ -86,7 +87,8 @@ function d3_rgb_parse(format, rgb, hsl) {
   }
 
   /* Named colors. */
-  if ((color = d3_rgb_names.get(format.toLowerCase()))) {
+  color = d3_rgb_names.get(format);
+  if (color) {
     return rgb(color.r, color.g, color.b);
   }
 
