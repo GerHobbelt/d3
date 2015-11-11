@@ -15,7 +15,7 @@ d3_transitionPrototype.style = function(name, value, priority) {
             tween = node.__transition__[this.id].tween.get("style." + name);
         return tween
             ? tween.$
-            : d3_window.getComputedStyle(node, null).getPropertyValue(name);
+            : d3_window(node).getComputedStyle(node, null).getPropertyValue(name);
       }
     }
 

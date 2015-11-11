@@ -9176,7 +9176,7 @@
       if (typeof name === "string") {
         if (n < 2) {
           var node = this.node(), tween = node.__transition__[this.id].tween.get("style." + name);
-          return tween ? tween.$ : d3_window.getComputedStyle(node, null).getPropertyValue(name);
+          return tween ? tween.$ : d3_window(node).getComputedStyle(node, null).getPropertyValue(name);
         }
       } else {
         if (n < 2) value = "";
