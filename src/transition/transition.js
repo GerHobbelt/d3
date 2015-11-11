@@ -58,11 +58,13 @@ function d3_transitionNode(node, i, j, ns, id, inherit) {
       transition = lock[id];
 
   if (!transition) {
-    var time = inherit.time;
+    var time = inherit.time,
+        timer = d3_timer(schedule, 0, time);
 
     transition = lock[id] = {
       tween: new d3_Map(),
       time: time,
+      timer: timer,
       delay: inherit.delay,
       duration: inherit.duration,
       ease: inherit.ease,
@@ -74,11 +76,10 @@ function d3_transitionNode(node, i, j, ns, id, inherit) {
 
     ++lock.count;
 
-    d3.timer(function(elapsed) {
+    function schedule(elapsed) {
       var delay = transition.delay,
           duration,
           ease,
-          timer = d3_timer_active,
           tweened = [];
 
       timer.t = delay + time;
@@ -86,38 +87,57 @@ function d3_transitionNode(node, i, j, ns, id, inherit) {
       timer.c = start;
 
       function start(elapsed) {
-        if (lock.active > id) return stop();
-
-        var active = lock[lock.active];
+        // Interrupt the active transition, if any.
+        var activeId = lock.active,
+            active = lock[activeId];
         if (active) {
+          active.timer.c = null;
+          active.timer.t = NaN;
           --lock.count;
-          delete lock[lock.active];
+          delete lock[activeId];
           active.event && active.event.interrupt.call(node, node.__data__, active.nodeIndex, active.groupIndex);
         }
 
-        lock.active = id;
+        // Cancel any pre-empted transitions. No interrupt event is dispatched
+        // because the cancelled transitions never started.
+        for (var cancelId in lock) {
+          if (+cancelId < id) {
+            var cancel = lock[cancelId];
+            cancel.timer.c = null;
+            cancel.timer.t = NaN;
+            --lock.count;
+            delete lock[cancelId];
+          }
+        }
 
+        // Start the transition.
+        lock.active = id;
         transition.event && transition.event.start.call(node, node.__data__, i, j);
 
+        // Initialize the tweens.
         transition.tween.forEach(function(key, value) {
           if ((value = value.call(node, node.__data__, i, j))) {
             tweened.push(value);
           }
         });
 
-        // Deferred capture to allow tweens to initialize ease & duration.
+        // Defer capture to allow tween initialization to set ease & duration.
         ease = transition.ease;
         duration = transition.duration;
 
-        d3.timer(function() { // defer to end of current frame
-          timer.c = tick(elapsed || 1) ? d3_true : tick;
+        // Defer tween invocation to end of current frame; see mbostock/d3#1576.
+        // Note that this transition may be canceled before then!
+        timer.c = tick;
+        d3_timer(function() {
+          if (timer.c && tick(elapsed || 1)) {
+            timer.c = null;
+            timer.t = NaN;
+          }
           return 1;
         }, 0, time);
       }
 
       function tick(elapsed) {
-        if (lock.active !== id) return 1;
-
         var t = elapsed / duration,
             e = ease(t),
             n = tweened.length;
@@ -128,15 +148,11 @@ function d3_transitionNode(node, i, j, ns, id, inherit) {
 
         if (t >= 1) {
           transition.event && transition.event.end.call(node, node.__data__, i, j);
-          return stop();
+          if (--lock.count) delete lock[id];
+          else delete node[ns];
+          return 1;
         }
       }
-
-      function stop() {
-        if (--lock.count) delete lock[id];
-        else delete node[ns];
-        return 1;
-      }
-    }, 0, time);
+    }
   }
 }
