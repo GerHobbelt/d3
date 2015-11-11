@@ -1,8 +1,6 @@
 # See the README for installation instructions.
 
-UGLIFY = node_modules/.bin/uglifyjs
 SMASH = node_modules/.bin/smash
-JSHINT = node_modules/.bin/jshint
 
 GENERATED_FILES = \
 	d3.latest.js \
@@ -23,10 +21,10 @@ test: npm-install
 	@npm test
 
 lint-all: npm-install
-	$(JSHINT) $(shell $(SMASH) --ignore-missing --list src/d3.js) 
+	jshint $(shell $(SMASH) --ignore-missing --list src/d3.js) 
 
 lint: npm-install d3.latest.js
-	$(JSHINT) d3.latest.js 
+	jshint d3.latest.js 
 
 src/start.js: npm-install package.json bin/start
 	bin/start > $@
@@ -38,19 +36,20 @@ test/data/sample-big.csv:
 	echo 'a,b,c,d,e,f,g,h,i,j' > $@
 	for i in {1..100000}; do echo '0,1,2,3,4,5,6,7,8,9' >> $@; done
 
-d3.latest.js: $(SMASH) $(shell $(SMASH) --ignore-missing --list src/d3.js) package.json
+# dependency `$(shell $(SMASH) --ignore-missing --list src/d3.js)` does not fly with my Win8/64 make v4.1 :-(( 
+d3.latest.js: $(SMASH) src/*.js src/*/*.js src/*/*/*.js package.json
 	@rm -f $@
 	$(SMASH) src/d3.js > $@
 	@chmod a-w $@
 
-d3.js: $(UGLIFY) d3.latest.js
+d3.js: d3.latest.js
 	@rm -f $@
-	cat d3.latest.js | $(UGLIFY) - -b indent-level=2 -o $@
+	cat d3.latest.js | uglifyjs - -b indent-level=2 -o $@
 	@chmod a-w $@
 
-d3.min.js: d3.js bin/uglify
+d3.min.js: d3.js
 	@rm -f $@
-	bin/uglify d3.js > $@
+	uglifyjs d3.js > $@
 
 %.json: npm-install bin/% package.json
 	@rm -f $@
@@ -67,8 +66,6 @@ publish: npm-install
 	meteor publish && rm -- .versions
 
 $(SMASH): npm-install
-
-$(UGLIFY): npm-install
 
 # When you nuke the generated files, smash crashes and does not recover. The 'echo x' and 'touch' lines are a hotfix for that one as it takes too long to fix in smash itself.
 clean:
