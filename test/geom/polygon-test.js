@@ -18,7 +18,7 @@ suite.addBatch({
       "has area 1": function(p) {
         assert.equal(p.area(), 1);
       },
-      "has centroid ⟨.5,.5⟩": function(p) {
+      "has centroid ⟨0.5,0.5⟩": function(p) {
         assertPointInDelta(p.centroid(), [0.5, 0.5]);
       },
       "can clip an open counterclockwise triangle": function(p) {
@@ -38,7 +38,7 @@ suite.addBatch({
       "has area 1": function(p) {
         assert.equal(p.area(), -1);
       },
-      "has centroid ⟨.5,.5⟩": function(p) {
+      "has centroid ⟨0.5,0.5⟩": function(p) {
         assertPointInDelta(p.centroid(), [0.5, 0.5]);
       },
       "is not currently supported for clipping": function(p) {
@@ -72,7 +72,7 @@ suite.addBatch({
       "has area 1": function(p) {
         assert.equal(p.area(), 1);
       },
-      "has centroid ⟨.5,.5⟩": function(p) {
+      "has centroid ⟨0.5,0.5⟩": function(p) {
         assertPointInDelta(p.centroid(), [0.5, 0.5]);
       },
       "can clip an open counterclockwise triangle": function(p) {
@@ -92,7 +92,7 @@ suite.addBatch({
       "has area 1": function(p) {
         assert.equal(p.area(), -1);
       },
-      "has centroid ⟨.5,.5⟩": function(p) {
+      "has centroid ⟨0.5,0.5⟩": function(p) {
         assertPointInDelta(p.centroid(), [0.5, 0.5]);
       },
       "is not currently supported for clipping": function(p) {

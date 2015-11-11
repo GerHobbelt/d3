@@ -74,7 +74,7 @@ suite.addBatch({
         var x = d3.scale.sqrt().range([d3.rgb(255, 0, 0), d3.hsl(240, 1, 0.5)]);
         assert.equal(x(0.25), "#800080");
         var x = d3.scale.sqrt().range(["hsl(0,100%,50%)", "hsl(240,100%,50%)"]);
-        assert.equal(x(.25), "#800080");
+        assert.equal(x(0.25), "#800080");
       },
       "can specify range values as arrays or objects": function(d3) {
         var x = d3.scale.sqrt().range([{color: "red"}, {color: "blue"}]);
@@ -85,7 +85,7 @@ suite.addBatch({
     },
 
     "exponent": {
-      "defaults to .5": function(d3) {
+      "defaults to 0.5": function(d3) {
         var x = d3.scale.sqrt();
         assert.equal(x.exponent(), 0.5);
       },

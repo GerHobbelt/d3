@@ -14,7 +14,7 @@ suite.addBatch({
       },
 
       "friction": {
-        "defaults to .9": function(f) {
+        "defaults to 0.9": function(f) {
           assert.equal(f.friction(), 0.9);
         },
         "can be a number": function(f) {
@@ -28,7 +28,7 @@ suite.addBatch({
       },
 
       "gravity": {
-        "defaults to .1": function(f) {
+        "defaults to 0.1": function(f) {
           assert.equal(f.gravity(), 0.1);
         },
         "can be a number": function(f) {
@@ -42,7 +42,7 @@ suite.addBatch({
       },
 
       "theta": {
-        "defaults to .8": function(f) {
+        "defaults to 0.8": function(f) {
           assert.equal(f.theta(), 0.8);
         },
         "can be a number": function(f) {

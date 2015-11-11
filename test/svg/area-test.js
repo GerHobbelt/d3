@@ -140,7 +140,7 @@ suite.addBatch({
       assert.equal(area().interpolate("__proto__").interpolate(), "linear");
     },
 
-    "tension defaults to .7": function(area) {
+    "tension defaults to 0.7": function(area) {
       assert.equal(area().tension(), 0.7);
     },
     "tension can be specified as a constant": function(area) {

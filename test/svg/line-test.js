@@ -67,7 +67,7 @@ suite.addBatch({
       assert.equal(line().interpolate("__proto__").interpolate(), "linear");
     },
 
-    "tension defaults to .7": function(line) {
+    "tension defaults to 0.7": function(line) {
       assert.equal(line().tension(), 0.7);
     },
     "tension can be specified as a constant": function(line) {
@@ -149,7 +149,7 @@ suite.addBatch({
       },
       "supports a single-element array": function(line) {
         var l = line().interpolate("bundle").tension(1);
-        assert.pathEqual(l([[0, 0]]), "M0,0");
+        assert.pathEqual(l([[0, 0]]), "M0,0Z");
       }
     },
 

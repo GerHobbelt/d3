@@ -281,7 +281,7 @@ suite.addBatch({
       },
       "with a suitable tick format": {
         topic: function(x, d3) {
-          return x.ticks().map(x.tickFormat(10, d3.format("+.6r")));
+          return x.ticks().map(x.tickFormat(10, d3.format("+0.6r")));
         },
         "generates ticks at powers of e": function(ticks) {
           assert.deepEqual(ticks, [
