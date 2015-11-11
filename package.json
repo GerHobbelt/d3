@@ -54,9 +54,7 @@
     "jsdom": "7",
     "seedrandom": "2",
     "smash": "0.0",
-    "uglify-js": "2.5.0",
     "vows": "0.8",
-    "jshint": "^2.8.0",
     "jscs": "^2.5.1"
   },
   "scripts": {
