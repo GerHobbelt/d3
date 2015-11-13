@@ -11,6 +11,7 @@ import "layout";
 d3.layout.force = function() {
   var force = {},
       event = d3.dispatch("start", "tick", "end"),
+      timer,
       size = [1, 1],
       drag,
       alpha,
@@ -159,7 +160,8 @@ d3.layout.force = function() {
 
   force.tick = function() {
     // simulated annealing, basically
-    if ((alpha *= .99) < .005) {
+    if ((alpha *= 0.99) < 0.005) {
+      timer = null;
       event.end({type: "end", alpha: alpha = 0});
       return true;
     }
@@ -213,7 +215,7 @@ d3.layout.force = function() {
       x *= l;
       y *= l;
       // and distribute change based on arity
-      k = s.weight / (t.weight + s.weight);
+      k = (t.weight + s.weight ? s.weight / (t.weight + s.weight) : 0.5);
       t.x -= x * k;
       t.y -= y * k;
       k = 1 - k;
@@ -394,11 +396,15 @@ d3.layout.force = function() {
 
     x = +x;
     if (alpha) {                  // if we're already running
-      if (x > 0) alpha = x;       // we might keep it hot
-      else alpha = 0;             // or, next tick will dispatch "end"
+      if (x > 0) { // we might keep it hot
+        alpha = x;
+      } else { // or we might stop
+        timer.c = null, timer.t = NaN, timer = null;
+        event.start({type: "end", alpha: alpha = 0});
+      }
     } else if (x > 0) {           // otherwise, fire it up!
       event.start({type: "start", alpha: alpha = x});
-      d3.timer(force.tick);
+      timer = d3_timer(force.tick);
     }
 
     return force;
@@ -491,7 +497,7 @@ d3.layout.force = function() {
   }
 
   force.resume = function() {
-    return force.alpha(.1);
+    return force.alpha(0.1);
   };
 
   force.stop = function() {
@@ -566,8 +572,8 @@ function d3_layout_forceAccumulate(quad, alpha, charges) {
   if (quad.point) {
     // jitter internal nodes that are coincident
     if (!quad.leaf) {
-      quad.point.x += Math.random() - .5;
-      quad.point.y += Math.random() - .5;
+      quad.point.x += Math.random() - 0.5;
+      quad.point.y += Math.random() - 0.5;
     }
     var k = charges[quad.point.index];
     quad.charge += quad.pointCharge = k;
