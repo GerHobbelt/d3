@@ -78,7 +78,7 @@ d3.behavior.drag = function() {
         var p = position(parent, dragId);
         if (!p) return;                            // this touch didn’t end
         dragSubject.on(move + dragName, null).on(end + dragName, null);
-        dragRestore(dragged && d3.event.target === target);
+        dragRestore(dragged);
 
         var dx = p[0] - position0[0],
             dy = p[1] - position0[1];
