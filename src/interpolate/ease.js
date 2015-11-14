@@ -34,6 +34,9 @@ d3.ease = function(name) {
   return d3_ease_clamp(m(t.apply(null, d3_arraySlice.call(arguments, 1))));
 };
 
+d3.ease.styles = d3_ease.keys();
+d3.ease.modes = d3_ease_mode.keys();
+
 function d3_ease_clamp(f) {
   return function(t) {
     return t <= 0 ? 0 : t >= 1 ? 1 : f(t);

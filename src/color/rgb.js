@@ -4,14 +4,14 @@ import "hsl";
 import "lab";
 import "xyz";
 
-d3.rgb = d3_rgb;
-
-function d3_rgb(r, g, b) {
+var d3_rgb = function (r, g, b) {
   return this instanceof d3_rgb ? void (this.r = ~~r, this.g = ~~g, this.b = ~~b)
       : arguments.length < 2 ? (r instanceof d3_rgb ? new d3_rgb(r.r, r.g, r.b)
       : d3_rgb_parse("" + r, d3_rgb, d3_hsl_rgb))
       : new d3_rgb(r, g, b);
-}
+};
+
+d3.rgb = d3_rgb;
 
 function d3_rgbNumber(value) {
   return new d3_rgb(value >> 16, value >> 8 & 0xff, value & 0xff);
@@ -301,3 +301,5 @@ var d3_rgb_names = d3.map({
 d3_rgb_names.forEach(function(key, value) {
   d3_rgb_names.set(key, d3_rgbNumber(value));
 });
+
+d3.rgb.names = d3_rgb_names.keys();

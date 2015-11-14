@@ -99,6 +99,8 @@ var d3_svg_lineInterpolators = d3.map({
   "monotone": d3_svg_lineMonotone
 });
 
+d3.svg.lineInterpolators = d3_svg_lineInterpolators.keys();
+
 d3_svg_lineInterpolators.forEach(function(key, value) {
   value.key = key;
   value.closed = /-closed$/.test(key);

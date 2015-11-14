@@ -211,6 +211,9 @@ var d3_layout_stackOffsets = d3.map({
   "zero": d3_layout_stackOffsetZero
 });
 
+d3.layout.stackOffsets = d3_layout_stackOffsets.keys();
+d3.layout.stackOrders = d3_layout_stackOrders.keys();
+
 function d3_layout_stackOrderDefault(data) {
   return d3.range(data.length);
 }
