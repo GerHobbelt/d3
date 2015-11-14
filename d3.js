@@ -1741,10 +1741,10 @@
   function d3_xyz_rgb(r) {
     return Math.round(255 * (r <= .00304 ? 12.92 * r : 1.055 * Math.pow(r, 1 / 2.4) - .055));
   }
-  d3.rgb = d3_rgb;
-  function d3_rgb(r, g, b) {
+  var d3_rgb = function(r, g, b) {
     return this instanceof d3_rgb ? void (this.r = ~~r, this.g = ~~g, this.b = ~~b) : arguments.length < 2 ? r instanceof d3_rgb ? new d3_rgb(r.r, r.g, r.b) : d3_rgb_parse("" + r, d3_rgb, d3_hsl_rgb) : new d3_rgb(r, g, b);
-  }
+  };
+  d3.rgb = d3_rgb;
   function d3_rgbNumber(value) {
     return new d3_rgb(value >> 16, value >> 8 & 255, value & 255);
   }
@@ -1991,6 +1991,7 @@
   d3_rgb_names.forEach(function(key, value) {
     d3_rgb_names.set(key, d3_rgbNumber(value));
   });
+  d3.rgb.names = d3_rgb_names.keys();
   function d3_functor(v) {
     return typeof v === "function" ? v : function() {
       return v;
@@ -6045,6 +6046,8 @@
     m = d3_ease_mode.get(m) || d3_identity;
     return d3_ease_clamp(m(t.apply(null, d3_arraySlice.call(arguments, 1))));
   };
+  d3.ease.styles = d3_ease.keys();
+  d3.ease.modes = d3_ease_mode.keys();
   function d3_ease_clamp(f) {
     return function(t) {
       return t <= 0 ? 0 : t >= 1 ? 1 : f(t);
@@ -7115,6 +7118,8 @@
     },
     zero: d3_layout_stackOffsetZero
   });
+  d3.layout.stackOffsets = d3_layout_stackOffsets.keys();
+  d3.layout.stackOrders = d3_layout_stackOrders.keys();
   function d3_layout_stackOrderDefault(data) {
     return d3.range(data.length);
   }
@@ -8521,6 +8526,7 @@
     hermite: d3_svg_lineHermiteMonotone,
     monotone: d3_svg_lineMonotone
   });
+  d3.svg.lineInterpolators = d3_svg_lineInterpolators.keys();
   d3_svg_lineInterpolators.forEach(function(key, value) {
     value.key = key;
     value.closed = /-closed$/.test(key);
