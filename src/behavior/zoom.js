@@ -335,7 +335,7 @@ d3.behavior.zoom = function() {
     else d3_selection_interrupt.call(this), translate0 = location(center0 = center || d3.mouse(this)), zoomstarted(dispatch);
     mousewheelTimer = setTimeout(function() { mousewheelTimer = null; zoomended(dispatch); }, 50);
     d3_eventPreventDefault();
-    scaleTo(Math.pow(zoomFactor, d3_behavior_zoomDelta() * .002) * view.k);
+    scaleTo(Math.pow(zoomFactor, Math.sign(d3_behavior_zoomDelta()) * view.k);
     translateTo(center0, translate0);
     zoomed(dispatch);
   }
