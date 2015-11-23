@@ -268,7 +268,7 @@ d3.behavior.zoom = function() {
       if (touches.length === 1) {
         if (now - touchtime < 500) { // dbltap
           var p = touches[0];
-          zoomTo(that, p, locations0[p.identifier], Math.floor(Math.log(view.k) / Math.log(zoomFactor)) + 1);
+          zoomTo(that, p, locations0[p.identifier], Math.floor(Math.round(Math.log(view.k) / Math.log(zoomFactor)*1e14)/1e14) + 1);
           d3_eventPreventDefault();
         }
         touchtime = now;
@@ -335,14 +335,14 @@ d3.behavior.zoom = function() {
     else d3_selection_interrupt.call(this), translate0 = location(center0 = center || d3.mouse(this)), zoomstarted(dispatch);
     mousewheelTimer = setTimeout(function() { mousewheelTimer = null; zoomended(dispatch); }, 50);
     d3_eventPreventDefault();
-    scaleTo(Math.pow(zoomFactor, Math.sign(d3_behavior_zoomDelta()) * view.k);
+    scaleTo(Math.pow(zoomFactor, Math.sign(d3_behavior_zoomDelta()) * view.k));
     translateTo(center0, translate0);
     zoomed(dispatch);
   }
 
   function dblclicked() {
     var p = d3.mouse(this),
-        k = Math.log(view.k) / Math.log(zoomFactor);
+        k = Math.round(Math.log(view.k) / Math.log(zoomFactor) * 1e14) / 1e14;
 
     zoomTo(this, p, location(p), d3.event.shiftKey ? Math.ceil(k) - 1 : Math.floor(k) + 1);
   }
