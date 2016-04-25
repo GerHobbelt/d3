@@ -93,6 +93,18 @@ function d3_transitionNode(node, i, j, ns, id, inherit) {
       }
     }
 
+    // Defer tween invocation to end of current frame; see mbostock/d3#1576.
+    // Note that this transition may be canceled before then!
+    // This must be scheduled before the start event; see d3/d3-transition#16!
+    timer.c = tick;
+    d3_timer(function() {
+      if (timer.c && tick(elapsed || 1)) {
+        timer.c = null;
+        timer.t = NaN;
+      }
+      return 1;
+    }, 0, time);
+
     // Start the transition.
     lock.active = id;
     transition.event && transition.event.start.call(node, node.__data__, i, j);
@@ -108,17 +120,6 @@ function d3_transitionNode(node, i, j, ns, id, inherit) {
     // Defer capture to allow tween initialization to set ease & duration.
     ease = transition.ease;
     duration = transition.duration;
-
-    // Defer tween invocation to end of current frame; see mbostock/d3#1576.
-    // Note that this transition may be canceled before then!
-    timer.c = tick;
-    d3_timer(function() {
-      if (timer.c && tick(elapsed || 1)) {
-        timer.c = null;
-        timer.t = NaN;
-      }
-      return 1;
-    }, 0, time);
   }
 
   function tick(elapsed) {

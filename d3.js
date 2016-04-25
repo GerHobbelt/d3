@@ -1,6 +1,6 @@
 !function() {
   var d3 = {
-    version: "3.5.8"
+    version: "3.5.9"
   };
   var d3_arraySlice = [].slice, d3_array = function(list) {
     return d3_arraySlice.call(list);
@@ -9341,6 +9341,14 @@
           delete lock[cancelId];
         }
       }
+      timer.c = tick;
+      d3_timer(function() {
+        if (timer.c && tick(elapsed || 1)) {
+          timer.c = null;
+          timer.t = NaN;
+        }
+        return 1;
+      }, 0, time);
       lock.active = id;
       transition.event && transition.event.start.call(node, node.__data__, i, j);
       tweens = [];
@@ -9351,14 +9359,6 @@
       });
       ease = transition.ease;
       duration = transition.duration;
-      timer.c = tick;
-      d3_timer(function() {
-        if (timer.c && tick(elapsed || 1)) {
-          timer.c = null;
-          timer.t = NaN;
-        }
-        return 1;
-      }, 0, time);
     }
     function tick(elapsed) {
       var t = elapsed / duration, e = ease(t), n = tweens.length;
