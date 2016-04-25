@@ -46,8 +46,22 @@
   function d3_ascending(a, b) {
     return a < b ? -1 : a > b ? 1 : a >= b ? 0 : NaN;
   }
+  d3.ascendingKey = function(key) {
+    return typeof key == "function" ? function(a, b) {
+      return key(a) < key(b) ? -1 : key(a) > key(b) ? 1 : key(a) >= key(b) ? 0 : NaN;
+    } : function(a, b) {
+      return a[key] < b[key] ? -1 : a[key] > b[key] ? 1 : a[key] >= b[key] ? 0 : NaN;
+    };
+  };
   d3.descending = function(a, b) {
     return b < a ? -1 : b > a ? 1 : b >= a ? 0 : NaN;
+  };
+  d3.descendingKey = function(key) {
+    return typeof key == "function" ? function(a, b) {
+      return key(b) < key(a) ? -1 : key(b) > key(a) ? 1 : key(b) >= key(a) ? 0 : NaN;
+    } : function(a, b) {
+      return b[key] < a[key] ? -1 : b[key] > a[key] ? 1 : b[key] >= a[key] ? 0 : NaN;
+    };
   };
   d3.min = function(array, f) {
     var i = -1, n = array.length, a, b;
@@ -843,10 +857,13 @@
     }) : this.node().innerHTML;
   };
   d3_selectionPrototype.append = function(name) {
+    var n = d3_parse_attributes(name), s;
+    name = n.attr ? n.tag : name;
     name = d3_selection_creator(name);
-    return this.select(function() {
+    s = this.select(function() {
       return this.appendChild(name.apply(this, arguments));
     });
+    return n.attr ? s.attr(n.attr) : s;
   };
   function d3_selection_creator(name) {
     function create() {
@@ -858,12 +875,30 @@
     }
     return typeof name === "function" ? name : (name = d3.ns.qualify(name)).local ? createNS : create;
   }
+  var d3_parse_attributes_regex = /([\.#])/g;
+  function d3_parse_attributes(name) {
+    if (typeof name === "string") {
+      var attr = {}, parts = name.split(d3_parse_attributes_regex), p;
+      name = parts.shift();
+      while (p = parts.shift()) {
+        if (p == ".") attr["class"] = attr["class"] ? attr["class"] + " " + parts.shift() : parts.shift(); else if (p == "#") attr.id = parts.shift();
+      }
+      return attr.id || attr["class"] ? {
+        tag: name,
+        attr: attr
+      } : name;
+    }
+    return name;
+  }
   d3_selectionPrototype.insert = function(name, before) {
+    var n = d3_parse_attributes(name), s;
+    name = n.attr ? n.tag : name;
     name = d3_selection_creator(name);
     before = d3_selection_selector(before);
-    return this.select(function() {
+    s = this.select(function() {
       return this.insertBefore(name.apply(this, arguments), before.apply(this, arguments) || null);
     });
+    return n.attr ? s.attr(n.attr) : s;
   };
   d3_selectionPrototype.remove = function() {
     return this.each(d3_selectionRemove);
@@ -4997,6 +5032,21 @@
     };
     return rotate([ 0, 0, 90 ]);
   }).raw = d3_geo_transverseMercator;
+  (d3.geo.naturalEarth = function() {
+    return d3_geo_projection(d3_geo_naturalEarth);
+  }).raw = d3_geo_naturalEarth;
+  function d3_geo_naturalEarth(λ, φ) {
+    var φ2 = φ * φ, φ4 = φ2 * φ2;
+    return [ λ * (.8707 - .131979 * φ2 + φ4 * (-.013791 + φ4 * (.003971 * φ2 - .001529 * φ4))), φ * (1.007226 + φ2 * (.015085 + φ4 * (-.044475 + .028874 * φ2 - .005916 * φ4))) ];
+  }
+  d3_geo_naturalEarth.invert = function(x, y) {
+    var φ = y, i = 25, δ;
+    do {
+      var φ2 = φ * φ, φ4 = φ2 * φ2;
+      φ -= δ = (φ * (1.007226 + φ2 * (.015085 + φ4 * (-.044475 + .028874 * φ2 - .005916 * φ4))) - y) / (1.007226 + φ2 * (.015085 * 3 + φ4 * (-.044475 * 7 + .028874 * 9 * φ2 - .005916 * 11 * φ4)));
+    } while (Math.abs(δ) > ε && --i > 0);
+    return [ x / (.8707 + (φ2 = φ * φ) * (-.131979 + φ2 * (-.013791 + φ2 * φ2 * φ2 * (.003971 - .001529 * φ2)))), φ ];
+  };
   d3.geom = {};
   function d3_geom_pointX(d) {
     return d[0];
