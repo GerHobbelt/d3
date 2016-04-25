@@ -94,7 +94,8 @@ d3.behavior.zoom = function() {
 
   zoom.scale = function(_) {
     if (!arguments.length) return view.k;
-    view = {x: view.x, y: view.y, k: +_}; // copy-on-write
+    view = {x: view.x, y: view.y, k: null}; // copy-on-write
+    scaleTo(+_);
     rescale();
     return zoom;
   };
@@ -194,7 +195,6 @@ d3.behavior.zoom = function() {
 
   function mousedowned() {
     var that = this,
-        target = d3.event.target,
         dispatch = event.of(that, arguments),
         dragged = 0,
         subject = d3.select(d3_window(that)).on(mousemove, moved).on(mouseup, ended),
@@ -212,7 +212,7 @@ d3.behavior.zoom = function() {
 
     function ended() {
       subject.on(mousemove, null).on(mouseup, null);
-      dragRestore(dragged && d3.event.target === target);
+      dragRestore(dragged);
       zoomended(dispatch);
     }
   }
@@ -268,7 +268,7 @@ d3.behavior.zoom = function() {
       if (touches.length === 1) {
         if (now - touchtime < 500) { // dbltap
           var p = touches[0];
-          zoomTo(that, p, locations0[p.identifier], Math.floor(Math.round(Math.log(view.k) / Math.log(zoomFactor)*1e14)/1e14) + 1);
+          zoomTo(that, p, locations0[p.identifier], Math.floor(Math.round(Math.log(view.k) / Math.log(zoomFactor) * 1e14) / 1e14) + 1);
           d3_eventPreventDefault();
         }
         touchtime = now;
