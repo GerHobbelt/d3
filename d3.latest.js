@@ -10584,6 +10584,14 @@ function d3_scale_linear(domain, range, interpolate, clamp) {
     return d3_scale_linear(domain, range, interpolate, clamp);
   };
 
+  scale.domainSegmented = function(x, n) {
+    var mn = x[0], d = x[1] - mn, domain = [];
+    n -= 1;
+    for (var i=0; i<=n; ++i)
+      domain.push(mn + d * i / n);
+    return scale.domain(domain);
+  };
+
   return rescale();
 }
 
@@ -10753,6 +10761,14 @@ function d3_scale_log(linear, base, positive, domain) {
     return d3_scale_log(linear.copy(), base, positive, domain);
   };
 
+  scale.domainSegmented = function(x, n) {
+    var mn = x[0], mx = x[1], domain = [];
+    n -= 1;
+    for (var i=0; i<=n; ++i)
+      domain.push(Math.pow(mn, (n-i)/n) * Math.pow(mx, i/n));
+    return scale.domain(domain);
+  };
+
   return d3_scale_linearRebind(scale, linear);
 }
 
@@ -10799,6 +10815,14 @@ function d3_scale_pow(linear, exponent, domain) {
     powb = d3_scale_powPow(1 / exponent);
     linear.domain(domain.map(powp));
     return scale;
+  };
+
+  scale.domainSegmented = function(x, n) {
+    var mn = x[0], d = x[1] - mn, domain = [];
+    n -= 1;
+    for (var i=0; i<=n; ++i)
+      domain.push(mn + d * Math.pow(i/n, 1/exponent));
+    return scale.domain(domain);
   };
 
   scale.copy = function() {
