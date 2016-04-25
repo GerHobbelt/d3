@@ -18,6 +18,8 @@ d3.behavior.zoom = function() {
       duration = 250,
       zooming = 0,
       zoomFactor = 2,
+      robustZoom = false,
+      zoomRatio = 0.002,
       mousedown = "mousedown.zoom",
       mousemove = "mousemove.zoom",
       mouseup = "mouseup.zoom",
@@ -143,6 +145,17 @@ d3.behavior.zoom = function() {
   zoom.zoomFactor = function(z) {
     if (!arguments.length) return zoomFactor;
     zoomFactor = z;
+    return zoom;
+  };
+
+  // TRUE: turn on 'robust zooming', which only looks at the mousewheel/zoom being active yes/no, but doesn't use the mouse step value
+  // FALSE: use classic zoom, with the default 0.002 factor
+  // 
+  // The `ratio` parameter MAY specify an alternative zoom/mouse tick factor, other than the default 0.002.
+  zoom.zoomRobust = function(z, ratio) {
+    if (!arguments.length) return robustZoom;
+    zoomRatio = (ratio > 0 ? ratio : 0.002);
+    robustZoom = !!z;
     return zoom;
   };
 
@@ -335,7 +348,8 @@ d3.behavior.zoom = function() {
     else d3_selection_interrupt.call(this), translate0 = location(center0 = center || d3.mouse(this)), zoomstarted(dispatch);
     mousewheelTimer = setTimeout(function() { mousewheelTimer = null; zoomended(dispatch); }, 50);
     d3_eventPreventDefault();
-    scaleTo(Math.pow(zoomFactor, Math.sign(d3_behavior_zoomDelta()) * view.k));
+    var strength = (robustZoom ? Math.sign(d3_behavior_zoomDelta()) : d3_behavior_zoomDelta() * zoomRatio);
+    scaleTo(Math.pow(zoomFactor, strength * view.k));
     translateTo(center0, translate0);
     zoomed(dispatch);
   }
