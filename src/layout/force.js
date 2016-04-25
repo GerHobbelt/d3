@@ -303,7 +303,7 @@ d3.layout.force = function() {
         if (timer) {
           timer.c = null; timer.t = NaN; timer = null;
         }
-        event.start({type: "end", alpha: alpha = 0});
+        event.end({type: "end", alpha: alpha = 0});
       }
     } else if (x > 0) { // otherwise, fire it up!
       event.start({type: "start", alpha: alpha = x});
