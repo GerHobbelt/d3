@@ -1375,7 +1375,7 @@
       x: 0,
       y: 0,
       k: 1
-    }, translate0, center0, center, size = [ 960, 500 ], scaleExtent = d3_behavior_zoomInfinity, duration = 250, zooming = 0, mousedown = "mousedown.zoom", mousemove = "mousemove.zoom", mouseup = "mouseup.zoom", mousewheelTimer, touchstart = "touchstart.zoom", touchtime, event = d3_eventDispatch(zoom, "zoomstart", "zoom", "zoomend"), x0, x1, y0, y1;
+    }, translate0, center0, center, size = [ 960, 500 ], scaleExtent = d3_behavior_zoomInfinity, duration = 250, zooming = 0, zoomFactor = 2, robustZoom = false, zoomRatio = .002, mousedown = "mousedown.zoom", mousemove = "mousemove.zoom", mouseup = "mouseup.zoom", mousewheelTimer, touchstart = "touchstart.zoom", touchtime, event = d3_eventDispatch(zoom, "zoomstart", "zoom", "zoomend"), x0, x1, y0, y1;
     if (!d3_behavior_zoomWheel) {
       d3_behavior_zoomWheel = "onwheel" in d3_document ? (d3_behavior_zoomDelta = function() {
         return -d3.event.deltaY * (d3.event.deltaMode ? 120 : 1);
@@ -1486,6 +1486,17 @@
       };
       return zoom;
     };
+    zoom.zoomFactor = function(z) {
+      if (!arguments.length) return zoomFactor;
+      zoomFactor = z;
+      return zoom;
+    };
+    zoom.zoomRobust = function(z, ratio) {
+      if (!arguments.length) return robustZoom;
+      zoomRatio = ratio > 0 ? ratio : .002;
+      robustZoom = !!z;
+      return zoom;
+    };
     function location(p) {
       return [ (p[0] - view.x) / view.k, (p[1] - view.y) / view.k ];
     }
@@ -1506,7 +1517,7 @@
         y: view.y,
         k: view.k
       };
-      scaleTo(Math.pow(2, k));
+      scaleTo(Math.pow(zoomFactor, k));
       translateTo(center0 = p, l);
       that = d3.select(that);
       if (duration > 0) that = that.transition().duration(duration);
@@ -1578,7 +1589,7 @@
         if (touches.length === 1) {
           if (now - touchtime < 500) {
             p = touches[0];
-            zoomTo(that, p, locations0[p.identifier], Math.floor(Math.log(view.k) / Math.LN2) + 1);
+            zoomTo(that, p, locations0[p.identifier], Math.floor(Math.round(Math.log(view.k) / Math.log(zoomFactor) * 1e14) / 1e14) + 1);
             d3_eventPreventDefault();
           }
           touchtime = now;
@@ -1637,12 +1648,13 @@
         zoomended(dispatch);
       }, 50);
       d3_eventPreventDefault();
-      scaleTo(Math.pow(2, d3_behavior_zoomDelta() * .002) * view.k);
+      var strength = robustZoom ? Math.sign(d3_behavior_zoomDelta()) : d3_behavior_zoomDelta() * zoomRatio;
+      scaleTo(Math.pow(zoomFactor, strength * view.k));
       translateTo(center0, translate0);
       zoomed(dispatch);
     }
     function dblclicked() {
-      var p = d3.mouse(this), k = Math.log(view.k) / Math.LN2;
+      var p = d3.mouse(this), k = Math.round(Math.log(view.k) / Math.log(zoomFactor) * 1e14) / 1e14;
       zoomTo(this, p, location(p), d3.event.shiftKey ? Math.ceil(k) - 1 : Math.floor(k) + 1);
     }
     return d3.rebind(zoom, event, "on");

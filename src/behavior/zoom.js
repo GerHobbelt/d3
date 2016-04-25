@@ -17,6 +17,9 @@ d3.behavior.zoom = function() {
       scaleExtent = d3_behavior_zoomInfinity,
       duration = 250,
       zooming = 0,
+      zoomFactor = 2,
+      robustZoom = false,
+      zoomRatio = 0.002,
       mousedown = "mousedown.zoom",
       mousemove = "mousemove.zoom",
       mouseup = "mouseup.zoom",
@@ -139,6 +142,23 @@ d3.behavior.zoom = function() {
     return zoom;
   };
 
+  zoom.zoomFactor = function(z) {
+    if (!arguments.length) return zoomFactor;
+    zoomFactor = z;
+    return zoom;
+  };
+
+  // TRUE: turn on 'robust zooming', which only looks at the mousewheel/zoom being active yes/no, but doesn't use the mouse step value
+  // FALSE: use classic zoom, with the default 0.002 factor
+  // 
+  // The `ratio` parameter MAY specify an alternative zoom/mouse tick factor, other than the default 0.002.
+  zoom.zoomRobust = function(z, ratio) {
+    if (!arguments.length) return robustZoom;
+    zoomRatio = (ratio > 0 ? ratio : 0.002);
+    robustZoom = !!z;
+    return zoom;
+  };
+
   function location(p) {
     return [(p[0] - view.x) / view.k, (p[1] - view.y) / view.k];
   }
@@ -160,7 +180,7 @@ d3.behavior.zoom = function() {
   function zoomTo(that, p, l, k) {
     that.__chart__ = {x: view.x, y: view.y, k: view.k};
 
-    scaleTo(Math.pow(2, k));
+    scaleTo(Math.pow(zoomFactor, k));
     translateTo(center0 = p, l);
 
     that = d3.select(that);
@@ -261,7 +281,7 @@ d3.behavior.zoom = function() {
       if (touches.length === 1) {
         if (now - touchtime < 500) { // dbltap
           p = touches[0];
-          zoomTo(that, p, locations0[p.identifier], Math.floor(Math.log(view.k) / Math.LN2) + 1);
+          zoomTo(that, p, locations0[p.identifier], Math.floor(Math.round(Math.log(view.k) / Math.log(zoomFactor) * 1e14) / 1e14) + 1);
           d3_eventPreventDefault();
         }
         touchtime = now;
@@ -332,14 +352,15 @@ d3.behavior.zoom = function() {
     else d3_selection_interrupt.call(this), translate0 = location(center0 = center || d3.mouse(this)), zoomstarted(dispatch);
     mousewheelTimer = setTimeout(function() { mousewheelTimer = null; zoomended(dispatch); }, 50);
     d3_eventPreventDefault();
-    scaleTo(Math.pow(2, d3_behavior_zoomDelta() * 0.002) * view.k);
+    var strength = (robustZoom ? Math.sign(d3_behavior_zoomDelta()) : d3_behavior_zoomDelta() * zoomRatio);
+    scaleTo(Math.pow(zoomFactor, strength * view.k));
     translateTo(center0, translate0);
     zoomed(dispatch);
   }
 
   function dblclicked() {
     var p = d3.mouse(this),
-        k = Math.log(view.k) / Math.LN2;
+        k = Math.round(Math.log(view.k) / Math.log(zoomFactor) * 1e14) / 1e14;
 
     zoomTo(this, p, location(p), d3.event.shiftKey ? Math.ceil(k) - 1 : Math.floor(k) + 1);
   }
