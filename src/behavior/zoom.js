@@ -268,7 +268,7 @@ d3.behavior.zoom = function() {
       if (touches.length === 1) {
         if (now - touchtime < 500) { // dbltap
           var p = touches[0];
-          zoomTo(that, p, locations0[p.identifier], Math.floor(Math.log(view.k) / Math.log(zoomFactor)) + 1);
+          zoomTo(that, p, locations0[p.identifier], Math.floor(Math.round(Math.log(view.k) / Math.log(zoomFactor)*1e14)/1e14) + 1);
           d3_eventPreventDefault();
         }
         touchtime = now;
@@ -342,7 +342,7 @@ d3.behavior.zoom = function() {
 
   function dblclicked() {
     var p = d3.mouse(this),
-        k = Math.log(view.k) / Math.log(zoomFactor);
+        k = Math.round(Math.log(view.k) / Math.log(zoomFactor) * 1e14) / 1e14;
 
     zoomTo(this, p, location(p), d3.event.shiftKey ? Math.ceil(k) - 1 : Math.floor(k) + 1);
   }
