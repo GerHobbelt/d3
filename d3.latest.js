@@ -1,5 +1,5 @@
 !function(){
-  var d3 = {version: "3.5.16"}; // semver
+  var d3 = {version: "3.5.18-3"}; // semver
 var d3_arraySlice = [].slice,
     d3_array = function(list) { return d3_arraySlice.call(list); }; // conversion for NodeLists
 var d3_document = this.document;
@@ -4854,7 +4854,7 @@ function d3_geo_pointInPolygon(point, polygon) {
   // from the point to the South pole.  If it is zero, then the point is the
   // same side as the South pole.
 
-  return (polarAngle < -ε || polarAngle < ε && d3_geo_areaRingSum < 0) ^ (winding & 1);
+  return (polarAngle < -ε || polarAngle < ε && d3_geo_areaRingSum < -ε) ^ (winding & 1);
 }
 
 // Clip features against a circle centered at [0°, 0°], with a given radius.

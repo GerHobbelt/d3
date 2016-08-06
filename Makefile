@@ -1,6 +1,7 @@
 # See the README for installation instructions.
 
 SMASH = node_modules/.bin/smash
+UGLIFY = node_modules/uglify-js/bin/uglifyjs
 
 GENERATED_FILES = \
 	d3.latest.js \
@@ -11,11 +12,11 @@ GENERATED_FILES = \
 
 all: $(GENERATED_FILES)
 
-.PHONY: superclean clean all test benchmark publish lint
+.PHONY: superclean clean all test benchmark publish lint __prepublish __postpublish pre-publish post-publish
 
 npm-install:
-	npm install
 	-@touch npm-install
+	npm install
 
 test: npm-install
 	@npm test
@@ -44,12 +45,12 @@ d3.latest.js: $(SMASH) src/*.js src/*/*.js src/*/*/*.js package.json
 
 d3.js: d3.latest.js
 	@rm -f $@
-	cat d3.latest.js | uglifyjs - -b indent-level=2 -o $@
+	cat d3.latest.js | $(UGLIFY) - -b indent-level=2 -o $@
 	@chmod a-w $@
 
 d3.min.js: d3.js
 	@rm -f $@
-	uglifyjs d3.js > $@
+	$(UGLIFY) d3.js > $@
 
 %.json: npm-install bin/% package.json
 	@rm -f $@
@@ -64,6 +65,40 @@ package.js: npm-install bin/meteor package.json
 publish: npm-install
 	npm publish
 	meteor publish && rm -- .versions
+
+pre-publish: package.js d3.js				
+	# __prepublish
+
+__prepublish:
+	npm test
+	rm -f package.js src/start.js d3.js d3.min.js d3.zip 
+	bin/start > src/start.js 
+	bin/meteor > package.js 
+	smash src/d3.js | $(UGLIFY) - -b indent-level=2 -o d3.js 
+	$(UGLIFY) d3.js > d3.min.js 	
+	chmod a-w d3.js d3.min.js package.js 
+	zip d3.zip LICENSE d3.js d3.min.js
+
+post-publish:				
+	# __postpublish
+
+__postpublish:
+	git push
+	git push --tags
+	cp -v README.md LICENSE d3.js d3.min.js ../d3-bower
+	cd ../d3-bower
+	git add README.md LICENSE d3.js d3.min.js
+	VERSION=`node -e 'console.log(require(\"./package.json\").version)'`; git commit -m \"Release $VERSION.\"
+	VERSION=`node -e 'console.log(require(\"./package.json\").version)'`; git tag -am \"Release $VERSION.\" v${VERSION}
+	git push
+	git push --tags
+	cd -
+	cp -v d3.js ../d3.github.com/d3.v3.js 
+	cp -v d3.min.js ../d3.github.com/d3.v3.min.js
+	cd ../d3.github.com
+	git add d3.v3.js d3.v3.min.js
+	VERSION=`node -e 'console.log(require(\"./package.json\").version)'`; git commit -m \"d3 ${VERSION}\"
+	git push
 
 $(SMASH): npm-install
 
