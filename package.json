@@ -51,12 +51,12 @@
     "main": "d3.js"
   },
   "devDependencies": {
-    "jsdom": "7",
-    "seedrandom": "2",
-    "smash": "0.0",
-    "uglify-js": "2.6.2",
-    "vows": "0.8",
-    "jscs": "2.5.1"
+    "jsdom": "11.6.2",
+    "seedrandom": "2.4.3",
+    "smash": "0.0.15",
+    "uglify-js": "3.3.14",
+    "vows": "0.8.1",
+    "jscs": "3.0.7"
   },
   "scripts": {
     "test": "node_modules/.bin/vows -v",

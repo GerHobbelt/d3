@@ -905,6 +905,12 @@ d3_selectionPrototype.attr = function(name, value) {
           ? node.getAttributeNS(name.space, name.local)
           : node.getAttribute(name);
     }
+    
+    if (typeof name === "function") {
+      // For attr(function), function should return object of name and values of the 
+      // attributes to set or remove.
+      name = value.apply(this, arguments);
+    }
 
     // For attr(object), the object specifies the names and values of the
     // attributes to set or remove. The values may be functions that are
@@ -1925,7 +1931,6 @@ d3.behavior.zoom = function() {
       mousemove = "mousemove.zoom",
       mouseup = "mouseup.zoom",
       mousewheelTimer,
-      touchstart = "touchstart.zoom",
       touchtime, // time of last touchstart (to detect double-tap)
       event = d3_eventDispatch(zoom, "zoomstart", "zoom", "zoomend"),
       x0,
@@ -1941,11 +1946,24 @@ d3.behavior.zoom = function() {
         : (d3_behavior_zoomDelta = function() { return -d3.event.detail; }, "MozMousePixelScroll");
   }
 
+  if (!d3_behavior_zoomTouch) {
+    if (window.PointerEvent) {
+      d3_behavior_zoomTouch = {down: "pointerdown", move: "pointermove", up: "pointerup", leave: "pointerleave", enter: "pointerenter"};
+      d3_behavior_zoomTouchHandler = pointerdowned;
+    } else if (window.MSPointerEvent) {
+      d3_behavior_zoomTouch = {down: "MSPointerDown", move: "MSPointerMove", up: "MSPointerUp", leave: "MSPointerLeave", enter: "MSPointerEnter"};
+      d3_behavior_zoomTouchHandler = pointerdowned;
+    } else {
+      d3_behavior_zoomTouch = {down: "touchstart"};
+      d3_behavior_zoomTouchHandler = touchstarted;
+    }
+  }
+
   function zoom(g) {
     g   .on(mousedown, mousedowned)
         .on(d3_behavior_zoomWheel + ".zoom", mousewheeled)
         .on("dblclick.zoom", dblclicked)
-        .on(touchstart, touchstarted);
+        .on(d3_behavior_zoomTouch.down + ".zoom", d3_behavior_zoomTouchHandler);
   }
 
   zoom.event = function(g) {
@@ -2150,7 +2168,7 @@ d3.behavior.zoom = function() {
 
     // Workaround for Chrome issue 412723: the touchstart listener must be set
     // after the touchmove listener.
-    subject.on(mousedown, null).on(touchstart, started); // prevent duplicate events
+    subject.on(mousedown, null).on(d3_behavior_zoomTouch.down + ".zoom", started); // prevent duplicate events
 
     // Updates locations of any touches in locations0.
     function relocate() {
@@ -2241,9 +2259,143 @@ d3.behavior.zoom = function() {
       }
       // Otherwise, remove touchmove and touchend listeners.
       d3.selectAll(targets).on(zoomName, null);
-      subject.on(mousedown, mousedowned).on(touchstart, touchstarted);
+      subject.on(mousedown, mousedowned).on(d3_behavior_zoomTouch.down + ".zoom", d3_behavior_zoomTouchHandler);
+
       dragRestore();
       zoomended(dispatch);
+    }
+  }
+
+  var pointers = [];
+
+  function getPointer(id) {
+    for (var i = 0; i < pointers.length; i++) {
+      if (pointers[i].identifier == id) {
+        return pointers[i];
+      }
+    }
+  }
+
+  function getAnotherPointer(id) {
+    for (var i = 0; i < pointers.length; i++) {
+      if (pointers[i].identifier != id) {
+        return pointers[i];
+      }
+    }
+  }
+
+  function addUpdatePointer(p) {
+    for (var i = 0; i < pointers.length; i++) {
+      if (pointers[i].identifier == p.identifier) {
+        if (pointers[i][0] == p[0] && pointers[i][1] == p[1]) {
+          return false;
+        }
+
+        pointers[i][0] = p[0];
+        pointers[i][1] = p[1];
+        return true;
+      }
+    }
+    pointers.push(p);
+    return true;
+  }
+
+  function removePointer(id) {
+    for (var i = 0; i < pointers.length; i++) {
+      if (pointers[i].identifier == id) {
+        pointers.splice(i, 1);
+      }
+    }
+  }
+ 
+  function pointerdowned() {
+    var that = this,
+        dispatch = event.of(that, arguments),
+        e = d3_eventSource(),
+        distance0 = 0,
+        scale0,
+        zoomName = ".zoom-" + e.pointerId,
+        subject = d3.select(that);
+
+    started();
+    zoomstarted(dispatch);
+
+    function started() {
+      var e = d3_eventSource();
+      
+      // store a pointer
+      var p = d3_mousePoint(that, e);
+      p.identifier = e.pointerId;
+      p.location = location(p);
+      addUpdatePointer(p);
+
+      d3_eventPreventDefault();
+      
+      // prevent duplication via replacing "pointerdowned" by local "started"
+      if (pointers.length == 1) {
+        subject
+            .on(d3_behavior_zoomTouch.down + ".zoom", null)
+            .on(d3_behavior_zoomTouch.down + zoomName, started)
+            .on(d3_behavior_zoomTouch.move + zoomName, moved)
+            .on(d3_behavior_zoomTouch.up + zoomName, ended)
+            .on(d3_behavior_zoomTouch.leave + zoomName, ended);
+      }
+      
+      scale0 = view.k;
+
+      // if this touch isn't first
+      if (pointers.length > 1) {
+        var p = pointers[0], q = pointers[1],
+            dx = p[0] - q[0], dy = p[1] - q[1];
+        distance0 = dx * dx + dy * dy;
+      }
+    }
+
+    function moved() {
+      var p0, l0,
+          p1, l1;
+
+      var ee = d3_eventSource();
+
+      // update a point in "pointers"
+      p0 = d3_mousePoint(that, ee);
+      p0.identifier = ee.pointerId;
+      p0.location = location(p0);
+
+      // ignore repetitve events with the same coordinates
+      if (!addUpdatePointer(p0))
+        return;
+
+      l0 = getPointer(p0.identifier).location;
+      if (pointers.length > 1) {
+        p1 = getAnotherPointer(p0.identifier); // get any another finger
+        l1 = p1.location;
+
+        var dx = p1[0] - p0[0], dy = p1[1] - p0[1],
+            distance1 = dx * dx + dy * dy;
+        var scale1 = (distance0 != 0) ? Math.sqrt(distance1 / distance0) : 0;
+
+        p0 = [(p0[0] + p1[0]) / 2, (p0[1] + p1[1]) / 2];
+        l0 = [(l0[0] + l1[0]) / 2, (l0[1] + l1[1]) / 2];
+
+        scaleTo(scale1 * scale0);
+      }
+
+      translateTo(p0, l0);
+      zoomed(dispatch);
+    }
+
+    function ended() {
+      var e = d3_eventSource();
+      removePointer(e.pointerId);
+
+      if (pointers.length == 0) {
+        subject
+            .on(zoomName, null)
+            .on(d3_behavior_zoomTouch.down + ".zoom", d3_behavior_zoomTouchHandler);
+
+        zoomended(dispatch);
+      }
     }
   }
 
@@ -2271,7 +2423,9 @@ d3.behavior.zoom = function() {
 
 var d3_behavior_zoomInfinity = [0, Infinity], // default scale extent
     d3_behavior_zoomDelta, // initialized lazily
-    d3_behavior_zoomWheel;
+    d3_behavior_zoomWheel,
+    d3_behavior_zoomTouch,
+    d3_behavior_zoomTouchHandler; // <- temporary keeps the name of function that handle touch event. Ideaqlly it should be the one function that do the same for any events
 d3.color = d3_color;
 
 function d3_color() {}
@@ -3758,32 +3912,27 @@ function d3_time_ordinal_suffix(number) {
 }
 
 function d3_time_parseWeekdayNumber(date, string, i) {
-  d3_time_numberRe.lastIndex = 0;
-  var n = d3_time_numberRe.exec(string.slice(i, i + 1));
+  var n = string.slice(i, i + 1).match(d3_time_numberRe);
   return n ? (date.w = +n[0], i + n[0].length) : -1;
 }
 
 function d3_time_parseWeekNumberSunday(date, string, i) {
-  d3_time_numberRe.lastIndex = 0;
-  var n = d3_time_numberRe.exec(string.slice(i));
+  var n = string.slice(i).match(d3_time_numberRe);
   return n ? (date.U = +n[0], i + n[0].length) : -1;
 }
 
 function d3_time_parseWeekNumberMonday(date, string, i) {
-  d3_time_numberRe.lastIndex = 0;
-  var n = d3_time_numberRe.exec(string.slice(i));
+  var n = string.slice(i).match(d3_time_numberRe);
   return n ? (date.W = +n[0], i + n[0].length) : -1;
 }
 
 function d3_time_parseFullYear(date, string, i) {
-  d3_time_numberRe.lastIndex = 0;
-  var n = d3_time_numberRe.exec(string.slice(i, i + 4));
+  var n = string.slice(i, i + 4).match(d3_time_numberRe);
   return n ? (date.y = +n[0], i + n[0].length) : -1;
 }
 
 function d3_time_parseYear(date, string, i) {
-  d3_time_numberRe.lastIndex = 0;
-  var n = d3_time_numberRe.exec(string.slice(i, i + 2));
+  var n = string.slice(i, i + 2).match(d3_time_numberRe);
   return n ? (date.y = d3_time_expandYear(+n[0]), i + n[0].length) : -1;
 }
 
@@ -3799,45 +3948,38 @@ function d3_time_expandYear(d) {
 }
 
 function d3_time_parseMonthNumber(date, string, i) {
-  d3_time_numberRe.lastIndex = 0;
-  var n = d3_time_numberRe.exec(string.slice(i, i + 2));
+  var n = string.slice(i, i + 2).match(d3_time_numberRe);
   return n ? (date.m = n[0] - 1, i + n[0].length) : -1;
 }
 
 function d3_time_parseDay(date, string, i) {
-  d3_time_numberRe.lastIndex = 0;
-  var n = d3_time_numberRe.exec(string.slice(i, i + 2));
+  var n = string.slice(i, i + 2).match(d3_time_numberRe);
   return n ? (date.d = +n[0], i + n[0].length) : -1;
 }
 
 function d3_time_parseDayOfYear(date, string, i) {
-  d3_time_numberRe.lastIndex = 0;
-  var n = d3_time_numberRe.exec(string.slice(i, i + 3));
+  var n = string.slice(i, i + 3).match(d3_time_numberRe);
   return n ? (date.j = +n[0], i + n[0].length) : -1;
 }
 
 // Note: we don't validate that the hour is in the range [0,23] or [1,12].
 function d3_time_parseHour24(date, string, i) {
-  d3_time_numberRe.lastIndex = 0;
-  var n = d3_time_numberRe.exec(string.slice(i, i + 2));
+  var n = string.slice(i, i + 2).match(d3_time_numberRe);
   return n ? (date.H = +n[0], i + n[0].length) : -1;
 }
 
 function d3_time_parseMinutes(date, string, i) {
-  d3_time_numberRe.lastIndex = 0;
-  var n = d3_time_numberRe.exec(string.slice(i, i + 2));
+  var n = string.slice(i, i + 2).match(d3_time_numberRe);
   return n ? (date.M = +n[0], i + n[0].length) : -1;
 }
 
 function d3_time_parseSeconds(date, string, i) {
-  d3_time_numberRe.lastIndex = 0;
-  var n = d3_time_numberRe.exec(string.slice(i, i + 2));
+  var n = string.slice(i, i + 2).match(d3_time_numberRe);
   return n ? (date.S = +n[0], i + n[0].length) : -1;
 }
 
 function d3_time_parseMilliseconds(date, string, i) {
-  d3_time_numberRe.lastIndex = 0;
-  var n = d3_time_numberRe.exec(string.slice(i, i + 3));
+  var n = string.slice(i, i + 3).match(d3_time_numberRe);
   return n ? (date.L = +n[0], i + n[0].length) : -1;
 }
 
@@ -3851,8 +3993,7 @@ function d3_time_zone(d) {
 }
 
 function d3_time_parseLiteralPercent(date, string, i) {
-  d3_time_percentRe.lastIndex = 0;
-  var n = d3_time_percentRe.exec(string.slice(i, i + 1));
+  var n = string.slice(i, i + 1).match(d3_time_percentRe);
   return n ? i + n[0].length : -1;
 }
 
