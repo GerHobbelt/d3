@@ -1,5 +1,5 @@
 !function(){
-  var d3 = {version: "3.5.18-3"}; // semver
+  var d3 = {version: "3.5.18-4"}; // semver
 var d3_arraySlice = [].slice,
     d3_array = function(list) { return d3_arraySlice.call(list); }; // conversion for NodeLists
 var d3_document = this.document;
